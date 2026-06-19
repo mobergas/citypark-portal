@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>City Park Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#f5f5f5;color:#0d0d0d;font-family:'Barlow',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 32px rgba(0,0,0,.12);max-width:420px;width:100%;margin:20px}
+.card-header{background:#0d0d0d;padding:32px 36px 28px;position:relative}
+.card-header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:5px;background:#b5d96e}
+.logo-box{background:#fff;border-radius:6px;padding:6px 14px;display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;margin-bottom:20px}
+.lcp{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;color:#0d0d0d;letter-spacing:-.5px}
+.lmg{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:11px;color:#b5d96e;letter-spacing:.12em;text-transform:uppercase}
+.card-header h1{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:28px;color:#fff;text-transform:uppercase;letter-spacing:.02em}
+.card-header p{color:#888;font-size:13px;margin-top:6px;line-height:1.5}
+.card-body{padding:32px 36px}
+.coming-soon{display:flex;flex-direction:column;gap:16px}
+.feature{display:flex;align-items:center;gap:12px;padding:14px;background:#f5f5f5;border-radius:10px;border-left:4px solid #b5d96e}
+.feature-icon{width:36px;height:36px;background:#0d0d0d;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.feature-text strong{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;display:block;color:#0d0d0d}
+.feature-text span{font-size:12px;color:#888;margin-top:2px;display:block}
+.footer{text-align:center;padding:0 36px 28px;font-size:12px;color:#bbb}
+.badge{display:inline-flex;align-items:center;gap:6px;background:#f0f8e0;border:1.5px solid #b5d96e;border-radius:20px;padding:6px 14px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8fb84a;margin-bottom:16px}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-header">
+    <div class="logo-box"><div class="lcp">city park</div><div class="lmg">management</div></div>
+    <div class="badge">🚧 Coming Soon</div>
+    <h1>Parking Portal<br>Launching Soon</h1>
+    <p>Our new online parking payment and management system is on its way. Pay for parking, manage validations, and more — all from your phone.</p>
+  </div>
+  <div class="card-body">
+    <div class="coming-soon">
+      <div class="feature"><div class="feature-icon">💳</div><div class="feature-text"><strong>Pay for Parking</strong><span>Hourly, event, and monthly passes</span></div></div>
+      <div class="feature"><div class="feature-icon">🎟️</div><div class="feature-text"><strong>Validation Codes</strong><span>Discounted parking for partner businesses</span></div></div>
+      <div class="feature"><div class="feature-icon">📱</div><div class="feature-text"><strong>SMS Alerts</strong><span>Get notified before your session expires</span></div></div>
+      <div class="feature"><div class="feature-icon">🔒</div><div class="feature-text"><strong>Staff Dashboard</strong><span>Manage lots, sessions, and billing</span></div></div>
+    </div>
+  </div>
+  <div class="footer">City Park Management · Powered by citypark.app</div>
+</div>
+</body>
+</html>
