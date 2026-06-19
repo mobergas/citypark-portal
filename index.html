@@ -777,7 +777,7 @@ function attachEv(){
   const ls=document.getElementById('lot-sel');if(ls)ls.addEventListener('change',e=>{S.lotId=e.target.value;S.val=null;render();});
   const vs=document.getElementById('veh-sel');if(vs)vs.addEventListener('change',e=>S.vehicle=e.target.value);
   const pi=document.getElementById('phone-inp');if(pi)pi.addEventListener('input',e=>S.phone=e.target.value);
-  const ti=document.getElementById('sms-tmpl');if(ti){ti.addEventListener('input',()=>{S.smsTmpl=ti.value;const prev=document.getElementById('smsprev'),cnt=document.getElementById('smscnt');if(prev)prev.textContent=bSms('ABC 1234',Object.values(S.lots)[0],'CPM-4921');if(cnt)cnt.textContent=ti.value.length+' characters';});}
+  const ti=document.getElementById('sms-tmpl');if(ti){ti.addEventListener('input',()=>{S.smsTmpl=ti.value;const prev=document.getElementById('smsprev'),cnt=document.getElementById('smscnt');if(prev)prev.textContent=bSms('ABC 1234',Object.values(S.lots)[0],'CPM-4921');if(cnt)cnt.textContent=ti.value.length+' characters';});} const ri=document.getElementById('receipt-tmpl');if(ri){ri.addEventListener('input',()=>{S.receiptTmpl=ri.value;const prev=document.getElementById('receiptprev'),cnt=document.getElementById('receiptcnt');const mockSess={plate:'ABC 1234',rate:'hourly',duration:2,paid:7.25};const mockLot=Object.values(S.lots)[0];if(prev)prev.textContent=bReceipt(mockSess,mockLot);if(cnt)cnt.textContent=ri.value.length+' characters';});}
 }
 let timerInt=null,adminInt=null;
 function startTimer(){if(timerInt)clearInterval(timerInt);timerInt=setInterval(()=>{const el=document.getElementById('cdown');if(!el){clearInterval(timerInt);return;}if(S.payData)el.textContent=fmtT(remMs(S.payData));},15000);}
