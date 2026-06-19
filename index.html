@@ -625,7 +625,7 @@ function applyCode(){
   if(v){S.val=v;S.codeErr=false;render();}
   else{S.codeErr=true;const el=document.getElementById('vcode-err');if(el)el.classList.add('show');}
 }
-function handlePay(){
+async function handlePay(){
   if(!S.plate.trim())return;
   const l=lot(),{total,base,fee}=getTotal();
   const dur=S.rate==='hourly'?S.hours:S.rate==='event'?24:720;
