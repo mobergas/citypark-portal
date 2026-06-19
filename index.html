@@ -8,42 +8,782 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#f5f5f5;color:#0d0d0d;font-family:'Barlow',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center}
-.card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 32px rgba(0,0,0,.12);max-width:420px;width:100%;margin:20px}
-.card-header{background:#0d0d0d;padding:32px 36px 28px;position:relative}
-.card-header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:5px;background:#b5d96e}
-.logo-box{background:#fff;border-radius:6px;padding:6px 14px;display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;margin-bottom:20px}
-.lcp{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;color:#0d0d0d;letter-spacing:-.5px}
-.lmg{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:11px;color:#b5d96e;letter-spacing:.12em;text-transform:uppercase}
-.card-header h1{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:28px;color:#fff;text-transform:uppercase;letter-spacing:.02em}
-.card-header p{color:#888;font-size:13px;margin-top:6px;line-height:1.5}
-.card-body{padding:32px 36px}
-.coming-soon{display:flex;flex-direction:column;gap:16px}
-.feature{display:flex;align-items:center;gap:12px;padding:14px;background:#f5f5f5;border-radius:10px;border-left:4px solid #b5d96e}
-.feature-icon{width:36px;height:36px;background:#0d0d0d;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
-.feature-text strong{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;display:block;color:#0d0d0d}
-.feature-text span{font-size:12px;color:#888;margin-top:2px;display:block}
-.footer{text-align:center;padding:0 36px 28px;font-size:12px;color:#bbb}
-.badge{display:inline-flex;align-items:center;gap:6px;background:#f0f8e0;border:1.5px solid #b5d96e;border-radius:20px;padding:6px 14px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8fb84a;margin-bottom:16px}
+:root{--lime:#b5d96e;--lime-dark:#8fb84a;--lime-bg:#f0f8e0;--blk:#0d0d0d;--wht:#fff;--g1:#f5f5f5;--g2:#ebebeb;--g3:#c8c8c8;--t1:#0d0d0d;--t2:#444;--t3:#888;--red:#d32f2f;--grn:#2e7d32;--gold:#f59e0b;--gold-bg:#fffbeb;--gold-bd:#fde68a;--blue:#1d4ed8;--f:'Barlow',sans-serif;--fc:'Barlow Condensed',sans-serif}
+body{background:var(--g1);color:var(--t1);font-family:var(--f);min-height:100vh;font-size:15px}
+.tb-out{background:var(--blk)}.tb{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;align-items:stretch;justify-content:space-between;height:64px}
+.logo-a{display:flex;align-items:center}.logo-box{background:#fff;border-radius:6px;padding:5px 12px;display:flex;flex-direction:column;align-items:flex-start;gap:1px;cursor:pointer}
+.lcp{font-family:var(--fc);font-weight:900;font-size:22px;color:#0d0d0d;letter-spacing:-.5px}
+.lmg{font-family:var(--fc);font-weight:900;font-size:11px;color:#b5d96e;letter-spacing:.12em;text-transform:uppercase}
+.nav-tabs{display:flex;align-items:stretch}
+.ntab{padding:0 18px;cursor:pointer;font-family:var(--fc);font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#999;border:none;background:none;border-bottom:3px solid transparent;display:flex;align-items:center;gap:6px;transition:all .2s}
+.ntab.on{color:var(--lime);border-bottom-color:var(--lime)}
+.ntab:hover:not(.on){color:#fff}
+.ls{height:5px;background:var(--lime)}
+.as{display:flex;align-items:center;gap:10px;padding:0 0 0 14px;border-left:1px solid #333}
+.av{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--fc);font-weight:900;font-size:12px;color:var(--blk)}
+.av-m{background:var(--lime)}.av-e{background:#60a5fa}
+.an{font-family:var(--fc);font-size:13px;font-weight:700;color:#ddd;letter-spacing:.04em;text-transform:uppercase;line-height:1.3}
+.rb{font-size:10px;font-weight:700;font-family:var(--fc);letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border-radius:3px}
+.rb-m{background:rgba(181,217,110,.2);color:var(--lime)}.rb-e{background:rgba(96,165,250,.2);color:#60a5fa}
+.lo-btn{background:none;border:1px solid #333;border-radius:6px;padding:5px 10px;color:#888;font-family:var(--fc);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:5px}
+.lo-btn:hover{border-color:var(--red);color:var(--red)}
+.pg{padding:24px 16px}
+.fl{font-family:var(--fc);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3);margin-bottom:5px;display:block}
+.fg{margin-bottom:14px}
+.fi{width:100%;background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:11px 13px;color:var(--t1);font-size:15px;outline:none;font-family:var(--f)}
+.fi:focus{border-color:var(--lime-dark);background:#fff}
+.fta{width:100%;background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:11px 13px;color:var(--t1);font-size:14px;outline:none;font-family:var(--f);resize:vertical;min-height:80px;line-height:1.6}
+.fta:focus{border-color:var(--lime-dark);background:#fff}
+.fse{width:100%;background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:11px 13px;color:var(--t1);font-family:var(--f);font-size:15px;outline:none;cursor:pointer}
+.fi2{width:100%;background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:12px 14px;color:var(--t1);font-size:15px;outline:none;font-family:var(--f)}
+.fi2:focus{border-color:var(--lime-dark);background:#fff}
+.fl2{font-family:var(--fc);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-bottom:6px;display:block}
+.fg2{margin-bottom:16px;position:relative}
+.pwtog{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t3);cursor:pointer;font-size:18px;display:flex;align-items:center}
+.tg{position:relative;width:38px;height:22px;cursor:pointer;flex-shrink:0;display:inline-block}
+.tg input{opacity:0;width:0;height:0}
+.tgs{position:absolute;inset:0;background:#ddd;border-radius:11px;transition:.3s}
+.tgs:before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.tg input:checked+.tgs{background:var(--lime-dark)}
+.tg input:checked+.tgs:before{transform:translateX(16px)}
+.tr{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--g2)}
+.tr:last-child{border:none}
+.trl{font-family:var(--fc);font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--t2)}
+.trs{font-size:11px;color:var(--t3);font-family:var(--f);font-weight:400;text-transform:none;letter-spacing:0;margin-top:1px}
+.piw{display:flex;align-items:center;background:var(--g1);border:1.5px solid var(--g2);border-radius:7px;overflow:hidden;flex:1}
+.piw:focus-within{border-color:var(--lime-dark)}
+.piw span{padding:0 8px;color:var(--t3);font-size:13px;font-weight:600;border-right:1px solid var(--g2);display:flex;align-items:center;align-self:stretch}
+.piw input{background:none;border:none;outline:none;color:var(--t1);padding:8px;font-family:var(--fc);font-size:15px;font-weight:700;width:100%}
+.ftr{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:8px 10px;background:var(--g1);border-radius:8px;border:1px solid var(--g2)}
+.ftl{font-family:var(--fc);font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--t2);width:110px;flex-shrink:0}
+.ftt{display:flex;align-items:center;gap:6px;margin-right:8px}
+.ftt span{font-size:11px;color:var(--t3)}
+.fmi{display:flex;align-items:center;background:#fff;border:1.5px solid var(--g2);border-radius:6px;overflow:hidden;width:90px}
+.fmi:focus-within{border-color:var(--lime-dark)}
+.fmi span{padding:0 6px;color:var(--t3);font-size:12px;border-right:1px solid var(--g2);display:flex;align-items:center;align-self:stretch}
+.fmi input{background:none;border:none;outline:none;color:var(--t1);padding:6px;font-family:var(--fc);font-size:14px;font-weight:700;width:100%}
+.fmi input:disabled{color:var(--g3)}
+.lw{max-width:420px;margin:40px auto 0}
+.lc{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.1)}
+.lh{background:var(--blk);padding:24px 28px 20px;position:relative}
+.lh::after{content:'';position:absolute;bottom:0;left:0;right:0;height:5px;background:var(--lime)}
+.li2{width:50px;height:50px;background:rgba(181,217,110,.15);border:2px solid var(--lime);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.lh h2{font-family:var(--fc);font-weight:900;font-size:24px;color:#fff;text-transform:uppercase}
+.lh p{color:#888;font-size:13px;margin-top:4px}
+.lb{padding:24px 28px}
+.lbtn{width:100%;background:var(--lime);color:var(--blk);border:none;border-radius:10px;padding:14px;font-family:var(--fc);font-size:18px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;margin-top:4px}
+.lbtn:hover{background:var(--lime-dark)}
+.lerr{background:#fff0f0;border:1.5px solid #ffcdd2;border-radius:8px;padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:16px;display:none;align-items:center;gap:8px}
+.lerr.show{display:flex}
+.lhint{text-align:center;font-size:12px;color:var(--t3);margin-top:16px;padding-top:14px;border-top:1px solid var(--g2)}
+.aw{max-width:1160px;margin:0 auto}
+.atb{background:var(--blk);border-radius:12px;padding:0 22px;display:flex;align-items:stretch;justify-content:space-between;margin-bottom:16px;overflow:hidden;position:relative}
+.atb::after{content:'';position:absolute;bottom:0;left:0;right:0;height:4px;background:var(--lime)}
+.att{padding:16px 0;color:#fff}
+.att h2{font-family:var(--fc);font-size:24px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+.att p{color:#888;font-size:12px;margin-top:2px}
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.sc{background:#fff;border-radius:12px;padding:16px 16px 12px;border-bottom:4px solid var(--lime);box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.sl{font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.sv{font-family:var(--fc);font-size:30px;font-weight:900;color:var(--t1)}
+.sv.gn{color:var(--grn)}.sv.am{color:#e65100}.sv.go{color:var(--gold)}.sv.bl{color:var(--blue)}
+.sd{font-size:11px;color:var(--t3);margin-top:3px}
+.pn{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.ph{background:var(--blk);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.ph h3{font-family:var(--fc);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#fff}
+.ph h3 i{color:var(--lime);margin-right:6px}
+.pb{padding:14px}
+.sb2{display:flex;align-items:center;gap:8px;background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:8px 10px;flex:1;min-width:200px}
+.sb2 i{color:var(--t3);font-size:16px;flex-shrink:0}
+.sb2 input{background:none;border:none;outline:none;color:var(--t1);font-size:13px;flex:1;font-family:var(--f);min-width:0}
+.lfb{padding:7px 13px;border-radius:8px;font-family:var(--fc);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border:1.5px solid var(--g2);background:#fff;color:var(--t2);transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:5px}
+.lfb.on{background:var(--blk);border-color:var(--blk);color:var(--lime)}
+.lfb:hover:not(.on){border-color:var(--lime-dark);color:var(--lime-dark)}
+.lfb .lc2{font-size:10px;background:var(--g2);color:var(--t3);padding:1px 5px;border-radius:3px;font-weight:700}
+.lfb.on .lc2{background:rgba(255,255,255,.15);color:var(--lime)}
+table{width:100%;border-collapse:collapse}
+thead th{font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);padding:7px 10px;text-align:left;border-bottom:2px solid var(--g2)}
+tbody tr{border-bottom:1px solid var(--g2);transition:background .15s}
+tbody tr:hover{background:var(--lime-bg)}
+tbody td{padding:10px;font-size:13px}
+tfoot td{padding:10px;font-size:13px;background:var(--lime-bg);font-weight:600}
+.pc{font-family:var(--fc);font-weight:800;font-size:16px;letter-spacing:.08em;color:var(--t1)}
+.sp{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:4px;font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.sp.active{background:rgba(46,125,50,.12);color:#2e7d32}
+.sp.expiring{background:rgba(230,81,0,.12);color:#e65100}
+.sp.expired{background:rgba(211,47,47,.1);color:#d32f2f}
+.sp.val{background:rgba(245,158,11,.15);color:#b45309}
+.sp.pending{background:rgba(29,78,216,.1);color:var(--blue)}
+.sp.canceled{background:var(--g2);color:var(--t3)}
+.tb2{height:4px;background:var(--g2);border-radius:3px;margin-top:4px;width:80px}
+.tb2f{height:100%;border-radius:3px}
+.ab{background:var(--g1);border:1.5px solid var(--g2);border-radius:5px;padding:4px 9px;font-family:var(--fc);font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--t2);cursor:pointer;transition:all .2s}
+.ab:hover{border-color:var(--lime-dark);color:var(--lime-dark);background:var(--lime-bg)}
+.ab.danger:hover{border-color:var(--red);color:var(--red);background:#fff5f5}
+.ab.blue-btn{border-color:var(--blue);color:var(--blue)}
+.ab.blue-btn:hover{background:rgba(29,78,216,.08)}
+.svb{width:100%;background:var(--lime);color:var(--blk);border:none;border-radius:9px;padding:11px;font-family:var(--fc);font-size:15px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;margin-top:4px}
+.svb:hover{background:var(--lime-dark)}
+.stt{display:none;background:var(--lime-bg);border:1.5px solid var(--lime);color:#3a6b00;border-radius:7px;padding:9px 12px;font-size:12px;text-align:center;margin-top:6px}
+.stt.show{display:block}
+.stabs{display:flex;gap:0;border-bottom:2px solid var(--g2);margin-bottom:16px;flex-wrap:wrap;overflow-x:auto}
+.stab{padding:8px 11px;font-family:var(--fc);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3);border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.stab.on{color:var(--lime-dark);border-bottom-color:var(--lime-dark)}
+.stab:hover:not(.on){color:var(--t2)}
+.ro3{display:flex;align-items:center;gap:8px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:13px;color:#1e40af;margin-bottom:14px}
+.vg{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.vc{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.06);border:1.5px solid var(--g2)}
+.vc.ac{border-color:var(--gold)}
+.vch{background:var(--blk);padding:12px 16px 10px;position:relative;display:flex;align-items:center;justify-content:space-between}
+.vch::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--gold)}
+.vcn{font-family:var(--fc);font-size:16px;font-weight:900;color:#fff;text-transform:uppercase}
+.vcl2{font-family:var(--fc);font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.vsd{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.vsd.on{background:#10b981}.vsd.off{background:#555}
+.vcb{padding:14px 16px}
+.vdr{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--g2);font-size:13px}
+.vdr:last-child{border:none}
+.vdl{color:var(--t3);font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.vtb{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:4px;font-family:var(--fc);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.vtf{background:rgba(16,185,129,.15);color:#059669}
+.vtd{background:rgba(245,158,11,.15);color:#b45309}
+.cc{display:inline-flex;align-items:center;gap:5px;background:var(--blk);color:var(--lime);border-radius:5px;padding:3px 9px;font-family:var(--fc);font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.vqs{padding:12px 16px;border-top:1px solid var(--g2);display:flex;align-items:center;gap:10px;background:var(--g1)}
+.vqi{flex:1}
+.vql{font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3);margin-bottom:2px}
+.vqu{font-size:11px;color:var(--lime-dark);word-break:break-all}
+.vac{display:flex;gap:6px;padding:10px 16px;border-top:1px solid var(--g2);flex-wrap:wrap}
+.addc{background:#fff;border:2px dashed var(--g2);border-radius:12px;min-height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:8px}
+.addc:hover{border-color:var(--gold);background:var(--gold-bg)}
+.addc i{font-size:28px;color:var(--g3)}.addc:hover i,.addc:hover span{color:var(--gold)}
+.addc span{font-family:var(--fc);font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3)}
+.dtg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.dto{border:2px solid var(--g2);border-radius:10px;padding:12px 8px;cursor:pointer;text-align:center;background:#fff}
+.dto:hover,.dto.on{border-color:var(--gold);background:var(--gold-bg)}
+.dto .dti{font-size:22px;margin-bottom:4px}.dto .dtl{font-family:var(--fc);font-size:13px;font-weight:800;color:var(--t1);text-transform:uppercase}
+.dto.on .dtl{color:#b45309}.dto .dts{font-size:11px;color:var(--t3);margin-top:2px}
+.lg{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.lcard{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.lch{background:var(--blk);padding:12px 16px 10px;position:relative}
+.lch::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--lime)}
+.lcn{font-family:var(--fc);font-size:18px;font-weight:900;color:#fff;text-transform:uppercase}
+.lcz{font-family:var(--fc);font-size:11px;color:var(--lime);font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.lcs{padding:12px 16px;border-bottom:1px solid var(--g2)}
+.lsr{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:3px 0}
+.lsl{color:var(--t3);font-family:var(--fc);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:11px}
+.lcq{padding:12px 16px;border-bottom:1px solid var(--g2);display:flex;align-items:center;gap:12px}
+.lqi{flex:1}.lql{font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3);margin-bottom:3px}
+.lqu{font-size:11px;color:var(--lime-dark);word-break:break-all}
+.lac{display:flex;gap:6px;padding:10px 16px;flex-wrap:wrap}
+.addl{background:#fff;border:2px dashed var(--g2);border-radius:12px;min-height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:8px}
+.addl:hover{border-color:var(--lime-dark);background:var(--lime-bg)}
+.addl i{font-size:28px;color:var(--g3)}.addl:hover i,.addl:hover span{color:var(--lime-dark)}
+.addl span{font-family:var(--fc);font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3)}
+.selfserve-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-family:var(--fc);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.selfserve-badge.on{background:rgba(29,78,216,.1);color:var(--blue)}
+.selfserve-badge.off{background:var(--g2);color:var(--t3)}
+.fbar{background:#fff;border-radius:12px;padding:12px 16px;margin-bottom:16px;box-shadow:0 1px 6px rgba(0,0,0,.06);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.flbl{font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3)}
+.pbtn{padding:6px 13px;border-radius:7px;font-family:var(--fc);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border:1.5px solid var(--g2);background:#fff;color:var(--t2);white-space:nowrap}
+.pbtn.on{background:var(--blk);border-color:var(--blk);color:var(--lime)}
+.pbtn:hover:not(.on){border-color:var(--lime-dark);color:var(--lime-dark)}
+.din{background:#fff;border:1.5px solid var(--g2);border-radius:7px;padding:6px 10px;color:var(--t1);font-size:13px;font-family:var(--f);outline:none;cursor:pointer}
+.din:focus{border-color:var(--lime-dark)}
+.apb{background:var(--blk);color:var(--lime);border:none;border-radius:7px;padding:7px 14px;font-family:var(--fc);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.fdiv{width:1px;height:22px;background:var(--g2)}
+.ltb{padding:6px 13px;border-radius:7px;font-family:var(--fc);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border:1.5px solid var(--g2);background:#fff;color:var(--t2);white-space:nowrap}
+.ltb.on{background:var(--lime);border-color:var(--lime-dark);color:var(--blk)}
+.ltb:hover:not(.on){border-color:var(--lime-dark);color:var(--lime-dark)}
+.rsc{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.rc{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 6px rgba(0,0,0,.06);border-left:4px solid}
+.rc.tot{border-color:var(--lime-dark)}.rc.prk{border-color:#2563eb}.rc.fee{border-color:var(--blk)}
+.rcl{font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:6px}
+.rcv{font-family:var(--fc);font-size:28px;font-weight:900;color:var(--t1)}
+.rcs{font-size:11px;color:var(--t3);margin-top:3px}
+.chartwrap{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.cwh2{background:var(--blk);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.cwh2 h3{font-family:var(--fc);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#fff}
+.cwh2 h3 i{color:var(--lime);margin-right:6px}
+.cwb2{padding:18px}
+.bc{display:flex;flex-direction:column;gap:8px}
+.br{display:flex;align-items:center;gap:8px}
+.bda{font-family:var(--fc);font-size:11px;font-weight:700;color:var(--t3);width:48px;flex-shrink:0;text-align:right}
+.bt{flex:1;display:flex;flex-direction:column;gap:3px}
+.bsw{display:flex;align-items:center;gap:5px}
+.bs{height:13px;border-radius:3px;min-width:2px}
+.bs.pk{background:#2563eb}.bs.fe{background:#0d0d0d}
+.bla{font-size:10px;color:var(--t3);white-space:nowrap;min-width:36px}
+.bto{font-family:var(--fc);font-size:11px;font-weight:700;color:var(--t2);width:44px;flex-shrink:0;text-align:right}
+.leg{display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap}
+.lgi{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--t2)}
+.lgd{width:12px;height:12px;border-radius:2px;flex-shrink:0}
+.rg2a{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.bsg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.bsc{background:#fff;border-radius:12px;padding:14px 14px 10px;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.bsc.us{border-bottom:4px solid var(--gold)}.bsc.vl{border-bottom:4px solid #2563eb}.bsc.fr{border-bottom:4px solid #10b981}.bsc.cl{border-bottom:4px solid var(--lime-dark)}
+.bsl{font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:6px}
+.bsv2{font-family:var(--fc);font-size:28px;font-weight:900;color:var(--t1)}
+.bss{font-size:11px;color:var(--t3);margin-top:3px}
+.ccs{display:flex;flex-direction:column;gap:10px}
+.ccard2{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.06);border:1.5px solid var(--g2)}
+.ccard2.hu{border-color:var(--gold)}
+.cch2{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.cch2:hover{background:var(--g1)}
+.ccl2{display:flex;align-items:center;gap:10px}
+.cca2{width:36px;height:36px;border-radius:8px;background:var(--blk);display:flex;align-items:center;justify-content:center;font-family:var(--fc);font-weight:900;font-size:14px;color:var(--lime);flex-shrink:0}
+.ccn2{font-family:var(--fc);font-size:16px;font-weight:900;color:var(--t1);text-transform:uppercase}
+.ccm2{font-size:11px;color:var(--t3);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cpi{display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:3px;font-family:var(--fc);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.cpi-l{background:var(--lime-bg);color:var(--lime-dark)}.cpi-c{background:var(--blk);color:var(--lime)}.cpi-f{background:rgba(16,185,129,.12);color:#059669}.cpi-p{background:rgba(245,158,11,.12);color:#b45309}.cpi-fl{background:rgba(37,99,235,.1);color:#1d4ed8}
+.ccr2{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.cst2{text-align:right;min-width:56px}
+.csv2{font-family:var(--fc);font-size:20px;font-weight:900;color:var(--t1)}
+.csv2.mo{color:#2563eb}
+.csl2{font-family:var(--fc);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-top:1px}
+.chev{color:var(--t3);font-size:18px;transition:transform .2s;flex-shrink:0}
+.chev.op{transform:rotate(180deg)}
+.cdt{display:none;border-top:1px solid var(--g2);padding:14px 18px}
+.cdt.op{display:block}
+.bxb{background:var(--blk);border-radius:10px;padding:14px 16px;margin-top:12px}
+.bxt{font-family:var(--fc);font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.bxr{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:13px;border-bottom:1px solid #1e1e1e}
+.bxr:last-child{border:none}
+.bxr .bl{color:#aaa}.bxr .bv{color:#fff;font-family:var(--fc);font-size:13px;font-weight:700}
+.bxr.tot{padding-top:10px;margin-top:4px;border-top:1px solid #333;border-bottom:none}
+.bxr.tot .bl{color:#fff;font-family:var(--fc);font-weight:900;font-size:14px;text-transform:uppercase}
+.bxr.tot .bv{color:var(--gold);font-size:22px;font-weight:900}
+.ucrd{background:#fff;border-radius:10px;padding:14px 16px;border:1.5px solid var(--g2);display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.ui{display:flex;align-items:center;gap:10px}
+.uav{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fc);font-weight:900;font-size:14px;color:var(--blk)}
+.ud h4{font-family:var(--fc);font-size:15px;font-weight:800;color:var(--t1)}
+.ud p{font-size:12px;color:var(--t3);margin-top:1px}
+.ua{display:flex;align-items:center;gap:8px}
+.pass-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.pstat{background:#fff;border-radius:12px;padding:14px 16px 10px;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.pstat.act{border-bottom:4px solid var(--blue)}.pstat.rev{border-bottom:4px solid var(--grn)}.pstat.pend{border-bottom:4px solid var(--gold)}.pstat.canc{border-bottom:4px solid var(--g3)}
+.ps-lbl{font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:6px}
+.ps-val{font-family:var(--fc);font-size:28px;font-weight:900;color:var(--t1)}
+.ps-sub{font-size:11px;color:var(--t3);margin-top:3px}
+.pass-row-actions{display:flex;gap:5px;flex-wrap:wrap}
+.invite-box{background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:12px;padding:20px 22px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.invite-box-text h4{font-family:var(--fc);font-size:18px;font-weight:900;color:#fff;text-transform:uppercase;letter-spacing:.04em}
+.invite-box-text p{font-size:13px;color:#94a3b8;margin-top:4px}
+.invite-btn-big{background:var(--blue);color:#fff;border:none;border-radius:10px;padding:12px 22px;font-family:var(--fc);font-size:15px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.invite-btn-big:hover{background:#1e40af}
+.email-preview{background:#fff;border:1.5px solid var(--g2);border-radius:10px;overflow:hidden}
+.email-header{background:var(--blk);padding:14px 18px;position:relative}
+.email-header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:4px;background:var(--lime)}
+.email-body{padding:18px 20px;font-size:14px;line-height:1.7;color:var(--t2)}
+.email-meta{font-size:12px;color:var(--t3);padding:8px 18px;border-bottom:1px solid var(--g2);display:flex;gap:16px;flex-wrap:wrap}
+.collapse-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 0;border-top:1px solid var(--g2);margin-top:14px;user-select:none}
+.collapse-label{font-family:var(--fc);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);display:flex;align-items:center;gap:6px}
+.collapse-icon{color:var(--t3);font-size:16px;transition:transform .2s}
+.collapse-icon.op{transform:rotate(180deg)}
+.collapse-body{display:none;padding-top:12px}
+.collapse-body.op{display:block}
+.ph-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.ph-tag{display:inline-flex;align-items:center;background:var(--blk);color:var(--lime);border-radius:4px;padding:3px 9px;font-family:var(--fc);font-size:12px;font-weight:700;letter-spacing:.06em;cursor:pointer;user-select:none}
+.ph-tag:hover{background:#222}
+.cw{max-width:500px;margin:0 auto}
+.ccard{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,.08);margin-bottom:16px}
+.cchd{background:var(--blk);padding:18px 22px 14px;position:relative}
+.cchd::after{content:'';position:absolute;bottom:0;left:0;right:0;height:5px;background:var(--lime)}
+.zbadge{display:inline-flex;align-items:center;gap:6px;background:var(--lime);color:var(--blk);border-radius:4px;padding:4px 12px;font-family:var(--fc);font-weight:800;font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.cchd h1{font-family:var(--fc);font-weight:900;font-size:28px;color:#fff;text-transform:uppercase;line-height:1.1}
+.cchd p{color:#aaa;font-size:12px;margin-top:3px}
+.ccbd{padding:20px 22px}
+.rg2{display:grid;gap:8px;margin-bottom:18px}
+.ro2{border:2px solid var(--g2);border-radius:10px;padding:12px 8px;cursor:pointer;text-align:center;transition:all .2s;background:#fff}
+.ro2:hover,.ro2.on{border-color:var(--lime-dark);background:var(--lime-bg)}
+.ro2 .rl{font-family:var(--fc);font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+.ro2 .rp{font-family:var(--fc);font-size:20px;font-weight:900;color:var(--t1)}
+.ro2.on .rp{color:var(--lime-dark)}
+.ro2 .rs{font-size:10px;color:var(--t3);margin-top:1px}
+.ph-row{display:flex;gap:8px}
+.ph-pfx{background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:11px 12px;color:var(--t3);font-size:14px;white-space:nowrap;display:flex;align-items:center;gap:4px}
+.hrs-row{display:flex;align-items:center;gap:10px}
+.hrs-btn{width:40px;height:40px;background:var(--blk);border:none;border-radius:8px;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hrs-btn:hover{background:var(--lime-dark)}
+.hrs-disp{flex:1;background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:8px;text-align:center;font-family:var(--fc);font-size:22px;font-weight:900}
+.hrs-lbl{font-family:var(--fc);font-size:12px;color:var(--t3);font-weight:600;white-space:nowrap}
+.psumm{background:var(--blk);border-radius:10px;padding:16px;margin:16px 0}
+.psr{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:13px}
+.psr .pl{color:#aaa}.psr .pv{color:#fff;font-weight:500}
+.psr.dr .pl{color:var(--lime)}.psr.dr .pv{color:var(--lime)}
+.psr.tot{border-top:1px solid #333;margin-top:6px;padding-top:10px}
+.psr.tot .pl{color:#fff;font-family:var(--fc);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.06em}
+.psr.tot .pv{font-family:var(--fc);font-size:22px;font-weight:900;color:var(--lime)}
+.psr.tot .pv.free{color:#10b981}
+.paybtn{width:100%;background:var(--lime);color:var(--blk);border:none;border-radius:10px;padding:15px;font-family:var(--fc);font-size:18px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.paybtn:hover{background:var(--lime-dark)}
+.paybtn:disabled{background:var(--g2);color:var(--g3);cursor:not-allowed}
+.paybtn.free{background:#10b981;color:#fff}.paybtn.free:hover{background:#059669}
+.valbanner{background:linear-gradient(135deg,#1a1a1a,#2a2a2a);border:2px solid var(--gold);border-radius:12px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.valicon{width:40px;height:40px;background:var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.valinfo h4{font-family:var(--fc);font-size:16px;font-weight:900;color:var(--gold);text-transform:uppercase;letter-spacing:.04em}
+.valinfo p{font-size:12px;color:#ccc;margin-top:2px}
+.valbadge{display:inline-flex;align-items:center;background:var(--gold);color:var(--blk);border-radius:4px;padding:2px 8px;font-family:var(--fc);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin-top:4px}
+.vcode-sec{background:var(--g1);border:1.5px solid var(--g2);border-radius:10px;padding:14px;margin-bottom:16px}
+.vcode-row{display:flex;gap:8px;align-items:center}
+.vcode-inp{flex:1;background:#fff;border:1.5px solid var(--g2);border-radius:8px;padding:10px 13px;color:var(--t1);font-family:var(--fc);font-size:16px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;outline:none}
+.vcode-inp:focus{border-color:var(--gold)}
+.vcode-btn{background:var(--blk);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-family:var(--fc);font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+.vcode-btn:hover{background:#333}
+.vcode-err{font-size:12px;color:var(--red);margin-top:6px;display:none}
+.vcode-err.show{display:block}
+.suc-hd{background:var(--lime);padding:20px 22px;text-align:center;position:relative}
+.suc-hd::after{content:'';position:absolute;bottom:0;left:0;right:0;height:5px;background:var(--blk)}
+.suc-hd h2{font-family:var(--fc);font-weight:900;font-size:26px;text-transform:uppercase;color:var(--blk)}
+.tkt{border:2px dashed var(--g2);border-radius:10px;overflow:hidden;margin-bottom:14px}
+.tkt-top{background:var(--blk);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+.tkt-id{font-family:var(--fc);font-size:20px;font-weight:900;color:var(--lime);letter-spacing:.12em}
+.tkt-bd{padding:14px 16px}
+.tkr{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--g2);font-size:13px}
+.tkr:last-child{border:none}
+.tkl{color:var(--t3);font-family:var(--fc);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.tkv{font-weight:600;font-family:var(--fc);font-size:15px}
+.tmr{background:var(--blk);border-radius:10px;padding:14px;text-align:center;margin-bottom:14px}
+.tmrn{font-family:var(--fc);font-size:38px;font-weight:900;color:var(--lime)}
+.tmrl{font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#888;margin-top:2px}
+.smsnote{display:flex;align-items:flex-start;gap:8px;background:var(--lime-bg);border:1px solid var(--lime);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--t2);margin-bottom:14px}
+.oln{width:100%;background:transparent;border:2px solid var(--g2);border-radius:10px;padding:11px;font-family:var(--fc);font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t2);cursor:pointer;margin-top:10px}
+.oln:hover{border-color:var(--lime-dark);color:var(--lime-dark);background:var(--lime-bg)}
+.ext-pnl{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,.08);margin-bottom:16px}
+.ext-hd{background:var(--blk);padding:16px 22px 12px;position:relative}
+.ext-hd::after{content:'';position:absolute;bottom:0;left:0;right:0;height:5px;background:var(--lime)}
+.ext-hd h2{font-family:var(--fc);font-weight:900;font-size:22px;color:#fff;text-transform:uppercase}
+.ext-hd p{color:#aaa;font-size:12px;margin-top:2px}
+.ext-bd{padding:18px 22px}
+.ext-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.ext-opt{border:2px solid var(--g2);border-radius:10px;padding:14px 10px;cursor:pointer;text-align:center;background:#fff}
+.ext-opt:hover,.ext-opt.on{border-color:var(--lime-dark);background:var(--lime-bg)}
+.ext-opt .eh{font-family:var(--fc);font-size:22px;font-weight:900;color:var(--t1)}
+.ext-opt.on .eh{color:var(--lime-dark)}
+.ext-opt .ep{font-size:12px;color:var(--t3);margin-top:2px}
+.monthly-invite-notice{background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:12px;padding:16px 18px;margin-top:16px;display:flex;align-items:center;gap:12px}
+.monthly-invite-notice i{font-size:24px;color:var(--blue);flex-shrink:0}
+.monthly-invite-notice div h4{font-family:var(--fc);font-size:15px;font-weight:900;color:#fff;text-transform:uppercase;letter-spacing:.04em}
+.monthly-invite-notice div p{font-size:12px;color:#94a3b8;margin-top:3px;line-height:1.5}
+.smsalert{display:none;position:fixed;top:16px;right:16px;background:var(--blk);border-left:4px solid var(--lime);border-radius:10px;padding:12px 16px;max-width:300px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.smsalert.show{display:block;animation:slin .3s ease}
+@keyframes slin{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.sat{font-family:var(--fc);font-size:14px;font-weight:800;color:var(--lime);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.sab{font-size:12px;color:#ccc;line-height:1.5}
+.scl{position:absolute;top:8px;right:10px;background:none;border:none;color:#666;cursor:pointer;font-size:18px}
+.mov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center;padding:16px}
+.mov.show{display:flex}
+.md{background:#fff;border-radius:14px;overflow:hidden;width:540px;max-width:100%;box-shadow:0 8px 40px rgba(0,0,0,.25);max-height:92vh;display:flex;flex-direction:column}
+.mdh{background:var(--blk);padding:16px 22px 14px;position:relative;flex-shrink:0}
+.mdh::after{content:'';position:absolute;bottom:0;left:0;right:0;height:4px;background:var(--lime)}
+.mdh.ga::after{background:var(--gold)}.mdh.ba::after{background:var(--blue)}
+.mdh h3{font-family:var(--fc);font-size:20px;font-weight:900;color:#fff;text-transform:uppercase;letter-spacing:.04em}
+.mds{overflow-y:auto;flex:1;padding:20px 22px}
+.mdf{padding:14px 22px;border-top:1px solid var(--g2);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0}
+.bsv3{background:var(--lime);color:var(--blk);border:none;border-radius:9px;padding:11px 24px;font-family:var(--fc);font-size:15px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.bsv3:hover{background:var(--lime-dark)}
+.bsv3.go{background:var(--gold);color:var(--blk)}.bsv3.go:hover{background:#d97706}
+.bsv3.bl{background:var(--blue);color:#fff}.bsv3.bl:hover{background:#1e40af}
+.bsv3.rl{background:var(--red);color:#fff}
+.bcl{background:transparent;border:1.5px solid var(--g2);border-radius:9px;padding:11px 20px;font-family:var(--fc);font-size:15px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t2);cursor:pointer}
+.sdv{font-family:var(--fc);font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--t2);padding-bottom:6px;border-bottom:2px solid var(--lime);margin-bottom:10px;margin-top:18px;display:flex;align-items:center;gap:6px}
+.sdv.go{border-bottom-color:var(--gold)}.sdv.bl{border-bottom-color:var(--blue)}
+.sdv:first-child{margin-top:0}
+.qmb{padding:24px;text-align:center}
+@media(max-width:800px){.sg{grid-template-columns:1fr 1fr}.lg{grid-template-columns:1fr}.rg2a{grid-template-columns:1fr}.rsc{grid-template-columns:1fr 1fr}.bsg{grid-template-columns:1fr 1fr}.vg{grid-template-columns:1fr}.pass-stats{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
-<div class="card">
-  <div class="card-header">
-    <div class="logo-box"><div class="lcp">city park</div><div class="lmg">management</div></div>
-    <div class="badge">🚧 Coming Soon</div>
-    <h1>Parking Portal<br>Launching Soon</h1>
-    <p>Our new online parking payment and management system is on its way. Pay for parking, manage validations, and more — all from your phone.</p>
-  </div>
-  <div class="card-body">
-    <div class="coming-soon">
-      <div class="feature"><div class="feature-icon">💳</div><div class="feature-text"><strong>Pay for Parking</strong><span>Hourly, event, and monthly passes</span></div></div>
-      <div class="feature"><div class="feature-icon">🎟️</div><div class="feature-text"><strong>Validation Codes</strong><span>Discounted parking for partner businesses</span></div></div>
-      <div class="feature"><div class="feature-icon">📱</div><div class="feature-text"><strong>SMS Alerts</strong><span>Get notified before your session expires</span></div></div>
-      <div class="feature"><div class="feature-icon">🔒</div><div class="feature-text"><strong>Staff Dashboard</strong><span>Manage lots, sessions, and billing</span></div></div>
-    </div>
-  </div>
-  <div class="footer">City Park Management · Powered by cityparkmanagement.app</div>
+
+<div id="smsalert" class="smsalert">
+  <button class="scl" onclick="document.getElementById('smsalert').classList.remove('show')">×</button>
+  <div class="sat"><i class="ti ti-message-circle" style="font-size:13px;margin-right:4px"></i>Alert</div>
+  <div class="sab" id="sab"></div>
 </div>
+
+<div class="mov" id="lot-modal"><div class="md"><div class="mdh"><h3 id="lmt">Edit Lot</h3></div><div class="mds" id="lmb"></div><div class="mdf"><button class="bcl" onclick="closeM('lot-modal')">Cancel</button><button class="bsv3" onclick="saveLot()">✓ Save</button></div></div></div>
+<div class="mov" id="qr-modal"><div class="md" style="width:380px"><div class="mdh"><h3 id="qrt">QR Code</h3></div><div class="qmb" id="qrb"></div><div class="mdf"><button class="bcl" onclick="closeM('qr-modal')">Close</button><button class="bsv3" onclick="alert('QR PNG download ready')">⬇ Download</button></div></div></div>
+<div class="mov" id="val-modal"><div class="md" style="width:500px"><div class="mdh ga"><h3 id="vmt">New Validation</h3></div><div class="mds" id="vmb"></div><div class="mdf"><button class="bcl" onclick="closeM('val-modal')">Cancel</button><button class="bsv3 go" onclick="saveVal()">✓ Save</button></div></div></div>
+<div class="mov" id="vqr-modal"><div class="md" style="width:400px"><div class="mdh ga"><h3 id="vqrt">Validation QR</h3></div><div class="qmb" id="vqrb"></div><div class="mdf"><button class="bcl" onclick="closeM('vqr-modal')">Close</button><button class="bsv3 go" onclick="alert('QR downloaded')">⬇ Download</button></div></div></div>
+<div class="mov" id="inv-modal"><div class="md" style="width:600px"><div class="mdh ga"><h3 id="ivt">Invoice</h3></div><div class="mds" id="ivb"></div><div class="mdf"><button class="bcl" onclick="closeM('inv-modal')">Close</button><button class="bsv3 go" onclick="alert('PDF export ready')">⬇ Export PDF</button></div></div></div>
+<div class="mov" id="usr-modal"><div class="md" style="width:420px"><div class="mdh"><h3 id="umt">Add User</h3></div><div class="mds" id="umb"></div><div class="mdf"><button class="bcl" onclick="closeM('usr-modal')">Cancel</button><button class="bsv3" onclick="saveUser()">✓ Save</button></div></div></div>
+<div class="mov" id="pass-modal"><div class="md" style="width:580px"><div class="mdh ba"><h3 id="pmt">Send Pass Invite</h3></div><div class="mds" id="pmb"></div><div class="mdf"><button class="bcl" onclick="closeM('pass-modal')">Cancel</button><button class="bsv3 bl" onclick="sendPassInvite()"><i class="ti ti-mail" style="font-size:14px;margin-right:5px"></i>Send Invite</button></div></div></div>
+<div class="mov" id="cancel-modal"><div class="md" style="width:440px"><div class="mdh" style="background:#7f1d1d"><h3 id="cmt">Cancel Pass</h3></div><div class="mds" id="cmb"></div><div class="mdf"><button class="bcl" onclick="closeM('cancel-modal')">Keep Active</button><button class="bsv3 rl" onclick="confirmCancel()">Cancel Pass</button></div></div></div>
+
+<div class="tb-out">
+  <div class="tb">
+    <div class="logo-a"><div class="logo-box" onclick="S.v='pay';S.cstep=1;S.payData=null;S.val=null;render()"><div class="lcp">city park</div><div class="lmg">management</div></div></div>
+    <div class="nav-tabs">
+      <button class="ntab" id="ntab-pay" onclick="S.v='pay';render()"><i class="ti ti-qrcode" style="font-size:13px"></i>Pay</button>
+      <button class="ntab" id="ntab-admin" onclick="S.cu?switchToAdmin():switchToLogin()"><i class="ti ti-lock" style="font-size:13px" id="admin-icon"></i>Admin</button>
+    </div>
+    <div id="tr" style="display:flex;align-items:stretch"></div>
+  </div>
+  <div class="ls"></div>
+</div>
+<div id="mc" class="pg"></div>
+
+<script>
+const NOW=new Date();NOW.setHours(0,0,0,0);
+function toDS(d){return d.toISOString().slice(0,10)}
+function fromDS(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)}
+function addMonths(d,n){const r=new Date(d);r.setMonth(r.getMonth()+n);return r}
+function fmtDate(d){return d.toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'})}
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+const DEFAULT_INVITE_TMPL=`Hi {FIRST_NAME},
+
+You've been invited to set up a monthly parking pass at {LOT_NAME}. Your pass gives you guaranteed access and auto-renews each month — no need to pay every time you park.
+
+Lot: {LOT_NAME} · Zone {ZONE}
+Monthly rate: {MONTHLY_RATE}/month
+Billing: Auto-renews monthly · Cancel anytime by contacting us
+
+To activate your pass, use the link below:
+{SIGNUP_LINK}
+
+This invite is personal to you and expires in 7 days. Questions? Reply to this email or call us at (813) 555-0100.
+
+— City Park Management`;
+
+const S={
+  v:'pay',
+  cstep:1,lotId:'lot1',rate:'hourly',hours:2,plate:'',phone:'',vehicle:'car',
+  val:null,codeErr:false,payData:null,tic:4823,extId:null,extHrs:1,extDone:false,
+  cu:null,loginErr:false,showPw:false,tab:'sessions',sfLot:'all',
+  eLot:null,eVal:null,eUsr:null,newVT:'free',openC:{},
+  rvP:'7d',rvF:toDS(new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()-6)),rvT:toDS(NOW),rvL:'all',
+  biP:'month',biF:toDS(new Date(NOW.getFullYear(),NOW.getMonth(),1)),biT:toDS(NOW),biL:'all',
+  smsTmpl:'City Park Management: Your parking for plate {PLATE} at {LOT} (Zone {ZONE}) expires in 20 min. Tap to extend: cityparkmanagement.app/extend?session={SESSION_ID}',
+  inviteTmpl:DEFAULT_INVITE_TMPL,
+  inviteSubject:'Your City Park monthly parking pass invitation',
+  smsLog:[{time:'10:42 AM',plate:'ABC 1234',lot:'Downtown Lot A',msg:'Auto 20 min warning'}],
+  passFilter:'all',passSearch:'',cancelingPassId:null,
+  users:[
+    {id:'u1',username:'manager',password:'manager123',role:'manager',name:'Site Manager',active:true},
+    {id:'u2',username:'emp1',password:'emp123',role:'employee',name:'John D.',active:true},
+    {id:'u3',username:'emp2',password:'emp456',role:'employee',name:'Maria S.',active:true},
+  ],
+  lots:{
+    lot1:{id:'lot1',name:'Downtown Lot A',zone:'2987',address:'123 Main St',open:true,
+      rates:{hourly:true,event:true,monthly:true},monthlyselfsrv:true,
+      fees:{hourly:{enabled:true,amount:0.25},event:{enabled:true,amount:0.50},monthly:{enabled:false,amount:0}},
+      pricing:{hourly:3.50,max_daily:22,event:18,monthly:120}},
+    lot2:{id:'lot2',name:'Airport Garage',zone:'8844',address:'500 Terminal Blvd',open:true,
+      rates:{hourly:true,event:true,monthly:false},monthlyselfsrv:false,
+      fees:{hourly:{enabled:true,amount:0.75},event:{enabled:true,amount:1.00},monthly:{enabled:false,amount:0}},
+      pricing:{hourly:5,max_daily:35,event:28,monthly:180}},
+  },
+  vals:{
+    val1:{id:'val1',name:'The Grand Hotel',code:'HOTEL2024',lotId:'lot1',type:'free',discountPct:0,discountAmt:0,maxHours:3,active:true,notes:'Hotel guests park free up to 3 hrs'},
+    val2:{id:'val2',name:'Mia Bella Restaurant',code:'MIABELLA',lotId:'lot1',type:'percent',discountPct:50,discountAmt:0,maxHours:2,active:true,notes:'50% off for diners'},
+    val3:{id:'val3',name:'City Retail Center',code:'CITYRETAIL',lotId:'lot2',type:'flat',discountPct:0,discountAmt:5,maxHours:0,active:true,notes:'$5 off any parking'},
+    val4:{id:'val4',name:'Metro Bank',code:'METROBANK',lotId:'lot2',type:'free',discountPct:0,discountAmt:0,maxHours:1,active:false,notes:'Free 1 hr for customers'},
+    val5:{id:'val5',name:'Rooftop Bar & Grill',code:'ROOFTOP25',lotId:'lot1',type:'percent',discountPct:25,discountAmt:0,maxHours:4,active:true,notes:'25% off for guests'},
+  },
+  sess:[],vsess:[],passes:[],
+};
+
+(function(){
+  const ppl=[
+    {name:'James Thornton',email:'j.thornton@example.com',lotId:'lot1',started:new Date(NOW.getFullYear(),NOW.getMonth()-4,12),status:'active'},
+    {name:'Priya Nair',email:'priya.nair@lawoffices.com',lotId:'lot1',started:new Date(NOW.getFullYear(),NOW.getMonth()-7,3),status:'active'},
+    {name:'Carlos Mendez',email:'cmendez@designco.com',lotId:'lot2',started:new Date(NOW.getFullYear(),NOW.getMonth()-2,18),status:'active'},
+    {name:'Sandra Wu',email:'sandra.wu@finance.io',lotId:'lot1',started:new Date(NOW.getFullYear(),NOW.getMonth()-11,5),status:'active'},
+    {name:'Tom Reeves',email:'t.reeves@gmail.com',lotId:'lot2',started:new Date(NOW.getFullYear(),NOW.getMonth()-1,22),status:'active'},
+    {name:'Aisha Okafor',email:'aisha@okafor.net',lotId:'lot1',started:new Date(NOW.getFullYear(),NOW.getMonth()-5,9),status:'canceled',canceledOn:new Date(NOW.getFullYear(),NOW.getMonth()-1,14)},
+    {name:'Megan Fischer',email:'mfischer@example.com',lotId:'lot2',started:NOW,status:'pending'},
+    {name:'Kevin Park',email:'kevin.park@startup.co',lotId:'lot1',started:NOW,status:'pending'},
+  ];
+  let id=1000;
+  ppl.forEach(p=>{
+    const lot=S.lots[p.lotId];const mo=lot.pricing.monthly;
+    const bm=p.status==='active'?Math.ceil((NOW-p.started)/(30*86400000)):0;
+    const nb=p.status==='active'?addMonths(p.started,(bm+1)||1):null;
+    S.passes.push({id:'MP-'+id++,name:p.name,email:p.email,lotId:p.lotId,status:p.status,startDate:p.started,nextBillDate:nb,canceledOn:p.canceledOn||null,monthlyAmount:mo,totalBilled:p.status==='canceled'?mo*Math.ceil((p.canceledOn-p.started)/(30*86400000)):p.status==='active'?mo*bm:0,inviteToken:'tok_'+Math.random().toString(36).slice(2,10)});
+  });
+})();
+(function(){
+  const T=[{r:'hourly',t:'Hourly',d:2,b:7,f:0.25,l:'lot1'},{r:'event',t:'Event Parking',d:24,b:18,f:0.50,l:'lot1'},{r:'hourly',t:'Hourly',d:3,b:15,f:0.75,l:'lot2'},{r:'event',t:'Event Parking',d:24,b:28,f:1.00,l:'lot2'},{r:'monthly',t:'Monthly',d:720,b:120,f:0,l:'lot1'}];
+  const P=['ABC 1234','XYZ 9876','DEF 5555','GHI 3311','JKL 7722','MNO 4456','PQR 8823','STU 1199'];
+  let id=4800;
+  for(let d=29;d>=0;d--){for(let t=0;t<(3+Math.floor(Math.random()*5));t++){const tp=T[Math.floor(Math.random()*T.length)];S.sess.push({id:`CPM-${id++}`,plate:P[Math.floor(Math.random()*P.length)],type:tp.t,rate:tp.r,start:Date.now()-d*86400000-Math.random()*10*3600000,duration:tp.d,paid:+(tp.b+tp.f).toFixed(2),pkch:tp.b,sfee:tp.f,phone:'',smsSent:false,lotId:tp.l,valId:null});}}
+  S.sess.push({id:'CPM-4921',plate:'ABC 1234',type:'Hourly',start:Date.now()-3600000*1.5,duration:2,paid:7.25,pkch:7,sfee:0.25,phone:'813-555-0111',smsSent:false,lotId:'lot1',valId:null});
+  S.sess.push({id:'CPM-4922',plate:'XYZ 9876',type:'Event Parking',start:Date.now()-3600000*2,duration:24,paid:0,pkch:0,sfee:0,phone:'',smsSent:false,lotId:'lot1',valId:'val1'});
+  S.sess.push({id:'CPM-4923',plate:'GHI 3311',type:'Hourly',start:Date.now()-3600000*0.5,duration:3,paid:7.75,pkch:7.5,sfee:0.75,phone:'',smsSent:false,lotId:'lot2',valId:'val3'});
+})();
+(function(){
+  const P=['ABC 1234','XYZ 9876','DEF 5555','GHI 3311','JKL 7722','MNO 4456','PQR 8823','STU 1199','VWX 3344','YZA 5566'];
+  let id=5000;
+  Object.values(S.vals).forEach(val=>{for(let m=5;m>=0;m--){const md=new Date(NOW.getFullYear(),NOW.getMonth()-m,1);const dim=new Date(md.getFullYear(),md.getMonth()+1,0).getDate();const bc=val.active?(5+Math.floor(Math.abs(Math.sin(id+m)*10))):Math.floor(Math.random()*2);for(let s=0;s<bc;s++){const day=1+Math.floor(Math.random()*(dim-1));const sd=new Date(md.getFullYear(),md.getMonth(),day,8+Math.floor(Math.random()*10));const rk=Math.random()<0.6?'hourly':'event';const hrs=rk==='hourly'?1+Math.floor(Math.random()*3):null;const ba=+(rk==='hourly'?3.5*(hrs||1):18).toFixed(2);let disc=0,fp=ba;if(val.type==='free'){disc=ba;fp=0;}else if(val.type==='percent'){disc=+(ba*(val.discountPct/100)).toFixed(2);fp=+(ba-disc).toFixed(2);}else{disc=Math.min(val.discountAmt,ba);fp=+(ba-disc).toFixed(2);}S.vsess.push({id:`VS-${id++}`,plate:P[Math.floor(Math.random()*P.length)],date:sd,lotId:val.lotId,valId:val.id,type:rk==='hourly'?'Hourly':'Event Parking',base:ba,disc:+disc.toFixed(2),paid:fp,hours:hrs});}}});
+})();
+
+function isMgr(){return S.cu?.role==='manager'}
+function lot(){return S.lots[S.lotId]}
+function remMs(s){return Math.max(0,s.start+s.duration*3600000-Date.now())}
+function fmtT(ms){if(ms<=0)return'Expired';const h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000);return h>0?h+'h '+m+'m':m+'m'}
+function gSt(s){const r=remMs(s);if(r<=0)return'expired';if(r<=20*60000)return'expiring';return'active'}
+function bSms(p,l,sid){return S.smsTmpl.replace('{PLATE}',p).replace('{LOT}',l.name).replace('{ZONE}',l.zone).replace('{SESSION_ID}',sid||'')}
+function feeL(lot){const p=[];if(lot.rates.hourly&&lot.fees.hourly.enabled)p.push('H:$'+lot.fees.hourly.amount.toFixed(2));if(lot.rates.event&&lot.fees.event.enabled)p.push('E:$'+lot.fees.event.amount.toFixed(2));return p.length?p.join(' · '):'None'}
+function codeTaken(code,excl){return Object.values(S.vals).some(v=>v.code.toUpperCase()===code.toUpperCase()&&v.id!==excl)}
+function fmtRL(a,b){const o={month:'short',day:'numeric'};return`${fromDS(a).toLocaleDateString([],o)} – ${fromDS(b).toLocaleDateString([],o)}`}
+function vsessInR(from,to,lotId){const a=fromDS(from),b=new Date(fromDS(to));b.setDate(b.getDate()+1);return S.vsess.filter(s=>s.date>=a&&s.date<b&&(lotId==='all'||s.lotId===lotId));}
+function bDaily(from,to,lotId){const start=fromDS(from),end=fromDS(to),days=[];let cur=new Date(start);while(cur<=end){days.push(new Date(cur));cur.setDate(cur.getDate()+1);}return days.map(d=>{const next=new Date(d);next.setDate(next.getDate()+1);const ss=S.sess.filter(s=>{const sd=new Date(s.start);return sd>=d&&sd<next&&(lotId==='all'||s.lotId===lotId);});return{label:d.toLocaleDateString([],{month:'short',day:'numeric'}),pk:+ss.reduce((a,s)=>a+(s.pkch||s.paid),0).toFixed(2),fe:+ss.reduce((a,s)=>a+(s.sfee||0),0).toFixed(2),tot:+ss.reduce((a,s)=>a+s.paid,0).toFixed(2),n:ss.length};});}
+function vtPill(v){if(!v.active)return`<span class="cpi" style="background:var(--g2);color:var(--t3)">Inactive</span>`;if(v.type==='free')return`<span class="cpi cpi-f">Free</span>`;if(v.type==='percent')return`<span class="cpi cpi-p">${v.discountPct}% Off</span>`;return`<span class="cpi cpi-fl">$${v.discountAmt.toFixed(2)} Off</span>`;}
+function vtLabel(v){if(v.type==='free')return`Free (${v.maxHours?v.maxHours+'hr max':'any'})`;if(v.type==='percent')return`${v.discountPct}% off`;return`$${v.discountAmt.toFixed(2)} off`}
+function closeM(id){document.getElementById(id).classList.remove('show')}
+function getTotal(){
+  const l=lot(),p=l.pricing,f=l.fees[S.rate]||{enabled:false,amount:0};
+  let base=S.rate==='hourly'?p.hourly*S.hours:S.rate==='event'?p.event:p.monthly;
+  const fee=f.enabled?f.amount:0;
+  let disc=0,discLabel='';
+  if(S.val&&S.val.active){const v=S.val;
+    if(v.type==='free'){disc=base+fee;discLabel='Free Parking ('+v.name+')';}
+    else if(v.type==='percent'){disc=+(base*(v.discountPct/100)).toFixed(2);discLabel=v.discountPct+'% off ('+v.name+')';}
+    else{disc=Math.min(v.discountAmt,base);discLabel='$'+v.discountAmt.toFixed(2)+' off ('+v.name+')';}
+  }
+  return{base:base.toFixed(2),fee:fee.toFixed(2),disc:disc.toFixed(2),discLabel,total:Math.max(0,base+fee-disc).toFixed(2)};
+}
+function renderInviteBody(tmpl,name,l,link){const fn=name.split(' ')[0]||'there';return tmpl.replace(/\{FIRST_NAME\}/g,fn).replace(/\{LOT_NAME\}/g,l?.name||'the lot').replace(/\{ZONE\}/g,l?.zone||'—').replace(/\{MONTHLY_RATE\}/g,'$'+(l?.pricing?.monthly||120).toFixed(2)).replace(/\{SIGNUP_LINK\}/g,link);}
+
+function genQR(lotId,sm){const P={lot1:[[1,1,1,1,1,1,1,0,1,0,0,1,0,0,1,1,1,1,1,1,1],[1,0,0,0,0,0,1,0,0,1,1,0,1,0,1,0,0,0,0,0,1],[1,0,1,1,1,0,1,0,1,0,1,0,0,0,1,0,1,1,1,0,1],[1,0,1,1,1,0,1,0,0,1,0,1,1,0,1,0,1,1,1,0,1],[1,0,1,1,1,0,1,0,1,1,0,0,1,0,1,0,1,1,1,0,1],[1,0,0,0,0,0,1,0,0,0,1,1,0,0,1,0,0,0,0,0,1],[1,1,1,1,1,1,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,0,1,1,0,1,1,0,0,0,0,0,0,0,0],[1,0,1,1,0,1,1,1,0,0,1,1,0,1,1,0,1,0,1,1,0],[0,1,1,0,1,0,0,0,1,0,1,0,1,1,0,1,0,1,1,0,1],[1,0,0,1,0,1,1,1,0,1,1,0,0,0,1,1,0,0,1,0,1],[0,1,1,0,1,0,0,0,0,1,0,1,1,0,0,0,1,1,0,1,0],[1,1,0,0,1,1,1,1,1,0,1,0,0,1,1,0,0,1,1,0,1],[0,0,0,0,0,0,0,0,1,0,1,1,0,0,1,0,1,0,0,1,0],[1,1,1,1,1,1,1,0,0,1,0,1,1,0,1,1,0,0,1,0,1],[1,0,0,0,0,0,1,0,1,0,1,0,0,1,0,1,1,0,0,1,1],[1,0,1,1,1,0,1,0,0,1,1,0,1,0,1,0,0,1,1,0,0],[1,0,1,1,1,0,1,0,1,0,0,1,0,1,1,0,1,0,0,1,1],[1,0,1,1,1,0,1,0,0,0,1,1,0,0,0,1,0,1,1,0,0],[1,0,0,0,0,0,1,0,1,1,0,0,1,1,0,0,1,1,0,1,0],[1,1,1,1,1,1,1,0,0,1,0,1,0,0,1,0,0,0,1,0,1]],lot2:[[1,1,1,1,1,1,1,0,0,1,1,0,1,0,1,1,1,1,1,1,1],[1,0,0,0,0,0,1,0,1,0,0,1,0,1,1,0,0,0,0,0,1],[1,0,1,1,1,0,1,0,0,1,0,1,1,0,1,0,1,1,1,0,1],[1,0,1,1,1,0,1,0,1,0,1,0,0,1,1,0,1,1,1,0,1],[1,0,1,1,1,0,1,0,0,0,1,1,0,0,1,0,1,1,1,0,1],[1,0,0,0,0,0,1,0,1,1,0,0,1,0,1,0,0,0,0,0,1],[1,1,1,1,1,1,1,0,0,1,0,1,0,0,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0],[0,1,0,0,1,0,1,1,1,0,0,0,1,1,1,0,1,0,0,1,0],[1,0,1,1,0,1,0,0,0,1,0,1,0,0,1,1,0,1,1,0,1],[0,1,1,0,1,0,1,1,1,0,1,0,0,1,1,0,0,1,0,1,0],[1,0,0,1,0,1,0,0,0,1,1,0,1,1,0,1,0,0,1,0,1],[0,0,1,1,0,0,1,1,0,1,0,1,1,0,1,1,0,0,0,1,0],[0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,1,0,1,0,0,1],[1,1,1,1,1,1,1,0,0,0,1,0,0,1,1,0,1,1,0,1,0],[1,0,0,0,0,0,1,0,0,1,0,1,1,0,1,0,0,1,1,0,1],[1,0,1,1,1,0,1,0,1,0,0,0,0,1,0,1,0,0,0,1,0],[1,0,1,1,1,0,1,0,0,1,1,0,1,0,0,1,0,1,0,0,1],[1,0,1,1,1,0,1,0,1,1,0,1,0,1,1,0,1,0,1,1,0],[1,0,0,0,0,0,1,0,0,0,1,0,1,0,0,1,0,0,1,0,1],[1,1,1,1,1,1,1,0,1,0,0,1,0,1,0,0,1,1,0,1,0]]};const m=P[lotId]||P.lot1;const sz=sm?3:6;let r='';m.forEach((row,ri)=>row.forEach((c,ci)=>{if(c)r+=`<rect x="${ci*sz}" y="${ri*sz}" width="${sz}" height="${sz}" fill="#0d0d0d"/>`}));return`<svg width="${21*sz}" height="${21*sz}" viewBox="0 0 ${21*sz} ${21*sz}">${r}</svg>`;}
+function genValQR(valId,sm){const seed=valId.split('').reduce((a,c)=>a+c.charCodeAt(0),0);const base=[[1,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,1],[1,0,0,0,0,0,1,0,1,0,0,1,0,1,1,0,0,0,0,0,1],[1,0,1,1,1,0,1,0,0,1,1,0,1,0,1,0,1,1,1,0,1],[1,0,1,1,1,0,1,0,1,1,0,0,0,1,1,0,1,1,1,0,1],[1,0,1,1,1,0,1,0,0,0,1,0,1,0,1,0,1,1,1,0,1],[1,0,0,0,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,0,1],[1,1,1,1,1,1,1,0,0,1,1,0,1,0,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,0,1,0,0,1,0,1,0,0,0,0,0,0,0],[1,1,0,1,0,0,1,0,1,1,0,0,1,0,0,1,0,1,1,0,1],[0,0,1,0,1,1,0,1,0,0,1,0,1,0,1,0,1,0,0,1,0],[1,0,1,0,0,1,1,0,1,0,0,1,0,1,1,0,1,1,0,1,1],[0,1,0,1,1,0,0,1,0,1,0,0,1,1,0,1,0,0,1,0,0],[1,0,1,0,1,0,1,0,0,0,1,0,1,0,0,1,1,0,1,1,0],[0,0,0,0,0,0,0,0,1,0,0,1,0,1,0,0,1,0,0,1,1],[1,1,1,1,1,1,1,0,1,1,0,0,1,0,1,0,0,1,0,0,1],[1,0,0,0,0,0,1,0,0,0,1,0,0,1,0,1,1,0,1,0,0],[1,0,1,1,1,0,1,1,0,1,0,1,0,0,1,0,0,1,0,1,1],[1,0,1,1,1,0,1,0,1,0,1,0,1,0,0,1,0,0,1,0,0],[1,0,1,1,1,0,1,0,0,1,0,0,0,1,1,0,1,1,0,1,0],[1,0,0,0,0,0,1,0,1,0,0,1,0,0,0,1,0,0,1,0,1],[1,1,1,1,1,1,1,0,0,0,1,0,1,1,0,0,1,0,0,1,0]];const mat=base.map((row,r)=>row.map((c,col)=>r>=7&&r<=13&&col>=7&&col<=13?c^((seed+r*col)%3===0?1:0):c));const sz=sm?3:6;let svg='';mat.forEach((row,ri)=>row.forEach((c,ci)=>{if(c)svg+=`<rect x="${ci*sz}" y="${ri*sz}" width="${sz}" height="${sz}" fill="#0d0d0d"/>`}));return`<svg width="${21*sz}" height="${21*sz}" viewBox="0 0 ${21*sz} ${21*sz}">${svg}</svg>`;}
+
+function renderTopbar(){
+  const tb=document.getElementById('tr');
+  const ai=document.getElementById('admin-icon');
+  if(S.cu&&S.v==='admin'){const ini=S.cu.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();const mgr=isMgr();tb.innerHTML=`<div class="as"><div class="av ${mgr?'av-m':'av-e'}">${ini}</div><div><div class="an">${S.cu.name}</div><span class="rb ${mgr?'rb-m':'rb-e'}">${mgr?'Manager':'Employee'}</span></div><button class="lo-btn" onclick="S.cu=null;S.v='pay';render()"><i class="ti ti-logout" style="font-size:12px"></i>Sign out</button></div>`;}
+  else tb.innerHTML='';
+  if(ai){ai.className=S.cu?'ti ti-layout-dashboard':'ti ti-lock';ai.style.fontSize='13px';}
+  document.getElementById('ntab-pay').classList.toggle('on',S.v==='pay'||S.v==='extend');
+  document.getElementById('ntab-admin').classList.toggle('on',S.v==='admin'||S.v==='login');
+}
+function switchToAdmin(){S.v='admin';render();}
+function switchToLogin(){S.v='login';render();}
+
+function render(){
+  renderTopbar();
+  const mc=document.getElementById('mc');
+  mc.style.maxWidth=S.v==='admin'?'1200px':'600px';
+  mc.style.margin='0 auto';
+  if(S.v==='pay')mc.innerHTML=S.cstep===2?renderSuccess():renderPay();
+  else if(S.v==='extend')mc.innerHTML=renderExtend();
+  else if(S.v==='login')mc.innerHTML=renderLogin();
+  else if(S.v==='admin')mc.innerHTML=renderAdmin();
+  attachEv();
+  if(S.v==='pay'&&S.cstep===2)startTimer();
+  if(S.v==='admin')startAdminTimer();
+}
+
+function renderPay(){
+  const l=lot(),p=l.pricing;
+  const rates=[];
+  if(l.rates.hourly)rates.push({key:'hourly',label:'Hourly',price:'$'+p.hourly.toFixed(2),sub:'per hour'});
+  if(l.rates.event)rates.push({key:'event',label:'Event Parking',price:'$'+p.event.toFixed(0),sub:'flat rate'});
+  if(l.rates.monthly&&l.monthlyselfsrv)rates.push({key:'monthly',label:'Monthly Pass',price:'$'+p.monthly.toFixed(0),sub:'per month'});
+  if(!rates.find(r=>r.key===S.rate)&&rates.length)S.rate=rates[0].key;
+  const{base,fee,disc,discLabel,total}=getTotal();
+  const isFree=parseFloat(total)===0;
+  const cols=rates.length===1?'1fr':rates.length===2?'1fr 1fr':'1fr 1fr 1fr';
+  const lotOpts=Object.values(S.lots).map(lo=>`<option value="${lo.id}"${lo.id===S.lotId?' selected':''}>${lo.name} — Zone ${lo.zone}</option>`).join('');
+  return`<div class="cw">
+    ${S.val?`<div class="valbanner"><div class="valicon">🎟️</div><div class="valinfo"><h4>Validation Applied</h4><p>${S.val.name}</p><span class="valbadge">${S.val.type==='free'?'FREE PARKING':S.val.type==='percent'?S.val.discountPct+'% OFF':'$'+S.val.discountAmt.toFixed(2)+' OFF'}</span></div><button onclick="S.val=null;render()" style="background:none;border:none;color:#aaa;cursor:pointer;font-size:20px;margin-left:auto;padding:4px">×</button></div>`:''}
+    <div class="ccard">
+      <div class="cchd"><div class="zbadge"><i class="ti ti-parking" style="font-size:11px"></i>Zone ${l.zone}</div><h1>Pay for<br>Parking Here</h1><p>${l.name} · ${l.address}</p></div>
+      <div class="ccbd">
+        <div class="fg"><label class="fl">Lot</label><select class="fse" id="lot-sel">${lotOpts}</select></div>
+        <div class="fg"><label class="fl">Parking type</label>
+          <div class="rg2" style="grid-template-columns:${cols}">
+            ${rates.map(r=>`<div class="ro2${S.rate===r.key?' on':''}" onclick="S.rate='${r.key}';render()"><div class="rl">${r.label}</div><div class="rp">${r.price}</div><div class="rs">${r.sub}</div></div>`).join('')}
+          </div>
+        </div>
+        ${S.rate==='hourly'?`<div class="fg"><label class="fl">Duration</label><div class="hrs-row"><button class="hrs-btn" onclick="S.hours=Math.max(1,S.hours-1);render()">−</button><div class="hrs-disp">${S.hours}</div><button class="hrs-btn" onclick="S.hours=Math.min(12,S.hours+1);render()">+</button><span class="hrs-lbl">${S.hours===1?'hour':'hours'}</span></div></div>`:''}
+        <div class="fg"><label class="fl">License plate</label><input class="fi" style="font-family:var(--fc);font-size:22px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;text-align:center" id="plate-inp" placeholder="e.g. ABC 1234" value="${escH(S.plate)}" oninput="S.plate=this.value.toUpperCase();this.value=S.plate" maxlength="10"></div>
+        <div class="fg"><label class="fl">Vehicle type</label><select class="fse" id="veh-sel"><option value="car"${S.vehicle==='car'?' selected':''}>Car / SUV</option><option value="truck"${S.vehicle==='truck'?' selected':''}>Truck / Van</option><option value="motorcycle"${S.vehicle==='motorcycle'?' selected':''}>Motorcycle</option></select></div>
+        <div class="fg"><label class="fl">Phone <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--lime-dark)">(optional — 20-min expiry text)</span></label><div class="ph-row"><div class="ph-pfx"><i class="ti ti-device-mobile" style="font-size:13px"></i> +1</div><input class="fi" id="phone-inp" placeholder="(555) 000-0000" value="${escH(S.phone)}" oninput="S.phone=this.value" style="flex:1" type="tel"></div></div>
+        ${!S.val?`<div class="vcode-sec"><div class="fl" style="margin-bottom:8px"><i class="ti ti-discount" style="font-size:12px;margin-right:4px;color:var(--gold)"></i>Have a validation code?</div><div class="vcode-row"><input class="vcode-inp" id="vcode-inp" placeholder="ENTER CODE (e.g. HOTEL2024)" maxlength="30" oninput="this.value=this.value.toUpperCase();S.codeErr=false" onkeydown="if(event.key==='Enter')applyCode()"><button class="vcode-btn" onclick="applyCode()">Apply</button></div><div class="vcode-err${S.codeErr?' show':''}" id="vcode-err">Invalid or inactive code for this lot.</div></div>`:''}
+        <div class="psumm">
+          ${S.rate==='hourly'?`<div class="psr"><span class="pl">Rate</span><span class="pv">$${p.hourly.toFixed(2)}/hr</span></div><div class="psr"><span class="pl">Duration</span><span class="pv">${S.hours} hr${S.hours!==1?'s':''}</span></div>`:''}
+          ${S.rate==='event'?`<div class="psr"><span class="pl">Event parking</span><span class="pv">flat rate</span></div>`:''}
+          ${S.rate==='monthly'?`<div class="psr"><span class="pl">Monthly pass</span><span class="pv">30 days</span></div>`:''}
+          <div class="psr"><span class="pl">Subtotal</span><span class="pv">$${base}</span></div>
+          ${parseFloat(fee)>0?`<div class="psr"><span class="pl">Service fee</span><span class="pv">$${fee}</span></div>`:''}
+          ${parseFloat(disc)>0?`<div class="psr dr"><span class="pl"><i class="ti ti-discount" style="font-size:11px;margin-right:3px"></i>${discLabel}</span><span class="pv">−$${disc}</span></div>`:''}
+          <div class="psr tot"><span class="pl">Total due</span><span class="pv${isFree?' free':''}">${isFree?'FREE':'$'+total}</span></div>
+        </div>
+        <button class="paybtn${isFree?' free':''}" onclick="handlePay()" ${!S.plate.trim()?'disabled':''}>${isFree?'<i class="ti ti-gift"></i> Claim Free Parking':'<i class="ti ti-credit-card"></i> Pay $'+total}</button>
+      </div>
+    </div>
+    ${l.rates.monthly&&!l.monthlyselfsrv?`<div class="monthly-invite-notice"><i class="ti ti-id-badge"></i><div><h4>Monthly passes available</h4><p>Monthly parking at ${l.name} is by invitation only. Contact the parking office to request a pass.</p></div></div>`:''}
+    <div style="text-align:center;font-size:11px;color:var(--t3);padding-bottom:16px;margin-top:8px"><i class="ti ti-lock" style="font-size:11px;margin-right:4px"></i>Secured payment · City Park Management</div>
+  </div>`;
+}
+function applyCode(){
+  const code=(document.getElementById('vcode-inp')?.value||'').toUpperCase().trim();
+  const l=lot();
+  const v=Object.values(S.vals).find(x=>x.code===code&&x.lotId===l.id&&x.active);
+  if(v){S.val=v;S.codeErr=false;render();}
+  else{S.codeErr=true;const el=document.getElementById('vcode-err');if(el)el.classList.add('show');}
+}
+function handlePay(){
+  if(!S.plate.trim())return;
+  const l=lot(),{total,base,fee}=getTotal();
+  const dur=S.rate==='hourly'?S.hours:S.rate==='event'?24:720;
+  const type=S.rate==='hourly'?'Hourly':S.rate==='event'?'Event Parking':'Monthly';
+  const sess={id:'CPM-'+S.tic++,plate:S.plate.trim(),type,start:Date.now(),duration:dur,rate:S.rate,paid:+total,pkch:+base,sfee:+fee,vehicle:S.vehicle,phone:S.phone,smsSent:false,lotId:S.lotId,valId:S.val?S.val.id:null};
+  S.sess.unshift(sess);S.payData=sess;S.cstep=2;S.val=null;render();
+}
+function renderSuccess(){
+  const d=S.payData,l=S.lots[d.lotId],rem=remMs(d);
+  const exp=new Date(d.start+d.duration*3600000);
+  const val=d.valId?S.vals[d.valId]:null;
+  return`<div class="cw"><div class="ccard">
+    <div class="suc-hd"><div style="font-size:36px;margin-bottom:4px">${d.paid===0?'🎟️':'✓'}</div><h2>${d.paid===0?'Free Parking!':'Payment Confirmed!'}</h2><p style="font-size:12px;color:var(--blk);opacity:.7">Your spot is reserved · Show this screen if asked</p></div>
+    <div class="ccbd">
+      ${val?`<div style="background:var(--gold-bg);border:1.5px solid var(--gold-bd);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px"><span style="font-size:18px">🎟️</span><div><div style="font-family:var(--fc);font-size:13px;font-weight:800;color:#b45309;text-transform:uppercase">Validated by ${val.name}</div><div style="font-size:11px;color:#78350f;margin-top:2px">${val.type==='free'?'Free parking applied':val.type==='percent'?val.discountPct+'% discount':'$'+val.discountAmt.toFixed(2)+' discount'}</div></div></div>`:''}
+      <div class="tkt"><div class="tkt-top"><span class="tkt-id">${d.id}</span><span style="font-family:var(--fc);font-size:10px;font-weight:700;text-transform:uppercase;color:#888">${d.type}</span></div>
+        <div class="tkt-bd"><div class="tkr"><span class="tkl">Plate</span><span class="tkv">${d.plate}</span></div><div class="tkr"><span class="tkl">Lot</span><span class="tkv">${l.name}</span></div><div class="tkr"><span class="tkl">Zone</span><span class="tkv">${l.zone}</span></div><div class="tkr"><span class="tkl">Expires</span><span class="tkv">${exp.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · ${exp.toLocaleDateString([],{month:'short',day:'numeric'})}</span></div><div class="tkr"><span class="tkl">Paid</span><span class="tkv" style="color:${d.paid===0?'#10b981':'var(--grn)'}">$${d.paid.toFixed(2)}</span></div></div>
+      </div>
+      <div class="tmr"><div class="tmrn" id="cdown">${fmtT(rem)}</div><div class="tmrl">Time remaining</div></div>
+      ${d.phone?`<div class="smsnote"><i class="ti ti-message-circle" style="color:var(--lime-dark);font-size:15px;flex-shrink:0;margin-top:1px"></i><div><div style="font-weight:600;margin-bottom:3px">Text alert set · 20 min before expiry</div></div></div>`:''}
+      <button class="paybtn" onclick="S.extId='${d.id}';S.extHrs=1;S.extDone=false;S.v='extend';render()"><i class="ti ti-clock-plus"></i> Extend My Session</button>
+      <button class="oln" onclick="S.cstep=1;S.plate='';S.phone='';S.payData=null;S.rate='hourly';S.hours=2;S.val=null;render()">Pay for another vehicle</button>
+    </div>
+  </div></div>`;
+}
+function renderExtend(){
+  const s=S.sess.find(x=>x.id===S.extId);if(!s)return`<p style="text-align:center;padding:40px;color:var(--t3)">Session not found.</p>`;
+  const l=S.lots[s.lotId],p=l.pricing,f=l.fees.hourly,fee=f.enabled?f.amount:0;
+  const ec=p.hourly*S.extHrs,et=(ec+fee).toFixed(2);
+  if(S.extDone){const ne=new Date(s.start+s.duration*3600000);return`<div class="cw"><div class="ext-pnl"><div class="ext-hd"><h2>Session Extended!</h2><p>${l.name} · Zone ${l.zone}</p></div><div class="ext-bd"><div style="background:var(--lime-bg);border:2px solid var(--lime-dark);border-radius:10px;padding:16px;text-align:center;margin-bottom:14px"><div style="font-size:28px;margin-bottom:6px">✓</div><div style="font-family:var(--fc);font-size:18px;font-weight:900;text-transform:uppercase">+${S.extHrs} hour${S.extHrs!==1?'s':''} added</div><div style="font-size:13px;color:var(--t2);margin-top:4px">New expiry: <strong>${ne.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</strong></div></div><div class="tmr"><div class="tmrn">${fmtT(remMs(s))}</div><div class="tmrl">Updated time remaining</div></div><button class="oln" style="margin-top:0" onclick="S.v='pay';S.cstep=S.payData&&S.payData.id===S.extId?2:1;S.extId=null;S.extDone=false;render()">← Back to my ticket</button></div></div></div>`;}
+  return`<div class="cw"><div class="ext-pnl"><div class="ext-hd"><h2>Extend Parking</h2><p>${l.name} · Plate: <strong style="color:var(--lime)">${s.plate}</strong></p></div><div class="ext-bd"><div class="tmr"><div class="tmrn">${fmtT(remMs(s))}</div><div class="tmrl">Time remaining</div></div><div style="margin:16px 0 6px"><label class="fl">Add more time ($${p.hourly.toFixed(2)}/hr)</label></div><div class="ext-opts">${[1,2,3,4].map(h=>`<div class="ext-opt${S.extHrs===h?' on':''}" onclick="S.extHrs=${h};render()"><div class="eh">+${h}hr</div><div class="ep">$${(p.hourly*h).toFixed(2)}${fee>0?' + fee':''}</div></div>`).join('')}</div><div class="psumm"><div class="psr"><span class="pl">+${S.extHrs}hr @ $${p.hourly.toFixed(2)}/hr</span><span class="pv">$${ec.toFixed(2)}</span></div>${fee>0?`<div class="psr"><span class="pl">Service fee</span><span class="pv">$${fee.toFixed(2)}</span></div>`:''}<div class="psr tot"><span class="pl">Total due</span><span class="pv">$${et}</span></div></div><button class="paybtn" onclick="const s2=S.sess.find(x=>x.id===S.extId);s2.duration+=S.extHrs;s2.paid=+(s2.paid+S.lots[s2.lotId].pricing.hourly*S.extHrs+(S.lots[s2.lotId].fees.hourly.enabled?S.lots[s2.lotId].fees.hourly.amount:0)).toFixed(2);S.extDone=true;render()"><i class="ti ti-credit-card"></i> Pay $${et} &amp; Extend</button><button class="oln" style="margin-top:8px" onclick="S.v='pay';S.cstep=S.payData&&S.payData.id===S.extId?2:1;S.extId=null;render()">← Cancel</button></div></div></div>`;
+}
+
+function renderLogin(){return`<div class="lw"><div class="lc"><div class="lh"><div class="li2"><i class="ti ti-lock" style="font-size:22px;color:var(--lime)"></i></div><h2>Staff Login</h2><p>Sign in with your City Park credentials.</p></div><div class="lb"><div class="lerr${S.loginErr?' show':''}" id="lerr"><i class="ti ti-alert-circle" style="font-size:15px;flex-shrink:0"></i> Incorrect username or password.</div><div class="fg2"><label class="fl2">Username</label><input class="fi2" id="lu" type="text" placeholder="Enter username" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div><div class="fg2"><label class="fl2">Password</label><input class="fi2" id="lp" type="${S.showPw?'text':'password'}" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:44px"><button class="pwtog" onclick="S.showPw=!S.showPw;const v=document.getElementById('lp')?.value||'';render();setTimeout(()=>{const n=document.getElementById('lp');if(n){n.value=v;n.focus();}},20)" type="button"><i class="ti ${S.showPw?'ti-eye-off':'ti-eye'}" style="font-size:17px"></i></button></div><button class="lbtn" onclick="doLogin()"><i class="ti ti-login" style="font-size:15px;margin-right:6px"></i>Sign In</button><div class="lhint">Manager: <strong>manager</strong> / <strong>manager123</strong><br>Employee: <strong>emp1</strong> / <strong>emp123</strong></div></div></div></div>`;}
+function doLogin(){const u=document.getElementById('lu').value.trim(),p=document.getElementById('lp').value;const user=S.users.find(x=>x.username===u&&x.password===p&&x.active);if(user){S.cu=user;S.loginErr=false;S.tab='sessions';S.v='admin';render();}else{S.loginErr=true;render();setTimeout(()=>document.getElementById('lp')?.focus(),50);}}
+
+function renderAdmin(){
+  const today=S.sess.filter(s=>{const d=new Date();d.setHours(0,0,0,0);return s.start>=d});
+  const todayRev=today.reduce((a,s)=>a+s.paid,0);
+  const active=S.sess.filter(s=>gSt(s)!=='expired');
+  const expiring=S.sess.filter(s=>gSt(s)==='expiring');
+  const aVals=Object.values(S.vals).filter(v=>v.active).length;
+  const activePasses=S.passes.filter(p=>p.status==='active').length;
+  const tabs=[{id:'sessions',ic:'ti-list-check',lb:'Sessions'},...(isMgr()?[{id:'lots',ic:'ti-parking',lb:'Lots & Pricing'},{id:'validations',ic:'ti-discount',lb:'Validations'},{id:'passes',ic:'ti-id-badge',lb:'Monthly Passes'},{id:'billing',ic:'ti-file-invoice',lb:'Billing Reports'},{id:'revenue',ic:'ti-chart-bar',lb:'Revenue'},{id:'sms',ic:'ti-message-circle',lb:'SMS & Email'},{id:'users',ic:'ti-users',lb:'Users'}]:[])];
+  if(!tabs.find(t=>t.id===S.tab))S.tab='sessions';
+  return`<div class="aw">
+    <div class="atb"><div class="att"><h2><i class="ti ti-layout-dashboard" style="color:var(--lime);margin-right:8px;font-size:20px"></i>Admin Dashboard</h2><p>City Park Management · ${S.cu?.name} (${isMgr()?'Manager':'Employee'})</p></div></div>
+    <div class="sg"><div class="sc"><div class="sl"><i class="ti ti-car" style="font-size:11px"></i>Active sessions</div><div class="sv">${active.length}</div><div class="sd">${today.length} today</div></div><div class="sc"><div class="sl"><i class="ti ti-currency-dollar" style="font-size:11px"></i>Today's revenue</div><div class="sv gn">$${todayRev.toFixed(2)}</div><div class="sd">All lots</div></div><div class="sc"><div class="sl"><i class="ti ti-alert-triangle" style="font-size:11px"></i>Expiring soon</div><div class="sv am">${expiring.length}</div><div class="sd">Within 20 min</div></div><div class="sc"><div class="sl"><i class="ti ti-id-badge" style="font-size:11px"></i>Monthly passes</div><div class="sv bl">${activePasses}</div><div class="sd">${S.passes.filter(p=>p.status==='pending').length} pending</div></div></div>
+    <div class="stabs">${tabs.map(t=>`<button class="stab${S.tab===t.id?' on':''}" onclick="S.tab='${t.id}';render()"><i class="ti ${t.ic}" style="font-size:12px;margin-right:4px"></i>${t.lb}</button>`).join('')}</div>
+    ${S.tab==='sessions'?rSessions():''}
+    ${S.tab==='lots'&&isMgr()?rLots():''}
+    ${S.tab==='validations'&&isMgr()?rValidations():''}
+    ${S.tab==='passes'&&isMgr()?rPasses():''}
+    ${S.tab==='billing'&&isMgr()?rBilling():''}
+    ${S.tab==='revenue'&&isMgr()?rRevenue():''}
+    ${S.tab==='sms'&&isMgr()?rSms():''}
+    ${S.tab==='users'&&isMgr()?rUsers():''}
+  </div>`;
+}
+
+function rSessions(){const ro=!isMgr();const allActive=S.sess.filter(s=>gSt(s)!=='expired');const lotIds=Object.keys(S.lots);const cByLot={};lotIds.forEach(id=>{cByLot[id]=allActive.filter(s=>s.lotId===id).length;});return`<div class="pn"><div class="ph"><h3><i class="ti ti-list-check"></i>Active Sessions</h3><span style="font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#888" id="sbadge">${allActive.length} active</span></div><div class="pb">${ro?`<div class="ro3"><i class="ti ti-eye" style="font-size:15px;flex-shrink:0"></i>View-only mode.</div>`:''}<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap"><div class="sb2"><i class="ti ti-search"></i><input id="ssearch" placeholder="Search plate or ticket ID..." autocomplete="off" oninput="filterSess()"></div></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px"><button class="lfb${S.sfLot==='all'?' on':''}" onclick="setSF('all')"><i class="ti ti-building" style="font-size:11px"></i> All <span class="lc2">${allActive.length}</span></button>${lotIds.map(id=>`<button class="lfb${S.sfLot===id?' on':''}" onclick="setSF('${id}')"><i class="ti ti-parking" style="font-size:11px"></i> ${S.lots[id].name} <span class="lc2">${cByLot[id]}</span></button>`).join('')}</div><div id="stbl">${bSessTable(allActive,ro)}</div></div></div>`;}
+function setSF(id){S.sfLot=id;document.querySelectorAll('.lfb').forEach(btn=>{const isAll=btn.textContent.trim().startsWith('All');const bId=isAll?'all':Object.keys(S.lots).find(lid=>btn.textContent.includes(S.lots[lid].name));btn.classList.toggle('on',(isAll&&id==='all')||(!isAll&&bId===id));});filterSess();}
+function filterSess(){const q=(document.getElementById('ssearch')?.value||'').toUpperCase().trim();const ro=!isMgr();const allActive=S.sess.filter(s=>gSt(s)!=='expired');let filtered=S.sfLot==='all'?allActive:allActive.filter(s=>s.lotId===S.sfLot);if(q)filtered=filtered.filter(s=>s.plate.includes(q)||s.id.toUpperCase().includes(q));const wrap=document.getElementById('stbl');if(wrap)wrap.innerHTML=bSessTable(filtered,ro);const badge=document.getElementById('sbadge');if(badge)badge.textContent=filtered.length+' shown';}
+function bSessTable(rows,ro){if(!rows.length)return`<table><thead><tr><th>Plate</th><th>Lot</th><th>Type</th><th>Paid</th><th>Status</th><th>Remaining</th>${ro?'':'<th></th>'}</tr></thead><tbody><tr><td colspan="${ro?6:7}" style="text-align:center;padding:28px;color:var(--t3)">No active sessions</td></tr></tbody></table>`;return`<table><thead><tr><th>Plate</th><th>Lot</th><th>Type</th><th>Paid</th><th>Status</th><th>Remaining</th>${ro?'':'<th></th>'}</tr></thead><tbody>${rows.map(s=>{const rem=remMs(s),st=gSt(s);const pct=Math.max(0,Math.min(100,Math.round(rem/(s.duration*3600000)*100)));const bc=st==='active'?'#2e7d32':st==='expiring'?'#e65100':'#d32f2f';const ln=(S.lots[s.lotId]||{name:'?'}).name.split(' ').slice(0,2).join(' ');const vn=s.valId&&S.vals[s.valId]?S.vals[s.valId].name:'';return`<tr><td class="pc">${s.plate}</td><td style="font-size:11px;color:var(--t3)">${ln}</td><td style="color:var(--t2);font-size:12px">${s.type}${vn?`<br><span style="font-size:10px;color:#b45309"><i class="ti ti-discount" style="font-size:10px"></i> ${vn}</span>`:''}</td><td style="font-family:var(--fc);font-weight:700;font-size:14px;color:${s.paid===0?'#10b981':'var(--t1)'}">$${s.paid.toFixed(2)}</td><td><span class="sp ${st}">${st==='active'?'Active':st==='expiring'?'Expiring':'Expired'}</span>${s.valId?`<span class="sp val" style="margin-left:3px;font-size:10px"><i class="ti ti-discount" style="font-size:9px"></i>Val</span>`:''}</td><td><div style="font-family:var(--fc);font-size:13px;font-weight:700">${fmtT(rem)}</div><div class="tb2"><div class="tb2f" style="width:${pct}%;background:${bc}"></div></div></td>${ro?'':`<td style="display:flex;gap:4px;flex-wrap:wrap">${s.phone&&!s.smsSent&&st!=='expired'?`<button class="ab" onclick="doSms('${s.id}')"><i class="ti ti-message-circle" style="font-size:11px"></i></button>`:''}<button class="ab danger" onclick="S.sess=S.sess.filter(x=>x.id!=='${s.id}');filterSess()">Remove</button></td>`}</tr>`;}).join('')}</tbody></table>`;}
+function doSms(id){const s=S.sess.find(x=>x.id===id);if(!s||!s.phone)return;s.smsSent=true;const t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),l=S.lots[s.lotId]||{name:'?',zone:''};S.smsLog.unshift({time:t,plate:s.plate,lot:l.name,msg:'Manual 20 min warning'});document.getElementById('sab').innerHTML=`To <strong>${s.phone}</strong>:<br>"${bSms(s.plate,l,s.id)}"`;document.getElementById('smsalert').classList.add('show');setTimeout(()=>document.getElementById('smsalert').classList.remove('show'),6000);filterSess();}
+
+function rLots(){return`<div><div class="lg">${Object.values(S.lots).map(l=>{const ls=S.sess.filter(s=>s.lotId===l.id&&gSt(s)!=='expired');const rev=S.sess.filter(s=>s.lotId===l.id).reduce((a,s)=>a+s.paid,0);const er=[l.rates.hourly&&'Hourly',l.rates.event&&'Event',l.rates.monthly&&'Monthly'].filter(Boolean).join(', ')||'None';const lv=Object.values(S.vals).filter(v=>v.lotId===l.id&&v.active).length;const ap=S.passes.filter(p=>p.lotId===l.id&&p.status==='active').length;return`<div class="lcard"><div class="lch"><div class="lcn">${l.name}</div><div class="lcz">Zone ${l.zone} · ${l.address}</div></div><div class="lcs"><div class="lsr"><span class="lsl">Status</span><span style="font-family:var(--fc);font-size:14px;font-weight:600;color:${l.open?'var(--grn)':'var(--red)'}">${l.open?'Open':'Closed'}</span></div><div class="lsr"><span class="lsl">Active sessions</span><span style="font-family:var(--fc);font-size:14px;font-weight:600">${ls.length}</span></div><div class="lsr"><span class="lsl">Today revenue</span><span style="font-family:var(--fc);font-size:14px;font-weight:600;color:var(--grn)">$${rev.toFixed(2)}</span></div><div class="lsr"><span class="lsl">Rates</span><span style="font-family:var(--fc);font-size:12px;font-weight:600">${er}</span></div><div class="lsr"><span class="lsl">Service fees</span><span style="font-family:var(--fc);font-size:11px;font-weight:600;color:var(--t2)">${feeL(l)}</span></div><div class="lsr"><span class="lsl">Active validations</span><span style="font-family:var(--fc);font-size:14px;font-weight:600;color:${lv>0?'#b45309':'var(--t3)'}">${lv}</span></div><div class="lsr"><span class="lsl">Monthly passes</span><span style="font-family:var(--fc);font-size:14px;font-weight:600;color:${ap>0?'var(--blue)':'var(--t3)'}">${ap} active</span></div>${l.rates.monthly?`<div class="lsr"><span class="lsl">Monthly signup</span><span class="selfserve-badge ${l.monthlyselfsrv?'on':'off'}">${l.monthlyselfsrv?'Self-serve':'Invite only'}</span></div>`:''}</div><div class="lcq"><div style="background:#fff;border:1.5px solid var(--g2);border-radius:6px;padding:6px;flex-shrink:0">${genQR(l.id,true)}</div><div class="lqi"><div class="lql">Lot QR</div><div class="lqu">cityparkmanagement.app/pay?lot=${l.id}&zone=${l.zone}</div><button class="ab" style="margin-top:6px" onclick="viewLotQR('${l.id}')"><i class="ti ti-arrows-maximize" style="font-size:11px;margin-right:3px"></i>View</button></div></div><div class="lac"><button class="ab" onclick="openLM('${l.id}')"><i class="ti ti-settings" style="font-size:11px;margin-right:3px"></i>Edit</button><button class="ab" onclick="S.lots['${l.id}'].open=!S.lots['${l.id}'].open;render()">${l.open?'Close':'Open'}</button>${l.rates.monthly?`<button class="ab blue-btn" onclick="S.tab='passes';S.passFilter='all';render();setTimeout(()=>openPassModal('${l.id}'),100)"><i class="ti ti-mail" style="font-size:11px;margin-right:3px"></i>Send Pass</button>`:''}<button class="ab danger" onclick="if(Object.keys(S.lots).length<=1){alert('Must keep at least one lot.');return;}if(confirm('Delete?')){delete S.lots['${l.id}'];render()}"><i class="ti ti-trash" style="font-size:11px"></i></button></div></div>`;}).join('')}<div class="addl" onclick="openLM(null)"><i class="ti ti-plus"></i><span>Add New Lot</span></div></div></div>`;}
+function viewLotQR(lotId){const l=S.lots[lotId];document.getElementById('qrt').textContent=`QR — ${l.name}`;document.getElementById('qrb').innerHTML=`<div style="background:#fff;border:2px solid var(--g2);border-radius:10px;padding:16px;display:inline-block;margin-bottom:14px">${genQR(lotId,false)}</div><div style="font-family:var(--fc);font-size:20px;font-weight:900;text-transform:uppercase;margin-bottom:4px">${l.name}</div><div style="font-family:var(--fc);font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--lime-dark);margin-bottom:12px">Zone ${l.zone}</div><div style="font-size:12px;color:var(--t3);word-break:break-all;padding:8px 12px;background:var(--g1);border-radius:6px">cityparkmanagement.app/pay?lot=${l.id}&zone=${l.zone}</div>`;document.getElementById('qr-modal').classList.add('show');}
+function openLM(lotId){
+  S.eLot=lotId;const l=lotId?S.lots[lotId]:null;
+  document.getElementById('lmt').textContent=lotId?`Edit — ${l.name}`:'Add New Lot';
+  const r=l?l.rates:{hourly:true,event:true,monthly:true};
+  const p=l?l.pricing:{hourly:3.50,max_daily:22,event:18,monthly:120};
+  const f=l?l.fees:{hourly:{enabled:true,amount:0.25},event:{enabled:true,amount:0.50},monthly:{enabled:false,amount:0}};
+  const selfserv=l?l.monthlyselfsrv:true;
+  document.getElementById('lmb').innerHTML=`
+    <div class="sdv"><i class="ti ti-building" style="font-size:12px"></i>Lot Details</div>
+    <div class="fg"><label class="fl">Lot name</label><input class="fi" id="m-name" value="${l?escH(l.name):''}" placeholder="e.g. South Parking Deck"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div class="fg"><label class="fl">Zone</label><input class="fi" id="m-zone" value="${l?l.zone:''}" placeholder="e.g. 1042"></div><div class="fg"><label class="fl">Address</label><input class="fi" id="m-addr" value="${l?escH(l.address):''}" placeholder="e.g. 500 Main St"></div></div>
+    <div class="sdv"><i class="ti ti-toggle-right" style="font-size:12px"></i>Rate Types</div>
+    ${[{k:'hourly',l:'Hourly',s:'Per-hour rate'},{k:'event',l:'Event Parking',s:'Flat rate for events'},{k:'monthly',l:'Monthly pass',s:'30-day recurring pass'}].map(({k,l:lb,s})=>`<div class="tr"><div><div class="trl">${lb}</div><div class="trs">${s}</div></div><label class="tg"><input type="checkbox" id="r-${k}"${r[k]?' checked':''}><span class="tgs"></span></label></div>`).join('')}
+    <div class="sdv bl"><i class="ti ti-id-badge" style="font-size:12px"></i>Monthly Pass Signup</div>
+    <div class="tr"><div><div class="trl">Allow self-serve monthly signup</div><div class="trs">On: Monthly Pass appears in Pay tab when customers scan this lot's QR.<br>Off: Invite-only — Pay tab shows a notice to contact the office.</div></div><label class="tg"><input type="checkbox" id="m-selfserv"${selfserv?' checked':''}><span class="tgs"></span></label></div>
+    <div class="sdv"><i class="ti ti-currency-dollar" style="font-size:12px"></i>Rates</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div class="fg"><label class="fl">Hourly rate</label><div class="piw"><span>$</span><input type="number" id="m-hourly" min="0" step="0.25" value="${p.hourly.toFixed(2)}"></div></div><div class="fg"><label class="fl">Daily max</label><div class="piw"><span>$</span><input type="number" id="m-max" min="0" step="0.50" value="${p.max_daily.toFixed(2)}"></div></div><div class="fg"><label class="fl">Event rate</label><div class="piw"><span>$</span><input type="number" id="m-event" min="0" step="0.50" value="${p.event.toFixed(2)}"></div></div><div class="fg"><label class="fl">Monthly</label><div class="piw"><span>$</span><input type="number" id="m-monthly" min="0" step="5" value="${p.monthly.toFixed(2)}"></div></div></div>
+    <div class="sdv"><i class="ti ti-receipt" style="font-size:12px"></i>Service Fees</div>
+    ${[{k:'hourly',l:'Hourly'},{k:'event',l:'Event Parking'},{k:'monthly',l:'Monthly'}].map(({k,l:lb})=>`<div class="ftr"><div class="ftl">${lb}</div><div class="ftt"><label class="tg" style="width:32px;height:19px"><input type="checkbox" id="fe-${k}"${f[k].enabled?' checked':''} onchange="document.getElementById('fa-${k}').disabled=!this.checked"><span class="tgs"></span></label><span>Fee on</span></div><div class="fmi"><span>$</span><input type="number" id="fa-${k}" min="0" step="0.05" value="${f[k].amount.toFixed(2)}"${f[k].enabled?'':' disabled'}></div></div>`).join('')}`;
+  document.getElementById('lot-modal').classList.add('show');
+}
+function saveLot(){const name=document.getElementById('m-name').value.trim(),zone=document.getElementById('m-zone').value.trim(),address=document.getElementById('m-addr').value.trim();if(!name||!zone){alert('Name and zone required.');return;}const rh=document.getElementById('r-hourly').checked,re=document.getElementById('r-event').checked,rm=document.getElementById('r-monthly').checked;if(!rh&&!re&&!rm){alert('At least one rate type required.');return;}const selfserv=document.getElementById('m-selfserv').checked;const pricing={hourly:+document.getElementById('m-hourly').value||3.5,max_daily:+document.getElementById('m-max').value||22,event:+document.getElementById('m-event').value||18,monthly:+document.getElementById('m-monthly').value||120};const fees={hourly:{enabled:document.getElementById('fe-hourly').checked,amount:+document.getElementById('fa-hourly').value||0},event:{enabled:document.getElementById('fe-event').checked,amount:+document.getElementById('fa-event').value||0},monthly:{enabled:document.getElementById('fe-monthly').checked,amount:+document.getElementById('fa-monthly').value||0}};const rates={hourly:rh,event:re,monthly:rm};if(S.eLot){Object.assign(S.lots[S.eLot],{name,zone,address,pricing,fees,rates,monthlyselfsrv:selfserv});}else{const id='lot'+Date.now();S.lots[id]={id,name,zone,address,open:true,rates,monthlyselfsrv:selfserv,fees,pricing};}closeM('lot-modal');render();}
+
+function rValidations(){const vals=Object.values(S.vals);return`<div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px"><div><div style="font-family:var(--fc);font-size:13px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.04em">${vals.length} validations · ${vals.filter(v=>v.active).length} active</div></div><button onclick="openVM(null)" style="background:var(--gold);color:var(--blk);border:none;border-radius:9px;padding:10px 18px;font-family:var(--fc);font-size:13px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-plus" style="font-size:13px"></i>New Validation</button></div><div class="vg">${vals.map(val=>{const l=S.lots[val.lotId];const tl=val.type==='free'?'Free Parking':val.type==='percent'?`${val.discountPct}% Off`:`$${val.discountAmt.toFixed(2)} Off`;const tc=val.type==='free'?'vtf':'vtd';return`<div class="vc${val.active?' ac':''}"><div class="vch"><div><div class="vcn">${val.name}</div><div class="vcl2"><i class="ti ti-parking" style="font-size:10px;margin-right:3px"></i>${l?.name||'?'}</div></div><div class="vsd${val.active?' on':' off'}"></div></div><div class="vcb"><div class="vdr"><span class="vdl">Discount</span><span class="vtb ${tc}">${tl}</span></div><div class="vdr"><span class="vdl">Code</span><span class="cc"><i class="ti ti-discount" style="font-size:11px"></i>${val.code}</span></div>${val.maxHours>0?`<div class="vdr"><span class="vdl">Max hrs</span><span style="font-weight:600;font-family:var(--fc);font-size:14px">${val.maxHours}hr</span></div>`:''}<div class="vdr"><span class="vdl">Status</span><span style="font-weight:600;font-family:var(--fc);font-size:14px;color:${val.active?'var(--grn)':'var(--t3)'}">${val.active?'Active':'Inactive'}</span></div>${val.notes?`<div style="font-size:11px;color:var(--t3);margin-top:6px;font-style:italic">${val.notes}</div>`:''}</div><div class="vqs"><div>${genValQR(val.id,true)}</div><div class="vqi"><div class="vql">Code: <strong>${val.code}</strong></div><div class="vqu">cityparkmanagement.app/pay?lot=${val.lotId}&code=${val.code}</div></div></div><div class="vac"><button class="ab" onclick="openVQR('${val.id}')"><i class="ti ti-qrcode" style="font-size:11px;margin-right:3px"></i>QR</button><button class="ab" onclick="openVM('${val.id}')"><i class="ti ti-settings" style="font-size:11px;margin-right:3px"></i>Edit</button><button class="ab" onclick="S.tab='billing';render()" style="border-color:#2563eb;color:#2563eb"><i class="ti ti-file-invoice" style="font-size:11px;margin-right:3px"></i>Report</button><button class="ab" onclick="S.vals['${val.id}'].active=!S.vals['${val.id}'].active;render()">${val.active?'Deactivate':'Activate'}</button><button class="ab danger" onclick="if(confirm('Delete?')){delete S.vals['${val.id}'];render()}"><i class="ti ti-trash" style="font-size:11px"></i></button></div></div>`;}).join('')}<div class="addc" onclick="openVM(null)"><i class="ti ti-plus"></i><span>New Validation</span></div></div></div>`;}
+function openVM(valId){S.eVal=valId;const val=valId?S.vals[valId]:null;if(!val)S.newVT='free';else S.newVT=val.type;document.getElementById('vmt').textContent=valId?`Edit — ${val.name}`:'New Validation';const lotOpts=Object.values(S.lots).map(l=>`<option value="${l.id}"${(val?.lotId||'lot1')===l.id?' selected':''}>${l.name}</option>`).join('');document.getElementById('vmb').innerHTML=`<div class="fg"><label class="fl">Client / Business Name</label><input class="fi" id="vm-name" value="${val?escH(val.name):''}" placeholder="e.g. The Grand Hotel"></div><div class="fg"><label class="fl">Lot</label><select class="fse" id="vm-lot">${lotOpts}</select></div><div class="sdv go"><i class="ti ti-discount" style="font-size:12px"></i>Validation Code</div><div class="fg"><label class="fl">Code customers type at checkout</label><input class="fi" id="vm-code" value="${val?val.code:''}" placeholder="e.g. HOTEL2024" maxlength="20" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');document.getElementById('vpc').textContent=this.value||'CODE';document.getElementById('vce').style.display='none'" style="font-family:var(--fc);font-size:20px;font-weight:800;letter-spacing:.12em;text-transform:uppercase"><div id="vce" style="color:var(--red);font-size:11px;margin-top:4px;display:none">Code already in use.</div><div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:var(--t3)">Preview:</span><span style="background:var(--blk);color:var(--lime);border-radius:5px;padding:4px 10px;font-family:var(--fc);font-size:14px;font-weight:800;letter-spacing:.12em" id="vpc">${val?val.code:'CODE'}</span></div></div><div class="sdv go"><i class="ti ti-discount" style="font-size:12px"></i>Discount Type</div><div class="dtg" id="dtg">${[{t:'free',i:'🎁',l:'Free Parking',s:'Customer pays nothing'},{t:'percent',i:'%',l:'Percentage Off',s:'e.g. 50% off'},{t:'flat',i:'$',l:'Flat Amount Off',s:'e.g. $5 off'}].map(o=>`<div class="dto${S.newVT===o.t?' on':''}" onclick="setVT('${o.t}')"><div class="dti">${o.i}</div><div class="dtl">${o.l}</div><div class="dts">${o.s}</div></div>`).join('')}</div><div id="vdf">${S.newVT==='percent'?`<div class="fg"><label class="fl">Discount %</label><div class="piw" style="max-width:130px"><span>%</span><input type="number" id="vm-pct" min="1" max="100" step="1" value="${val?.discountPct||50}"></div></div>`:''}${S.newVT==='flat'?`<div class="fg"><label class="fl">Amount Off</label><div class="piw" style="max-width:130px"><span>$</span><input type="number" id="vm-amt" min="0.50" step="0.50" value="${val?.discountAmt||5}"></div></div>`:''}</div><div class="fg"><label class="fl">Max hours <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--t3)">(0 = no limit)</span></label><div class="piw" style="max-width:130px"><span style="font-size:12px;padding:0 6px">hrs</span><input type="number" id="vm-hours" min="0" step="1" value="${val?.maxHours||0}"></div></div><div class="fg"><label class="fl">Notes (internal)</label><textarea class="fta" id="vm-notes" placeholder="e.g. For hotel guests only" style="min-height:60px">${val?.notes||''}</textarea></div><div class="fg" style="display:flex;align-items:center;justify-content:space-between"><div><label class="fl" style="margin:0">Active</label><div style="font-size:11px;color:var(--t3);margin-top:2px">Inactive codes rejected at checkout</div></div><label class="tg"><input type="checkbox" id="vm-active"${val?val.active?' checked':'':' checked'}><span class="tgs"></span></label></div>`;document.getElementById('val-modal').classList.add('show');}
+function setVT(t){S.newVT=t;document.querySelectorAll('.dto').forEach(el=>{el.classList.toggle('on',el.querySelector('.dtl').textContent.toLowerCase().includes(t==='free'?'free':t==='percent'?'percentage':'flat'));});const f=document.getElementById('vdf');if(f)f.innerHTML=t==='percent'?`<div class="fg"><label class="fl">Discount %</label><div class="piw" style="max-width:130px"><span>%</span><input type="number" id="vm-pct" min="1" max="100" step="1" value="50"></div></div>`:t==='flat'?`<div class="fg"><label class="fl">Amount Off</label><div class="piw" style="max-width:130px"><span>$</span><input type="number" id="vm-amt" min="0.50" step="0.50" value="5"></div></div>`:'';}
+function saveVal(){const name=document.getElementById('vm-name')?.value.trim(),code=(document.getElementById('vm-code')?.value||'').toUpperCase().replace(/[^A-Z0-9]/g,''),lotId=document.getElementById('vm-lot')?.value;const maxHours=parseInt(document.getElementById('vm-hours')?.value)||0,notes=document.getElementById('vm-notes')?.value||'',active=document.getElementById('vm-active')?.checked||false;if(!name){alert('Business name required.');return;}if(!code){alert('Validation code required.');return;}if(codeTaken(code,S.eVal)){const el=document.getElementById('vce');if(el)el.style.display='block';return;}const dp=S.newVT==='percent'?parseFloat(document.getElementById('vm-pct')?.value)||50:0,da=S.newVT==='flat'?parseFloat(document.getElementById('vm-amt')?.value)||5:0;if(S.eVal){Object.assign(S.vals[S.eVal],{name,code,lotId,type:S.newVT,discountPct:dp,discountAmt:da,maxHours,notes,active});}else{const id='val'+Date.now();S.vals[id]={id,name,code,lotId,type:S.newVT,discountPct:dp,discountAmt:da,maxHours,active,notes};}closeM('val-modal');render();}
+function openVQR(valId){const val=S.vals[valId],l=S.lots[val.lotId];const tl=val.type==='free'?'Free Parking':val.type==='percent'?`${val.discountPct}% Off`:`$${val.discountAmt.toFixed(2)} Off`;document.getElementById('vqrt').textContent=`QR — ${val.name}`;document.getElementById('vqrb').innerHTML=`<div style="background:#fff;border:2px solid var(--g2);border-radius:10px;padding:16px;display:inline-block">${genValQR(valId,false)}</div><div style="font-family:var(--fc);font-size:18px;font-weight:900;text-transform:uppercase;margin:10px 0 4px">${val.name}</div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:8px"><span style="background:var(--gold-bg);border:1px solid var(--gold-bd);border-radius:4px;padding:3px 10px;font-family:var(--fc);font-size:12px;font-weight:800;color:#b45309;letter-spacing:.06em;text-transform:uppercase">${tl}</span><span style="background:var(--lime-bg);border:1px solid var(--lime);border-radius:4px;padding:3px 10px;font-family:var(--fc);font-size:12px;font-weight:800;color:var(--lime-dark);letter-spacing:.06em;text-transform:uppercase">${l?.name||''}</span></div><div style="background:var(--blk);color:var(--lime);border-radius:6px;padding:5px 12px;font-family:var(--fc);font-size:14px;font-weight:800;letter-spacing:.12em;margin-bottom:8px">Code: ${val.code}</div><div style="font-size:12px;color:var(--t3);word-break:break-all;padding:8px 12px;background:var(--g1);border-radius:6px">cityparkmanagement.app/pay?lot=${val.lotId}&code=${val.code}</div>`;document.getElementById('vqr-modal').classList.add('show');}
+
+function rPasses(){
+  const active=S.passes.filter(p=>p.status==='active');const pending=S.passes.filter(p=>p.status==='pending');const canceled=S.passes.filter(p=>p.status==='canceled');
+  const mrr=active.reduce((a,p)=>a+p.monthlyAmount,0);const totalBilled=S.passes.reduce((a,p)=>a+p.totalBilled,0);
+  let filtered=S.passes;if(S.passFilter!=='all')filtered=filtered.filter(p=>p.status===S.passFilter);if(S.sfLot!=='all')filtered=filtered.filter(p=>p.lotId===S.sfLot);const q=S.passSearch.toUpperCase().trim();if(q)filtered=filtered.filter(p=>p.name.toUpperCase().includes(q)||p.email.toUpperCase().includes(q)||p.id.includes(q));
+  return`<div>
+    <div class="invite-box"><div class="invite-box-text"><h4><i class="ti ti-id-badge" style="font-size:18px;margin-right:6px;vertical-align:-2px"></i>Monthly Parking Passes</h4><p>Send a subscriber a personal signup link. They complete payment online and are billed automatically every month until you cancel.</p></div><button class="invite-btn-big" onclick="openPassModal()"><i class="ti ti-mail" style="font-size:16px"></i>Send Pass Invite</button></div>
+    <div class="pass-stats"><div class="pstat act"><div class="ps-lbl"><i class="ti ti-id-badge" style="font-size:11px"></i>Active passes</div><div class="ps-val" style="color:var(--blue)">${active.length}</div><div class="ps-sub">Auto-billing monthly</div></div><div class="pstat rev"><div class="ps-lbl"><i class="ti ti-repeat" style="font-size:11px"></i>Monthly revenue</div><div class="ps-val" style="color:var(--grn)">$${mrr.toFixed(2)}</div><div class="ps-sub">Recurring MRR</div></div><div class="pstat pend"><div class="ps-lbl"><i class="ti ti-clock" style="font-size:11px"></i>Pending invites</div><div class="ps-val" style="color:var(--gold)">${pending.length}</div><div class="ps-sub">Awaiting signup</div></div><div class="pstat canc"><div class="ps-lbl"><i class="ti ti-x" style="font-size:11px"></i>Canceled</div><div class="ps-val" style="color:var(--t3)">${canceled.length}</div><div class="ps-sub">$${totalBilled.toFixed(0)} total billed</div></div></div>
+    <div class="fbar"><div class="sb2" style="min-width:220px"><i class="ti ti-search"></i><input id="pass-search" placeholder="Search name or email..." value="${escH(S.passSearch)}" oninput="S.passSearch=this.value;filterPasses()"></div><div class="fdiv"></div><span class="flbl">Status:</span>${[{v:'all',l:'All'},{v:'active',l:'Active'},{v:'pending',l:'Pending'},{v:'canceled',l:'Canceled'}].map(f=>`<button class="pbtn${S.passFilter===f.v?' on':''}" onclick="S.passFilter='${f.v}';filterPasses()">${f.l}</button>`).join('')}<div class="fdiv"></div><span class="flbl">Lot:</span><button class="ltb${S.sfLot==='all'?' on':''}" onclick="S.sfLot='all';filterPasses()">All</button>${Object.values(S.lots).map(l=>`<button class="ltb${S.sfLot===l.id?' on':''}" onclick="S.sfLot='${l.id}';filterPasses()">${l.name}</button>`).join('')}</div>
+    <div class="pn"><div class="ph"><h3><i class="ti ti-id-badge"></i>Pass Subscribers</h3><span style="font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#888" id="pass-badge">${filtered.length} shown</span></div><div style="overflow-x:auto"><table id="pass-table"><thead><tr><th>Subscriber</th><th>Pass ID</th><th>Lot</th><th>Status</th><th>Start Date</th><th>Next Bill / Info</th><th>Monthly</th><th>Total Billed</th><th></th></tr></thead><tbody>${passRows(filtered)}</tbody>${filtered.length>0?`<tfoot><tr><td colspan="6" style="font-family:var(--fc);font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.06em">Totals</td><td style="font-family:var(--fc);font-weight:900;font-size:14px;color:var(--blue)">$${filtered.reduce((a,p)=>a+p.monthlyAmount,0).toFixed(2)}/mo</td><td style="font-family:var(--fc);font-weight:900;font-size:14px;color:var(--grn)">$${filtered.reduce((a,p)=>a+p.totalBilled,0).toFixed(2)}</td><td></td></tr></tfoot>`:''}</table></div></div>
+  </div>`;}
+function passRows(filtered){if(!filtered.length)return`<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--t3)">No passes match your filter.</td></tr>`;return filtered.map(p=>{const l=S.lots[p.lotId];const sh=p.status==='active'?`<span class="sp active">Active</span>`:p.status==='pending'?`<span class="sp pending">Pending</span>`:`<span class="sp canceled">Canceled</span>`;const ni=p.status==='active'?`<div style="font-family:var(--fc);font-size:13px;font-weight:700;color:var(--blue)">${fmtDate(p.nextBillDate)}</div><div style="font-size:10px;color:var(--t3);margin-top:2px">Next auto-charge</div>`:p.status==='pending'?`<div style="font-size:12px;color:var(--t3)">Invite sent · awaiting signup</div>`:p.canceledOn?`<div style="font-size:12px;color:var(--t3)">Canceled ${fmtDate(p.canceledOn)}</div>`:'—';return`<tr><td><div style="font-weight:600;color:var(--t1)">${p.name}</div><div style="font-size:11px;color:var(--t3);margin-top:2px"><i class="ti ti-mail" style="font-size:11px;margin-right:3px"></i>${p.email}</div></td><td style="font-family:var(--fc);font-size:12px;font-weight:700;color:var(--t3)">${p.id}</td><td style="font-size:12px;color:var(--t2)">${l?.name||'?'}</td><td>${sh}</td><td style="font-size:12px;color:var(--t3)">${fmtDate(p.startDate)}</td><td>${ni}</td><td style="font-family:var(--fc);font-weight:800;font-size:15px">$${p.monthlyAmount.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:700;font-size:13px;color:var(--grn)">$${p.totalBilled.toFixed(2)}</td><td><div class="pass-row-actions">${p.status==='pending'?`<button class="ab blue-btn" onclick="resendInvite('${p.id}')"><i class="ti ti-send" style="font-size:11px;margin-right:3px"></i>Resend</button>`:''}${p.status==='active'?`<button class="ab danger" onclick="promptCancel('${p.id}')"><i class="ti ti-player-stop" style="font-size:11px;margin-right:3px"></i>Cancel</button>`:''}${p.status==='canceled'?`<div style="font-size:11px;color:var(--t3)">—</div>`:''}</div></td></tr>`;}).join('');}
+function filterPasses(){const q=S.passSearch.toUpperCase().trim();let filtered=S.passes;if(S.passFilter!=='all')filtered=filtered.filter(p=>p.status===S.passFilter);if(S.sfLot!=='all')filtered=filtered.filter(p=>p.lotId===S.sfLot);if(q)filtered=filtered.filter(p=>p.name.toUpperCase().includes(q)||p.email.toUpperCase().includes(q)||p.id.includes(q));const tbody=document.querySelector('#pass-table tbody');if(tbody)tbody.innerHTML=passRows(filtered);const badge=document.getElementById('pass-badge');if(badge)badge.textContent=filtered.length+' shown';}
+function openPassModal(prefillLotId){const lotOpts=Object.values(S.lots).filter(l=>l.rates.monthly).map(l=>`<option value="${l.id}"${(prefillLotId||'lot1')===l.id?' selected':''}>${l.name} — $${l.pricing.monthly}/mo</option>`).join('');if(!lotOpts){alert('No lots have monthly parking enabled.');return;}document.getElementById('pmt').textContent='Send Pass Invite';document.getElementById('pmb').innerHTML=`<p style="font-size:13px;color:var(--t2);line-height:1.7;margin-bottom:16px">Enter the subscriber's details below. They'll receive a personalized signup link.</p><div class="sdv bl"><i class="ti ti-user" style="font-size:12px"></i>Subscriber Details</div><div class="fg"><label class="fl">Full name</label><input class="fi" id="pi-name" placeholder="e.g. James Thornton" oninput="liveUP()"></div><div class="fg"><label class="fl">Email address</label><input class="fi" id="pi-email" type="email" placeholder="e.g. james@example.com" oninput="liveUP()"></div><div class="fg"><label class="fl">Lot</label><select class="fse" id="pi-lot" onchange="liveUP()">${lotOpts}</select></div><div class="collapse-toggle" onclick="toggleCollapse('mc')"><span class="collapse-label"><i class="ti ti-pencil" style="font-size:13px"></i>Customize invite message</span><i class="ti ti-chevron-down collapse-icon" id="mc-icon"></i></div><div class="collapse-body" id="mc"><div class="fg"><label class="fl">Subject line</label><input class="fi" id="pi-subj" value="${escH(S.inviteSubject)}" oninput="liveUP()"></div><div class="fg"><label class="fl">Message body</label><div class="ph-tags">${['{FIRST_NAME}','{LOT_NAME}','{ZONE}','{MONTHLY_RATE}','{SIGNUP_LINK}'].map(ph=>`<span class="ph-tag" onclick="insertPH('pi-body','${ph}')">${ph}</span>`).join('')}</div><textarea class="fta" id="pi-body" rows="8" style="min-height:180px;font-family:var(--fc);font-size:13px;line-height:1.7" oninput="liveUP()">${escH(S.inviteTmpl)}</textarea><div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;flex-wrap:wrap;gap:8px"><span style="font-size:11px;color:var(--t3)" id="pi-cnt">${S.inviteTmpl.length} chars</span><div style="display:flex;gap:8px"><button onclick="const b=document.getElementById('pi-body')?.value||'';const s=document.getElementById('pi-subj')?.value||'';S.inviteTmpl=b;S.inviteSubject=s;this.innerHTML='✓ Saved!';this.style.color='var(--grn)';setTimeout(()=>{this.innerHTML='Save as default';this.style.color='';},2000)" style="background:none;border:1.5px solid var(--blue);border-radius:6px;padding:5px 12px;font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);cursor:pointer">Save as default</button><button onclick="document.getElementById('pi-body').value=DEFAULT_INVITE_TMPL;document.getElementById('pi-subj').value='Your City Park monthly parking pass invitation';liveUP()" style="background:none;border:1.5px solid var(--g2);border-radius:6px;padding:5px 12px;font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3);cursor:pointer">Reset</button></div></div></div></div><div class="sdv bl" style="margin-top:18px"><i class="ti ti-eye" style="font-size:12px"></i>Email Preview</div><div id="pi-prev">${buildEP('James Thornton','james@example.com',Object.values(S.lots).find(l=>l.rates.monthly)||Object.values(S.lots)[0],S.inviteTmpl,S.inviteSubject)}</div>`;document.getElementById('pass-modal').classList.add('show');setTimeout(()=>document.getElementById('pi-name')?.focus(),50);}
+function toggleCollapse(id){const b=document.getElementById(id),ic=document.getElementById(id+'-icon');if(b)b.classList.toggle('op');if(ic)ic.classList.toggle('op');}
+function insertPH(id,ph){const el=document.getElementById(id);if(!el)return;const s=el.selectionStart,e=el.selectionEnd;el.value=el.value.slice(0,s)+ph+el.value.slice(e);el.selectionStart=el.selectionEnd=s+ph.length;el.focus();liveUP();}
+function liveUP(){const n=document.getElementById('pi-name')?.value||'James Thornton';const e=document.getElementById('pi-email')?.value||'james@example.com';const lid=document.getElementById('pi-lot')?.value||'lot1';const b=document.getElementById('pi-body')?.value||S.inviteTmpl;const subj=document.getElementById('pi-subj')?.value||S.inviteSubject;const l=S.lots[lid];const prev=document.getElementById('pi-prev');if(prev)prev.innerHTML=buildEP(n,e,l,b,subj);const cnt=document.getElementById('pi-cnt');if(cnt)cnt.textContent=b.length+' chars';}
+function buildEP(name,email,l,bodyTmpl,subj){const tok='tok_'+Math.random().toString(36).slice(2,10);const link=`cityparkmanagement.app/pass/signup?token=${tok}&lot=${l?.id||'lot1'}`;const rendered=renderInviteBody(bodyTmpl||S.inviteTmpl,name||'Subscriber',l,link);const htmlBody=rendered.split('\n').map(line=>line.trim()===''?'<br>':line.startsWith('Lot:')||line.startsWith('Monthly')||line.startsWith('Billing')?`<div style="line-height:1.8;color:var(--t2)">${escH(line)}</div>`:`<p style="margin:0 0 10px">${escH(line)}</p>`).join('');return`<div class="email-preview"><div class="email-meta"><span><strong>To:</strong> ${escH(email||'recipient@example.com')}</span><span><strong>From:</strong> noreply@cityparkmanagement.app</span><span><strong>Subject:</strong> ${escH(subj||S.inviteSubject)}</span></div><div class="email-header"><div class="logo-box" style="display:inline-flex"><div class="lcp">city park</div><div class="lmg">management</div></div></div><div class="email-body">${htmlBody}<div style="text-align:center;margin:20px 0"><div style="display:inline-block;background:var(--blue);color:#fff;border-radius:10px;padding:14px 28px;font-family:var(--fc);font-size:16px;font-weight:900;letter-spacing:.06em;text-transform:uppercase">Activate My Pass</div></div></div></div>`;}
+function sendPassInvite(){const name=document.getElementById('pi-name')?.value.trim(),email=document.getElementById('pi-email')?.value.trim(),lotId=document.getElementById('pi-lot')?.value;if(!name){alert('Name required.');return;}if(!email||!email.includes('@')){alert('Valid email required.');return;}const l=S.lots[lotId];const tok='tok_'+Math.random().toString(36).slice(2,10);S.passes.push({id:'MP-'+(1000+S.passes.length+1),name,email,lotId,status:'pending',startDate:NOW,nextBillDate:null,canceledOn:null,monthlyAmount:l.pricing.monthly,totalBilled:0,inviteToken:tok});closeM('pass-modal');render();setTimeout(()=>{document.getElementById('sab').innerHTML=`Invite sent to <strong>${name}</strong> (${email})`;document.getElementById('smsalert').classList.add('show');setTimeout(()=>document.getElementById('smsalert').classList.remove('show'),5000);},300);}
+function resendInvite(id){const p=S.passes.find(x=>x.id===id);if(!p)return;document.getElementById('sab').innerHTML=`Invite resent to <strong>${p.name}</strong><br>${p.email}`;document.getElementById('smsalert').classList.add('show');setTimeout(()=>document.getElementById('smsalert').classList.remove('show'),5000);}
+function promptCancel(id){const p=S.passes.find(x=>x.id===id);if(!p)return;S.cancelingPassId=id;const l=S.lots[p.lotId];document.getElementById('cmt').textContent=`Cancel — ${p.name}`;document.getElementById('cmb').innerHTML=`<div style="display:flex;align-items:center;gap:12px;padding:14px;background:#fff5f5;border-radius:10px;border:1.5px solid #fecaca;margin-bottom:16px"><i class="ti ti-alert-triangle" style="font-size:28px;color:var(--red);flex-shrink:0"></i><div><div style="font-weight:600;color:var(--t1);margin-bottom:4px">Cancel this monthly pass?</div><div style="font-size:13px;color:var(--t3);line-height:1.6">Billing stops immediately. The subscriber keeps access through the end of their current billing period.</div></div></div><div style="background:var(--g1);border-radius:8px;padding:12px 14px"><div style="font-family:var(--fc);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3);margin-bottom:8px">Pass Summary</div><div style="display:flex;flex-direction:column;gap:5px;font-size:13px"><div style="display:flex;justify-content:space-between"><span style="color:var(--t3)">Subscriber</span><span style="font-weight:600">${p.name}</span></div><div style="display:flex;justify-content:space-between"><span style="color:var(--t3)">Email</span><span>${p.email}</span></div><div style="display:flex;justify-content:space-between"><span style="color:var(--t3)">Lot</span><span>${l?.name||'?'}</span></div><div style="display:flex;justify-content:space-between"><span style="color:var(--t3)">Monthly rate</span><span style="font-family:var(--fc);font-weight:700">$${p.monthlyAmount.toFixed(2)}/mo</span></div><div style="display:flex;justify-content:space-between"><span style="color:var(--t3)">Total billed</span><span style="font-family:var(--fc);font-weight:700;color:var(--grn)">$${p.totalBilled.toFixed(2)}</span></div>${p.nextBillDate?`<div style="display:flex;justify-content:space-between"><span style="color:var(--t3)">Next charge (will not occur)</span><span style="font-family:var(--fc);font-weight:700;color:var(--red)">${fmtDate(p.nextBillDate)}</span></div>`:''}</div></div>`;document.getElementById('cancel-modal').classList.add('show');}
+function confirmCancel(){const p=S.passes.find(x=>x.id===S.cancelingPassId);if(!p)return;p.status='canceled';p.canceledOn=new Date();p.nextBillDate=null;closeM('cancel-modal');render();}
+
+function rBilling(){const lotIds=Object.keys(S.lots);const ms=vsessInR(S.biF,S.biT,S.biL);const tu=ms.length,td=ms.reduce((a,s)=>a+s.disc,0),tf=ms.filter(s=>s.paid===0).length,uc=new Set(ms.map(s=>s.valId)).size;const rl=fmtRL(S.biF,S.biT);const byVal={};Object.values(S.vals).forEach(val=>{if(S.biL!=='all'&&val.lotId!==S.biL)return;byVal[val.id]={val,sess:ms.filter(s=>s.valId===val.id)};});const sorted=Object.values(byVal).sort((a,b)=>b.sess.length-a.sess.length);return`<div><div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px"><div><div style="font-family:var(--fc);font-size:20px;font-weight:900;text-transform:uppercase;display:flex;align-items:center;gap:8px"><i class="ti ti-file-invoice" style="color:var(--gold);font-size:20px"></i>Validation Billing Reports</div></div><button onclick="alert('Exporting CSV...')" style="background:var(--gold);color:var(--blk);border:none;border-radius:9px;padding:10px 18px;font-family:var(--fc);font-size:13px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-file-spreadsheet" style="font-size:13px"></i>Export</button></div><div class="fbar"><span class="flbl">Period:</span>${[{v:'month',l:'This Month'},{v:'lastmonth',l:'Last Month'},{v:'3m',l:'3 Months'},{v:'custom',l:'Custom'}].map(p=>`<button class="pbtn${S.biP===p.v?' on':''}" onclick="applyBiP('${p.v}')">${p.l}</button>`).join('')}<div class="fdiv"></div><input id="bi-from" type="date" class="din" value="${S.biF}"><span style="color:var(--t3);font-size:12px">to</span><input id="bi-to" type="date" class="din" value="${S.biT}"><button class="apb" onclick="const f=document.getElementById('bi-from')?.value,t=document.getElementById('bi-to')?.value;if(f)S.biF=f;if(t)S.biT=t;S.biP='custom';render()">Apply</button><div class="fdiv"></div><span class="flbl">Lot:</span><button class="ltb${S.biL==='all'?' on':''}" onclick="S.biL='all';render()">All</button>${lotIds.map(id=>`<button class="ltb${S.biL===id?' on':''}" onclick="S.biL='${id}';render()">${S.lots[id].name}</button>`).join('')}</div><div class="bsg"><div class="bsc us"><div class="bsl">Total Uses</div><div class="bsv2">${tu}</div><div class="bss">${rl}</div></div><div class="bsc vl"><div class="bsl">Discount Given</div><div class="bsv2" style="color:#2563eb">$${td.toFixed(2)}</div><div class="bss">Billable</div></div><div class="bsc fr"><div class="bsl">Free Parkings</div><div class="bsv2" style="color:#10b981">${tf}</div><div class="bss">Zero-dollar</div></div><div class="bsc cl"><div class="bsl">Active Clients</div><div class="bsv2" style="color:var(--lime-dark)">${uc}</div><div class="bss">This period</div></div></div>${tu===0?`<div style="text-align:center;padding:40px;color:var(--t3);background:#fff;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.06)">No usage in ${rl}.</div>`:`<div class="ccs">${sorted.map(({val,sess})=>rCC(val,sess,rl)).join('')}</div>`}</div>`;}
+function applyBiP(p){if(p==='month'){S.biF=toDS(new Date(NOW.getFullYear(),NOW.getMonth(),1));S.biT=toDS(NOW);}else if(p==='lastmonth'){S.biF=toDS(new Date(NOW.getFullYear(),NOW.getMonth()-1,1));S.biT=toDS(new Date(NOW.getFullYear(),NOW.getMonth(),0));}else if(p==='3m'){S.biF=toDS(new Date(NOW.getFullYear(),NOW.getMonth()-2,1));S.biT=toDS(NOW);}S.biP=p;render();}
+function rCC(val,sess,rl){const l=S.lots[val.lotId];const td=sess.reduce((a,s)=>a+s.disc,0),tp=sess.reduce((a,s)=>a+s.paid,0),tb=sess.reduce((a,s)=>a+s.base,0);const ini=val.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();const isOpen=S.openC[val.id];const invNum=`CPM-${S.biF.replace(/-/g,'').slice(0,6)}-${val.id.toUpperCase()}`;return`<div class="ccard2${sess.length>0?' hu':''}"><div class="cch2" onclick="S.openC['${val.id}']=!S.openC['${val.id}'];render()"><div class="ccl2"><div class="cca2">${ini}</div><div><div class="ccn2">${val.name}</div><div class="ccm2"><span class="cpi cpi-l"><i class="ti ti-parking" style="font-size:9px"></i>${l?.name||'?'}</span>${vtPill(val)}<span class="cpi cpi-c"><i class="ti ti-discount" style="font-size:9px"></i>${val.code}</span></div></div></div><div class="ccr2"><div class="cst2"><div class="csv2">${sess.length}</div><div class="csl2">Uses</div></div><div class="cst2"><div class="csv2 mo">$${td.toFixed(2)}</div><div class="csl2">Bill Amt</div></div><button onclick="event.stopPropagation();openInv('${val.id}')" style="background:var(--gold);color:var(--blk);border:none;border-radius:7px;padding:7px 12px;font-family:var(--fc);font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;white-space:nowrap;flex-shrink:0"><i class="ti ti-file-invoice" style="font-size:11px"></i> Invoice</button><i class="ti ti-chevron-down chev${isOpen?' op':''}"></i></div></div><div class="cdt${isOpen?' op':''}"><div style="border:1px solid var(--g2);border-radius:8px;overflow:hidden;margin-bottom:12px"><table><thead><tr style="background:var(--g1)"><th>Date</th><th>Plate</th><th>Type</th><th>Base</th><th>Discount</th><th>Cust. Paid</th></tr></thead><tbody>${sess.length===0?`<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--t3)">No usage this period.</td></tr>`:sess.sort((a,b)=>b.date-a.date).map(s=>`<tr><td style="font-family:var(--fc);font-size:12px;font-weight:700">${s.date.toLocaleDateString([],{month:'short',day:'numeric'})}</td><td class="pc" style="font-size:14px">${s.plate}</td><td style="color:var(--t2);font-size:12px">${s.type}${s.hours?` · ${s.hours}hr`:''}</td><td style="font-family:var(--fc);font-weight:700;font-size:13px">$${s.base.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:700;font-size:13px;color:#2563eb">−$${s.disc.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:700;font-size:13px;color:${s.paid===0?'#10b981':'var(--t1)'}">$${s.paid.toFixed(2)}</td></tr>`).join('')}</tbody><tfoot><tr><td colspan="3" style="font-family:var(--fc);font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.06em">Total</td><td style="font-family:var(--fc);font-weight:800">$${tb.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:800;color:#2563eb">−$${td.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:800">$${tp.toFixed(2)}</td></tr></tfoot></table></div><div class="bxb"><div class="bxt"><i class="ti ti-file-invoice" style="font-size:13px"></i>Invoice #${invNum} — ${rl}</div><div class="bxr"><span class="bl">Sessions</span><span class="bv">${sess.length}</span></div><div class="bxr"><span class="bl">Parking value</span><span class="bv">$${tb.toFixed(2)}</span></div><div class="bxr"><span class="bl">Customers paid</span><span class="bv">$${tp.toFixed(2)}</span></div><div class="bxr tot"><span class="bl">Invoice ${val.name}</span><span class="bv">$${td.toFixed(2)}</span></div></div></div></div>`;}
+function openInv(valId){const val=S.vals[valId],l=S.lots[val.lotId];const sess=vsessInR(S.biF,S.biT,'all').filter(s=>s.valId===valId);const td=sess.reduce((a,s)=>a+s.disc,0),tp=sess.reduce((a,s)=>a+s.paid,0),tb=sess.reduce((a,s)=>a+s.base,0);const rl=fmtRL(S.biF,S.biT);const invNum=`CPM-${S.biF.replace(/-/g,'').slice(0,6)}-${val.id.toUpperCase()}`;document.getElementById('ivt').textContent=`Invoice — ${val.name}`;document.getElementById('ivb').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;padding-bottom:16px;border-bottom:2px solid var(--g2)"><div><div style="font-family:var(--fc);font-size:22px;font-weight:900;text-transform:uppercase">City Park Management</div><div style="font-size:13px;color:var(--t3);margin-top:3px">Parking Validation Services · ${l?.name||''}</div></div><div style="text-align:right"><div style="font-family:var(--fc);font-size:11px;font-weight:700;text-transform:uppercase;color:var(--t3);margin-bottom:4px">Bill To</div><div style="font-size:14px;font-weight:600">${val.name}</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">${[['Invoice #',invNum],['Period',rl],['Discount',vtLabel(val)],['Lot',l?.name||'']].map(([lb,v])=>`<div style="background:var(--g1);border-radius:6px;padding:8px 12px"><div style="font-family:var(--fc);font-size:10px;font-weight:700;text-transform:uppercase;color:var(--t3);margin-bottom:2px">${lb}</div><div style="font-family:var(--fc);font-size:14px;font-weight:800">${v}</div></div>`).join('')}</div>${sess.length===0?`<div style="text-align:center;padding:20px;color:var(--t3);background:var(--g1);border-radius:8px;margin-bottom:16px">No usage. $0.00 due.</div>`:`<div style="border:1px solid var(--g2);border-radius:8px;overflow:hidden;margin-bottom:16px"><table><thead><tr style="background:var(--g1)"><th>Date</th><th>Plate</th><th>Type</th><th>Base</th><th>Discount</th><th>Cust. Paid</th></tr></thead><tbody>${sess.sort((a,b)=>a.date-b.date).map(s=>`<tr><td style="font-family:var(--fc);font-size:12px;font-weight:700">${s.date.toLocaleDateString([],{month:'short',day:'numeric'})}</td><td class="pc" style="font-size:14px">${s.plate}</td><td style="font-size:12px;color:var(--t2)">${s.type}${s.hours?` · ${s.hours}hr`:''}</td><td style="font-family:var(--fc);font-weight:700;font-size:13px">$${s.base.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:700;font-size:13px;color:#2563eb">−$${s.disc.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:700;font-size:13px;color:${s.paid===0?'#10b981':'var(--t1)'}">$${s.paid.toFixed(2)}</td></tr>`).join('')}</tbody><tfoot><tr style="background:var(--lime-bg)"><td colspan="3" style="font-family:var(--fc);font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.06em">Totals</td><td style="font-family:var(--fc);font-weight:800">$${tb.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:800;color:#2563eb">−$${td.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:800">$${tp.toFixed(2)}</td></tr></tfoot></table></div>`}<div style="background:var(--blk);border-radius:10px;padding:16px"><div style="font-family:var(--fc);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-bottom:10px"><i class="ti ti-receipt" style="font-size:13px;margin-right:5px"></i>Invoice Summary</div>${[['Sessions',sess.length],['Parking value','$'+tb.toFixed(2)],['Customers paid','$'+tp.toFixed(2)]].map(([lb,v])=>`<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:13px;border-bottom:1px solid #1e1e1e"><span style="color:#aaa">${lb}</span><span style="color:#fff;font-family:var(--fc);font-weight:700">${v}</span></div>`).join('')}<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0 0;border-top:1px solid #333;margin-top:6px"><span style="color:#fff;font-family:var(--fc);font-weight:900;font-size:14px;text-transform:uppercase">Amount Due from ${val.name}</span><span style="color:var(--gold);font-family:var(--fc);font-weight:900;font-size:26px">$${td.toFixed(2)}</span></div></div>`;document.getElementById('inv-modal').classList.add('show');}
+
+function rRevenue(){const lotIds=Object.keys(S.lots);const data=bDaily(S.rvF,S.rvT,S.rvL);const tp=data.reduce((a,d)=>a+d.pk,0),tf=data.reduce((a,d)=>a+d.fe,0),gt=tp+tf;const mx=Math.max(...data.map(d=>d.tot),1);const ln=S.rvL==='all'?'All Lots':(S.lots[S.rvL]?.name||'');const rl=fmtRL(S.rvF,S.rvT);return`<div><div class="fbar"><span class="flbl">Range:</span>${[{v:'7d',l:'7 Days'},{v:'14d',l:'14 Days'},{v:'30d',l:'30 Days'},{v:'month',l:'This Month'},{v:'custom',l:'Custom'}].map(p=>`<button class="pbtn${S.rvP===p.v?' on':''}" onclick="applyRvP('${p.v}')">${p.l}</button>`).join('')}<div class="fdiv"></div><input id="rv-from" type="date" class="din" value="${S.rvF}"><span style="color:var(--t3);font-size:12px">to</span><input id="rv-to" type="date" class="din" value="${S.rvT}"><button class="apb" onclick="const f=document.getElementById('rv-from')?.value,t=document.getElementById('rv-to')?.value;if(f)S.rvF=f;if(t)S.rvT=t;S.rvP='custom';render()">Apply</button><div class="fdiv"></div><span class="flbl">Lot:</span><button class="ltb${S.rvL==='all'?' on':''}" onclick="S.rvL='all';render()">All</button>${lotIds.map(id=>`<button class="ltb${S.rvL===id?' on':''}" onclick="S.rvL='${id}';render()">${S.lots[id].name}</button>`).join('')}</div><div class="rsc"><div class="rc tot"><div class="rcl">Total — ${ln}</div><div class="rcv">$${gt.toFixed(2)}</div><div class="rcs">${rl} · ${data.reduce((a,d)=>a+d.n,0)} transactions</div></div><div class="rc prk"><div class="rcl">Parking Charges</div><div class="rcv" style="color:#2563eb">$${tp.toFixed(2)}</div><div class="rcs">${gt>0?((tp/gt)*100).toFixed(1):0}% of total</div></div><div class="rc fee"><div class="rcl">Service Fees</div><div class="rcv">$${tf.toFixed(2)}</div><div class="rcs">${gt>0?((tf/gt)*100).toFixed(1):0}% of total</div></div></div><div class="rg2a"><div class="chartwrap"><div class="cwh2"><h3><i class="ti ti-chart-bar"></i>Daily Breakdown — ${ln}</h3></div><div class="cwb2"><div class="leg"><div class="lgi"><div class="lgd" style="background:#2563eb"></div>Parking</div><div class="lgi"><div class="lgd" style="background:#0d0d0d"></div>Fees</div></div><div class="bc">${data.map(d=>{const pw=Math.round((d.pk/mx)*200),fw=Math.round((d.fe/mx)*200);return`<div class="br"><div class="bda">${d.label}</div><div class="bt"><div class="bsw"><div class="bs pk" style="width:${Math.max(pw,2)}px"></div><div class="bla">$${d.pk.toFixed(0)}</div></div>${d.fe>0?`<div class="bsw"><div class="bs fe" style="width:${Math.max(fw,2)}px"></div><div class="bla" style="color:#555">$${d.fe.toFixed(2)}</div></div>`:''}</div><div class="bto">$${d.tot.toFixed(0)}</div></div>`;}).join('')}</div></div></div><div class="pn"><div class="ph"><h3><i class="ti ti-table"></i>Daily Summary — ${ln}</h3></div><div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Txns</th><th>Parking</th><th>Fees</th><th>Total</th></tr></thead><tbody>${[...data].reverse().map(d=>`<tr><td style="font-family:var(--fc);font-size:13px;font-weight:700">${d.label}</td><td style="color:var(--t3)">${d.n}</td><td style="font-family:var(--fc);font-weight:700;font-size:13px;color:#2563eb">$${d.pk.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:700;font-size:13px">$${d.fe.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:700;font-size:14px">$${d.tot.toFixed(2)}</td></tr>`).join('')}<tr style="background:var(--lime-bg)"><td style="font-family:var(--fc);font-weight:800;font-size:13px">TOTAL</td><td style="font-family:var(--fc);font-weight:800">${data.reduce((a,d)=>a+d.n,0)}</td><td style="font-family:var(--fc);font-weight:800;font-size:13px;color:#2563eb">$${tp.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:800;font-size:13px">$${tf.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:800;font-size:15px">$${gt.toFixed(2)}</td></tr></tbody></table></div></div></div></div>`;}
+function applyRvP(p){if(p==='7d'){S.rvF=toDS(new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()-6));S.rvT=toDS(NOW);}else if(p==='14d'){S.rvF=toDS(new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()-13));S.rvT=toDS(NOW);}else if(p==='30d'){S.rvF=toDS(new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()-29));S.rvT=toDS(NOW);}else if(p==='month'){S.rvF=toDS(new Date(NOW.getFullYear(),NOW.getMonth(),1));S.rvT=toDS(NOW);}S.rvP=p;render();}
+
+function rSms(){return`<div style="display:flex;flex-direction:column;gap:16px">
+  <div class="pn"><div class="ph"><h3><i class="ti ti-message-circle"></i>Expiry SMS Template</h3></div><div class="pb"><p style="font-size:13px;color:var(--t2);margin-bottom:12px;line-height:1.6">Sent 20 minutes before a session expires. Use <strong>{PLATE}</strong>, <strong>{LOT}</strong>, <strong>{ZONE}</strong>, <strong>{SESSION_ID}</strong>.</p><div class="fg"><label class="fl">SMS message</label><textarea class="fta" id="sms-tmpl">${escH(S.smsTmpl)}</textarea><div style="font-size:11px;color:var(--t3);margin-top:4px" id="smscnt">${S.smsTmpl.length} characters</div></div><div class="fg"><label class="fl">Live preview</label><div style="background:var(--g1);border-radius:8px;padding:12px;font-size:13px;color:var(--t2);line-height:1.6;border:1.5px solid var(--g2)" id="smsprev">${bSms('ABC 1234',Object.values(S.lots)[0],'CPM-4921')}</div></div><button class="svb" onclick="const v=document.getElementById('sms-tmpl')?.value||'';S.smsTmpl=v;const t=document.getElementById('smssave');if(t){t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}">✓ Save SMS template</button><div class="stt" id="smssave">✓ Saved!</div></div></div>
+  <div class="pn"><div class="ph"><h3><i class="ti ti-mail"></i>Pass Invite Email Template</h3><button class="ab blue-btn" onclick="S.tab='passes';render();setTimeout(openPassModal,100)"><i class="ti ti-send" style="font-size:11px;margin-right:4px"></i>Send an invite</button></div><div class="pb">
+    <p style="font-size:13px;color:var(--t2);margin-bottom:12px;line-height:1.6">Default message used when inviting someone to purchase a monthly pass.</p>
+    <div class="ph-tags" style="margin-bottom:14px">${['{FIRST_NAME}','{LOT_NAME}','{ZONE}','{MONTHLY_RATE}','{SIGNUP_LINK}'].map(ph=>`<span class="ph-tag" onclick="insertPH2('settings-body','${ph}')">${ph}</span>`).join('')}</div>
+    <div class="fg"><label class="fl">Subject line</label><input class="fi" id="settings-subj" value="${escH(S.inviteSubject)}" oninput="refreshSP()"></div>
+    <div class="fg"><label class="fl">Message body</label><textarea class="fta" id="settings-body" rows="12" style="min-height:260px;font-family:var(--fc);font-size:13px;line-height:1.7" oninput="refreshSP()">${escH(S.inviteTmpl)}</textarea><div style="font-size:11px;color:var(--t3);margin-top:4px" id="inv-cnt">${S.inviteTmpl.length} characters</div></div>
+    <div class="fg"><label class="fl">Live preview</label><div id="settings-prev">${buildEP('James Thornton','james@example.com',Object.values(S.lots).find(l=>l.rates.monthly)||Object.values(S.lots)[0],S.inviteTmpl,S.inviteSubject)}</div></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="svb" style="flex:1;margin-top:0" onclick="S.inviteTmpl=document.getElementById('settings-body')?.value||S.inviteTmpl;S.inviteSubject=document.getElementById('settings-subj')?.value||S.inviteSubject;const t=document.getElementById('inv-save');if(t){t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}">✓ Save email template</button><button onclick="const b=document.getElementById('settings-body'),s=document.getElementById('settings-subj');if(b)b.value=DEFAULT_INVITE_TMPL;if(s)s.value='Your City Park monthly parking pass invitation';refreshSP();" style="flex:0 0 auto;background:transparent;border:1.5px solid var(--g2);border-radius:9px;padding:11px 18px;font-family:var(--fc);font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3);cursor:pointer;margin-top:0"><i class="ti ti-refresh" style="font-size:12px;margin-right:4px"></i>Reset</button></div>
+    <div class="stt" id="inv-save">✓ Template saved!</div>
+  </div></div>
+  <div class="pn"><div class="ph"><h3><i class="ti ti-history"></i>SMS Log</h3></div><div class="pb">${S.smsLog.length===0?`<div style="text-align:center;padding:24px;color:var(--t3)">No alerts yet</div>`:''}<table><thead><tr><th>Time</th><th>Plate</th><th>Lot</th><th>Type</th></tr></thead><tbody>${S.smsLog.map(e=>`<tr><td style="font-family:var(--fc);font-size:12px;color:var(--t3)">${e.time}</td><td class="pc" style="font-size:14px">${e.plate}</td><td style="font-size:12px;color:var(--t2)">${e.lot}</td><td style="font-size:11px;color:var(--t3)">${e.msg}</td></tr>`).join('')}</tbody></table></div></div>
+</div>`;}
+function insertPH2(id,ph){const el=document.getElementById(id);if(!el)return;const s=el.selectionStart,e=el.selectionEnd;el.value=el.value.slice(0,s)+ph+el.value.slice(e);el.selectionStart=el.selectionEnd=s+ph.length;el.focus();refreshSP();}
+function refreshSP(){const b=document.getElementById('settings-body')?.value||S.inviteTmpl;const s=document.getElementById('settings-subj')?.value||S.inviteSubject;const l=Object.values(S.lots).find(x=>x.rates.monthly)||Object.values(S.lots)[0];const prev=document.getElementById('settings-prev');if(prev)prev.innerHTML=buildEP('James Thornton','james@example.com',l,b,s);const cnt=document.getElementById('inv-cnt');if(cnt)cnt.textContent=b.length+' characters';}
+
+function rUsers(){const mgrs=S.users.filter(u=>u.role==='manager');const emps=S.users.filter(u=>u.role==='employee');return`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div class="pn"><div class="ph"><h3><i class="ti ti-shield-check"></i>Managers</h3><button class="ab" style="border-color:#888;color:#aaa" onclick="openUM(null,'manager')"><i class="ti ti-plus" style="font-size:11px;margin-right:3px"></i>Add</button></div><div class="pb">${mgrs.map(u=>rUC(u)).join('')}</div></div><div class="pn"><div class="ph"><h3><i class="ti ti-user"></i>Employees</h3><button class="ab" style="border-color:#888;color:#aaa" onclick="openUM(null,'employee')"><i class="ti ti-plus" style="font-size:11px;margin-right:3px"></i>Add</button></div><div class="pb">${emps.length===0?`<div style="text-align:center;padding:20px;color:var(--t3);font-size:13px">No employees yet</div>`:''}${emps.map(u=>rUC(u)).join('')}<div style="margin-top:10px;padding:10px 12px;background:var(--lime-bg);border:1px solid var(--lime);border-radius:8px;font-size:12px;color:var(--t2)"><i class="ti ti-info-circle" style="font-size:13px;margin-right:4px;color:var(--lime-dark)"></i>Employees can view sessions and search plates only.</div></div></div></div>`;}
+function rUC(u){const isSelf=u.id===S.cu?.id;const ini=u.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();const mgr=u.role==='manager';return`<div class="ucrd"><div class="ui"><div class="uav ${mgr?'av-m':'av-e'}">${ini}</div><div class="ud"><h4>${u.name}${isSelf?' <span style="font-size:10px;color:var(--t3);font-weight:400">(you)</span>':''}</h4><p>@${u.username} · <span class="rb ${mgr?'rb-m':'rb-e'}">${u.role}</span> · ${u.active?'Active':'Inactive'}</p></div></div><div class="ua"><button class="ab" onclick="openUM('${u.id}')"><i class="ti ti-pencil" style="font-size:11px"></i></button>${!isSelf?`<button class="ab danger" onclick="if(confirm('Delete?')){S.users=S.users.filter(x=>x.id!=='${u.id}');render()}"><i class="ti ti-trash" style="font-size:11px"></i></button>`:''}</div></div>`;}
+function openUM(userId,defaultRole){S.eUsr=userId;const u=userId?S.users.find(x=>x.id===userId):null;document.getElementById('umt').textContent=userId?`Edit — ${u.name}`:defaultRole==='manager'?'Add Manager':'Add Employee';document.getElementById('umb').innerHTML=`<div class="fg"><label class="fl">Full name</label><input class="fi" id="um-name" value="${u?escH(u.name):''}" placeholder="e.g. Jane Smith"></div><div class="fg"><label class="fl">Username</label><input class="fi" id="um-user" value="${u?u.username:''}" placeholder="e.g. jsmith" style="font-family:var(--fc);font-size:16px;font-weight:700;letter-spacing:.04em"></div><div class="fg"><label class="fl">${u?'New password (blank = keep)':'Password'}</label><input class="fi" id="um-pass" type="text" placeholder="Enter password"></div><div class="fg"><label class="fl">Role</label><select class="fse" id="um-role"><option value="manager"${(u?.role||defaultRole)==='manager'?' selected':''}>Manager — full access</option><option value="employee"${(u?.role||defaultRole)==='employee'?' selected':''}>Employee — view only</option></select></div><div class="fg" style="display:flex;align-items:center;justify-content:space-between"><div><label class="fl" style="margin:0">Active</label><div style="font-size:11px;color:var(--t3);margin-top:2px">Inactive users cannot log in</div></div><label class="tg"><input type="checkbox" id="um-active"${u?u.active?' checked':'':' checked'}><span class="tgs"></span></label></div>`;document.getElementById('usr-modal').classList.add('show');}
+function saveUser(){const name=document.getElementById('um-name').value.trim(),username=document.getElementById('um-user').value.trim(),pass=document.getElementById('um-pass').value.trim(),role=document.getElementById('um-role').value,active=document.getElementById('um-active').checked;if(!name||!username){alert('Name and username required.');return;}if(!S.eUsr&&!pass){alert('Password required.');return;}if(S.eUsr){const u=S.users.find(x=>x.id===S.eUsr);Object.assign(u,{name,username,role,active});if(pass)u.password=pass;}else{if(S.users.find(u=>u.username===username)){alert('Username taken.');return;}S.users.push({id:'u'+Date.now(),name,username,password:pass,role,active});}closeM('usr-modal');render();}
+
+function attachEv(){
+  const ls=document.getElementById('lot-sel');if(ls)ls.addEventListener('change',e=>{S.lotId=e.target.value;S.val=null;render();});
+  const vs=document.getElementById('veh-sel');if(vs)vs.addEventListener('change',e=>S.vehicle=e.target.value);
+  const pi=document.getElementById('phone-inp');if(pi)pi.addEventListener('input',e=>S.phone=e.target.value);
+  const ti=document.getElementById('sms-tmpl');if(ti){ti.addEventListener('input',()=>{S.smsTmpl=ti.value;const prev=document.getElementById('smsprev'),cnt=document.getElementById('smscnt');if(prev)prev.textContent=bSms('ABC 1234',Object.values(S.lots)[0],'CPM-4921');if(cnt)cnt.textContent=ti.value.length+' characters';});}
+}
+let timerInt=null,adminInt=null;
+function startTimer(){if(timerInt)clearInterval(timerInt);timerInt=setInterval(()=>{const el=document.getElementById('cdown');if(!el){clearInterval(timerInt);return;}if(S.payData)el.textContent=fmtT(remMs(S.payData));},15000);}
+function startAdminTimer(){if(adminInt)clearInterval(adminInt);adminInt=setInterval(()=>{S.sess.forEach(s=>{if(!s.smsSent&&s.phone&&gSt(s)==='expiring'){s.smsSent=true;const t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),l=S.lots[s.lotId]||{name:'?',zone:''};S.smsLog.unshift({time:t,plate:s.plate,lot:l.name,msg:'Auto 20 min warning'});document.getElementById('sab').innerHTML=`To <strong>${s.phone}</strong>:<br>"${bSms(s.plate,l,s.id)}"`;document.getElementById('smsalert').classList.add('show');setTimeout(()=>document.getElementById('smsalert').classList.remove('show'),6000);}});},30000);}
+
+render();
+</script>
 </body>
 </html>
