@@ -459,11 +459,7 @@ const S={
   inviteSubject:'Your City Park monthly parking pass invitation',
   smsLog:[{time:'10:42 AM',plate:'ABC 1234',lot:'Downtown Lot A',msg:'Auto 20 min warning'}],   receiptTmpl:'City Park Management: Receipt for {PLATE} at {LOT} (Zone {ZONE}). Duration: {DURATION}. Amount paid: {AMOUNT}. Thank you for parking with us!',
   passFilter:'all',passSearch:'',cancelingPassId:null,
-  users:[
-    {id:'u1',username:'manager',password:'manager123',role:'manager',name:'Site Manager',active:true},
-    {id:'u2',username:'emp1',password:'emp123',role:'employee',name:'John D.',active:true},
-    {id:'u3',username:'emp2',password:'emp456',role:'employee',name:'Maria S.',active:true},
-  ],
+users:[],
   lots:{
     lot1:{id:'lot1',name:'Downtown Lot A',zone:'2987',address:'123 Main St',open:true,
       rates:{hourly:true,event:true,monthly:true},monthlyselfsrv:true,
