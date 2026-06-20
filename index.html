@@ -484,39 +484,7 @@ const S={
   sess:[],vsess:[],passes:[],
 };
 
-(function(){
-  const ppl=[
-    {name:'James Thornton',email:'j.thornton@example.com',lotId:'lot1',started:new Date(NOW.getFullYear(),NOW.getMonth()-4,12),status:'active'},
-    {name:'Priya Nair',email:'priya.nair@lawoffices.com',lotId:'lot1',started:new Date(NOW.getFullYear(),NOW.getMonth()-7,3),status:'active'},
-    {name:'Carlos Mendez',email:'cmendez@designco.com',lotId:'lot2',started:new Date(NOW.getFullYear(),NOW.getMonth()-2,18),status:'active'},
-    {name:'Sandra Wu',email:'sandra.wu@finance.io',lotId:'lot1',started:new Date(NOW.getFullYear(),NOW.getMonth()-11,5),status:'active'},
-    {name:'Tom Reeves',email:'t.reeves@gmail.com',lotId:'lot2',started:new Date(NOW.getFullYear(),NOW.getMonth()-1,22),status:'active'},
-    {name:'Aisha Okafor',email:'aisha@okafor.net',lotId:'lot1',started:new Date(NOW.getFullYear(),NOW.getMonth()-5,9),status:'canceled',canceledOn:new Date(NOW.getFullYear(),NOW.getMonth()-1,14)},
-    {name:'Megan Fischer',email:'mfischer@example.com',lotId:'lot2',started:NOW,status:'pending'},
-    {name:'Kevin Park',email:'kevin.park@startup.co',lotId:'lot1',started:NOW,status:'pending'},
-  ];
-  let id=1000;
-  ppl.forEach(p=>{
-    const lot=S.lots[p.lotId];const mo=lot.pricing.monthly;
-    const bm=p.status==='active'?Math.ceil((NOW-p.started)/(30*86400000)):0;
-    const nb=p.status==='active'?addMonths(p.started,(bm+1)||1):null;
-    S.passes.push({id:'MP-'+id++,name:p.name,email:p.email,lotId:p.lotId,status:p.status,startDate:p.started,nextBillDate:nb,canceledOn:p.canceledOn||null,monthlyAmount:mo,totalBilled:p.status==='canceled'?mo*Math.ceil((p.canceledOn-p.started)/(30*86400000)):p.status==='active'?mo*bm:0,inviteToken:'tok_'+Math.random().toString(36).slice(2,10)});
-  });
-})();
-(function(){
-  const T=[{r:'hourly',t:'Hourly',d:2,b:7,f:0.25,l:'lot1'},{r:'event',t:'Event Parking',d:24,b:18,f:0.50,l:'lot1'},{r:'hourly',t:'Hourly',d:3,b:15,f:0.75,l:'lot2'},{r:'event',t:'Event Parking',d:24,b:28,f:1.00,l:'lot2'},{r:'monthly',t:'Monthly',d:720,b:120,f:0,l:'lot1'}];
-  const P=['ABC 1234','XYZ 9876','DEF 5555','GHI 3311','JKL 7722','MNO 4456','PQR 8823','STU 1199'];
-  let id=4800;
-  for(let d=29;d>=0;d--){for(let t=0;t<(3+Math.floor(Math.random()*5));t++){const tp=T[Math.floor(Math.random()*T.length)];S.sess.push({id:`CPM-${id++}`,plate:P[Math.floor(Math.random()*P.length)],type:tp.t,rate:tp.r,start:Date.now()-d*86400000-Math.random()*10*3600000,duration:tp.d,paid:+(tp.b+tp.f).toFixed(2),pkch:tp.b,sfee:tp.f,phone:'',smsSent:false,lotId:tp.l,valId:null});}}
-  S.sess.push({id:'CPM-4921',plate:'ABC 1234',type:'Hourly',start:Date.now()-3600000*1.5,duration:2,paid:7.25,pkch:7,sfee:0.25,phone:'813-555-0111',smsSent:false,lotId:'lot1',valId:null});
-  S.sess.push({id:'CPM-4922',plate:'XYZ 9876',type:'Event Parking',start:Date.now()-3600000*2,duration:24,paid:0,pkch:0,sfee:0,phone:'',smsSent:false,lotId:'lot1',valId:'val1'});
-  S.sess.push({id:'CPM-4923',plate:'GHI 3311',type:'Hourly',start:Date.now()-3600000*0.5,duration:3,paid:7.75,pkch:7.5,sfee:0.75,phone:'',smsSent:false,lotId:'lot2',valId:'val3'});
-})();
-(function(){
-  const P=['ABC 1234','XYZ 9876','DEF 5555','GHI 3311','JKL 7722','MNO 4456','PQR 8823','STU 1199','VWX 3344','YZA 5566'];
-  let id=5000;
-  Object.values(S.vals).forEach(val=>{for(let m=5;m>=0;m--){const md=new Date(NOW.getFullYear(),NOW.getMonth()-m,1);const dim=new Date(md.getFullYear(),md.getMonth()+1,0).getDate();const bc=val.active?(5+Math.floor(Math.abs(Math.sin(id+m)*10))):Math.floor(Math.random()*2);for(let s=0;s<bc;s++){const day=1+Math.floor(Math.random()*(dim-1));const sd=new Date(md.getFullYear(),md.getMonth(),day,8+Math.floor(Math.random()*10));const rk=Math.random()<0.6?'hourly':'event';const hrs=rk==='hourly'?1+Math.floor(Math.random()*3):null;const ba=+(rk==='hourly'?3.5*(hrs||1):18).toFixed(2);let disc=0,fp=ba;if(val.type==='free'){disc=ba;fp=0;}else if(val.type==='percent'){disc=+(ba*(val.discountPct/100)).toFixed(2);fp=+(ba-disc).toFixed(2);}else{disc=Math.min(val.discountAmt,ba);fp=+(ba-disc).toFixed(2);}S.vsess.push({id:`VS-${id++}`,plate:P[Math.floor(Math.random()*P.length)],date:sd,lotId:val.lotId,valId:val.id,type:rk==='hourly'?'Hourly':'Event Parking',base:ba,disc:+disc.toFixed(2),paid:fp,hours:hrs});}}});
-})();
+
 
 function isMgr(){return S.cu?.role==='manager'}
 function lot(){return S.lots[S.lotId]}
