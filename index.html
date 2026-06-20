@@ -575,7 +575,7 @@ function renderPay(){
           ${parseFloat(disc)>0?`<div class="psr dr"><span class="pl"><i class="ti ti-discount" style="font-size:11px;margin-right:3px"></i>${discLabel}</span><span class="pv">−$${disc}</span></div>`:''}
           <div class="psr tot"><span class="pl">Total due</span><span class="pv${isFree?' free':''}">${isFree?'FREE':'$'+total}</span></div>
         </div>
-        <button class="paybtn${isFree?' free':''}" onclick="handlePay()" ${!S.plate.trim()?'disabled':''}>${isFree?'<i class="ti ti-gift"></i> Claim Free Parking':'<i class="ti ti-credit-card"></i> Pay $'+total}</button>
+        <button class="paybtn${isFree?' free':''}" onclick="handlePay()" ${!S.plate.trim()||!S.phone.trim()?'disabled':''}>${isFree?'<i class="ti ti-gift"></i> Claim Free Parking':'<i class="ti ti-credit-card"></i> Pay $'+total}</button>
       </div>
     </div>
     ${l.rates.monthly&&!l.monthlyselfsrv?`<div class="monthly-invite-notice"><i class="ti ti-id-badge"></i><div><h4>Monthly passes available</h4><p>Monthly parking at ${l.name} is by invitation only. Contact the parking office to request a pass.</p></div></div>`:''}
