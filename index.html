@@ -428,7 +428,7 @@ const NOW=new Date();NOW.setHours(0,0,0,0);
 function toDS(d){return d.toISOString().slice(0,10)}
 function fromDS(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)}
 function addMonths(d,n){const r=new Date(d);r.setMonth(r.getMonth()+n);return r}
-function fmtDate(d){return d.toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'})}
+function fmtDate(d){if(!d)return'—';try{return new Date(d).toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'})}catch(e){return'—'}}
 function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 
 const DEFAULT_INVITE_TMPL=`Hi {FIRST_NAME},
