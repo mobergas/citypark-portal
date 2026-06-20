@@ -582,7 +582,8 @@ function renderPay(){
     <div style="text-align:center;font-size:11px;color:var(--t3);padding-bottom:16px;margin-top:8px"><i class="ti ti-lock" style="font-size:11px;margin-right:4px"></i>Secured payment · City Park Management</div>
   </div>`;
 }
-function applyCode(){
+function updatePayBtn(){const btn=document.querySelector('.paybtn');if(!btn)return;const ready=S.plate.trim()&&S.phone.trim();btn.disabled=!ready;}
+  function applyCode(){
   const code=(document.getElementById('vcode-inp')?.value||'').toUpperCase().trim();
   const l=lot();
   const v=Object.values(S.vals).find(x=>x.code===code&&x.lotId===l.id&&x.active);
