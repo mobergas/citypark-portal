@@ -537,6 +537,7 @@ function render(){
   attachEv();
   if(S.v==='pay'&&S.cstep===2)startTimer();
   if(S.v==='admin')startAdminTimer();
+  if(S.v==='pay'&&S.cstep===1)updatePayBtn();
 }
 
 function renderPay(){
