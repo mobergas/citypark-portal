@@ -18,12 +18,14 @@ async function db(table,method='GET',body=null,filters=''){
 }
 
 async function loadFromDB(){
-  const [lots,vals,passes,sess]=await Promise.all([
+  const [lots,vals,passes,sess,users]=await Promise.all([
     db('lots','GET',null,'?select=*'),
     db('validations','GET',null,'?select=*'),
     db('passes','GET',null,'?select=*&order=created_at.desc'),
     db('sessions','GET',null,'?select=*&order=created_at.desc&limit=200'),
+  db('users','GET',null,'?select=*'),
   ]);
+  if(users){S.users=users.map(u=>({id:u.id,name:u.name,username:u.username,password:u.password,role:u.role,active:u.active}));}
   if(lots){
     S.lots={};
     lots.forEach(l=>{
