@@ -1,3 +1,7 @@
+let AUTH_TOKEN = null;
+function setAuthToken(token){ AUTH_TOKEN = token; }
+function getAuthToken(){ return AUTH_TOKEN; }
+
 const SUPA_URL='https://sldahhdbvcxdlqdhmsjd.supabase.co';
 const SUPA_KEY='sb_publishable_ZGELlV5vw7QFvva8_8NGcA_pQplXd46';
 
