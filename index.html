@@ -630,6 +630,16 @@ function renderLogin(){return`<div class="lw"><div class="lc"><div class="lh"><d
 async function doLogin(){
   const email = document.getElementById('lu').value.trim();
   const password = document.getElementById('lp').value;
+}
+  
+async function signOut(){
+  const token = getAuthToken();
+  if(token) await supabaseSignOut(token);
+  setAuthToken(null);
+  S.cu = null;
+  S.v = 'pay';
+  render();
+}
 
   const authData = await supabaseLogin(email, password);
 
