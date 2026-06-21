@@ -516,7 +516,7 @@ function genValQR(valId,sm){const seed=valId.split('').reduce((a,c)=>a+c.charCod
 function renderTopbar(){
   const tb=document.getElementById('tr');
   const ai=document.getElementById('admin-icon');
-  if(S.cu&&S.v==='admin'){const ini=S.cu.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();const mgr=isMgr();tb.innerHTML=`<div class="as"><div class="av ${mgr?'av-m':'av-e'}">${ini}</div><div><div class="an">${S.cu.name}</div><span class="rb ${mgr?'rb-m':'rb-e'}">${mgr?'Manager':'Employee'}</span></div><button class="lo-btn" onclick="S.cu=null;S.v='pay';render()"><i class="ti ti-logout" style="font-size:12px"></i>Sign out</button></div>`;}
+  if(S.cu&&S.v==='admin'){const ini=S.cu.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();const mgr=isMgr();tb.innerHTML=`<div class="as"><div class="av ${mgr?'av-m':'av-e'}">${ini}</div><div><div class="an">${S.cu.name}</div><span class="rb ${mgr?'rb-m':'rb-e'}">${mgr?'Manager':'Employee'}</span></div><button class="lo-btn" onclick="signOut()"><i class="ti ti-logout" style="font-size:12px"></i>Sign out</button></div>`;}
   else tb.innerHTML='';
   if(ai){ai.className=S.cu?'ti ti-layout-dashboard':'ti ti-lock';ai.style.fontSize='13px';}
   document.getElementById('ntab-pay').classList.toggle('on',S.v==='pay'||S.v==='extend');
