@@ -140,3 +140,37 @@ async function saveUserDB(user){
 async function deleteUserDB(id){
   return db('users','DELETE',null,`?id=eq.${id}`);
 }
+async function supabaseLogin(email, password){
+  const res = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPA_KEY
+    },
+    body: JSON.stringify({ email, password })
+  });
+  if(!res.ok) return null;
+  return res.json(); // returns { access_token, user, ... }
+}
+
+async function supabaseSignOut(accessToken){
+  await fetch(`${SUPA_URL}/auth/v1/logout`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + accessToken
+    }
+  });
+}
+
+async function getProfile(userId, accessToken){
+  const res = await fetch(`${SUPA_URL}/rest/v1/profiles?id=eq.${userId}&select=*`, {
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + accessToken
+    }
+  });
+  if(!res.ok) return null;
+  const data = await res.json();
+  return data && data.length > 0 ? data[0] : null;
+}
