@@ -668,9 +668,6 @@ async function signOut(){
   render();
 }
 
-  setAuthToken(authData.access_token);
-
-}
 function renderAdmin(){
   const today=S.sess.filter(s=>{const d=new Date();d.setHours(0,0,0,0);return s.start>=d});
   const todayRev=today.reduce((a,s)=>a+s.paid,0);
