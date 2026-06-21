@@ -630,16 +630,6 @@ function renderLogin(){return`<div class="lw"><div class="lc"><div class="lh"><d
 async function doLogin(){
   const email = document.getElementById('lu').value.trim();
   const password = document.getElementById('lp').value;
-}
-  
-async function signOut(){
-  const token = getAuthToken();
-  if(token) await supabaseSignOut(token);
-  setAuthToken(null);
-  S.cu = null;
-  S.v = 'pay';
-  render();
-}
 
   const authData = await supabaseLogin(email, password);
 
@@ -667,6 +657,19 @@ async function signOut(){
   S.tab = 'sessions';
   S.v = 'admin';
   render();
+}
+
+async function signOut(){
+  const token = getAuthToken();
+  if(token) await supabaseSignOut(token);
+  setAuthToken(null);
+  S.cu = null;
+  S.v = 'pay';
+  render();
+}
+
+  setAuthToken(authData.access_token);
+
 }
 function renderAdmin(){
   const today=S.sess.filter(s=>{const d=new Date();d.setHours(0,0,0,0);return s.start>=d});
