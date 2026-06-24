@@ -202,12 +202,15 @@ async function sendEmail(to, subject, html){
 }
 
 async function supabaseGetSession(){
+  const token = getAuthToken();
+  if(!token) return null;
   const res = await fetch(`${SUPA_URL}/auth/v1/user`, {
     headers: {
       'apikey': SUPA_KEY,
-      'Authorization': 'Bearer ' + (AUTH_TOKEN || '')
+      'Authorization': 'Bearer ' + token
     }
   });
-  if(!res.ok) return null;
-  return res.json();
+  if(!res.ok){ setAuthToken(null); return null; }
+  const user = await res.json();
+  return { access_token: token, user };
 }
