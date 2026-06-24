@@ -176,3 +176,27 @@ async function getProfile(userId, accessToken){
   const data = await res.json();
   return data && data.length > 0 ? data[0] : null;
 }
+
+async function sendSMS(to, message){
+  const res = await fetch(`${SUPA_URL}/functions/v1/send-sms`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + (getAuthToken() || SUPA_KEY),
+    },
+    body: JSON.stringify({ to, message })
+  });
+  return res.json();
+}
+
+async function sendEmail(to, subject, html){
+  const res = await fetch(`${SUPA_URL}/functions/v1/send-email`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + (getAuthToken() || SUPA_KEY),
+    },
+    body: JSON.stringify({ to, subject, html })
+  });
+  return res.json();
+}
