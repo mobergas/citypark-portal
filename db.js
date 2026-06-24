@@ -200,3 +200,14 @@ async function sendEmail(to, subject, html){
   });
   return res.json();
 }
+
+async function supabaseGetSession(){
+  const res = await fetch(`${SUPA_URL}/auth/v1/user`, {
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + (AUTH_TOKEN || '')
+    }
+  });
+  if(!res.ok) return null;
+  return res.json();
+}
