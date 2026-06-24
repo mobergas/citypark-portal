@@ -810,7 +810,6 @@ async function init(){
   
   const sessionRes = await supabaseGetSession();
   if(sessionRes && sessionRes.access_token){
-    setAuthToken(sessionRes.access_token);
     const profile = await getProfile(sessionRes.user.id, sessionRes.access_token);
     if(profile && profile.active){
       S.cu = { id: sessionRes.user.id, name: profile.name, role: profile.role };
