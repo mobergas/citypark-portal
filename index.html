@@ -807,6 +807,18 @@ function bReceipt(s,l){const dur=s.rate==='hourly'?s.duration+'hr':s.rate==='eve
 async function init(){
   const mc=document.getElementById('mc');
   mc.innerHTML='<div style="text-align:center;padding:60px;color:var(--t3);font-family:var(--fc);font-size:16px;font-weight:700;letter-spacing:.06em;text-transform:uppercase"><i class="ti ti-loader" style="font-size:28px;display:block;margin-bottom:12px;color:var(--lime)"></i>Loading...</div>';
+  
+  const sessionRes = await supabaseGetSession();
+  if(sessionRes && sessionRes.access_token){
+    setAuthToken(sessionRes.access_token);
+    const profile = await getProfile(sessionRes.user.id, sessionRes.access_token);
+    if(profile && profile.active){
+      S.cu = { id: sessionRes.user.id, name: profile.name, role: profile.role };
+      S.v = 'admin';
+      S.tab = 'sessions';
+    }
+  }
+
   await loadFromDB();
   render();
 }
