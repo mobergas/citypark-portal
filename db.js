@@ -1,5 +1,5 @@
-let AUTH_TOKEN = null;
-function setAuthToken(token){ AUTH_TOKEN = token; }
+let AUTH_TOKEN = localStorage.getItem('cpm_token') || null;
+function setAuthToken(token){ AUTH_TOKEN = token; if(token) localStorage.setItem('cpm_token', token); else localStorage.removeItem('cpm_token'); }
 function getAuthToken(){ return AUTH_TOKEN; }
 
 const SUPA_URL='https://sldahhdbvcxdlqdhmsjd.supabase.co';
