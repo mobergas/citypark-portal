@@ -830,7 +830,20 @@ async function init(){
     }
   }
 
-  await loadFromDB();
+await loadFromDB();
+  
+  const params = new URLSearchParams(window.location.search);
+  const lotParam = params.get('lot');
+  const codeParam = params.get('code');
+  if(lotParam && S.lots[lotParam]){
+    S.lotId = lotParam;
+    S.v = 'pay';
+  }
+  if(codeParam){
+    const v = Object.values(S.vals).find(x=>x.code===codeParam.toUpperCase()&&x.active);
+    if(v) S.val = v;
+  }
+  
   render();
 }
 init();
