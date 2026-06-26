@@ -82,7 +82,7 @@ async function saveSession(sess){
     start_time:sess.start,duration:sess.duration,paid:sess.paid,
     pkch:sess.pkch,sfee:sess.sfee,vehicle:sess.vehicle,phone:sess.phone,
     sms_sent:sess.smsSent,receipt_sent:sess.receiptSent||false,
-    lot_id:sess.lotId,val_id:sess.valId||null
+    email:sess.email||'',lot_id:sess.lotId,val_id:sess.valId||null
   });
 }
 
