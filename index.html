@@ -450,7 +450,7 @@ This invite is personal to you and expires in 7 days. Questions? Reply to this e
 const S={
   v:'pay',
   cstep:1,lotId:'lot1',rate:'hourly',hours:3,plate:'',phone:'',vehicle:'car',
-  val:null,codeErr:false,payData:null,tic:Date.now(),extId:null,extHrs:1,extDone:false,
+  val:null,codeErr:false,payData:null,tic:Date.now()+Math.floor(Math.random()*1000),extId:null,extHrs:1,extDone:false,
   cu:null,loginErr:false,showPw:false,tab:'sessions',sfLot:'all',
   eLot:null,eVal:null,eUsr:null,newVT:'free',openC:{},
   rvP:'7d',rvF:toDS(new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()-6)),rvT:toDS(NOW),rvL:'all',
