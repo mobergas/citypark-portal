@@ -214,3 +214,21 @@ async function supabaseGetSession(){
   const user = await res.json();
   return { access_token: token, user };
 }
+
+function saveTemplatesToLocal(){
+  localStorage.setItem('cpm_sms_tmpl', S.smsTmpl);
+  localStorage.setItem('cpm_receipt_tmpl', S.receiptTmpl);
+  localStorage.setItem('cpm_invite_tmpl', S.inviteTmpl);
+  localStorage.setItem('cpm_invite_subj', S.inviteSubject);
+}
+
+function loadTemplatesFromLocal(){
+  const sms = localStorage.getItem('cpm_sms_tmpl');
+  const receipt = localStorage.getItem('cpm_receipt_tmpl');
+  const invite = localStorage.getItem('cpm_invite_tmpl');
+  const subj = localStorage.getItem('cpm_invite_subj');
+  if(sms) S.smsTmpl = sms;
+  if(receipt) S.receiptTmpl = receipt;
+  if(invite) S.inviteTmpl = invite;
+  if(subj) S.inviteSubject = subj;
+}
