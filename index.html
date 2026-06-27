@@ -597,7 +597,7 @@ async function handlePay(){
   const l=lot(),{total,base,fee}=getTotal();
   const dur=S.rate==='hourly'?S.hours:S.rate==='event'?24:720;
   const type=S.rate==='hourly'?'Hourly':S.rate==='event'?'Event Parking':'Monthly';
-  const sess={id:'CPM-'+S.tic++,plate:S.plate.trim(),type,start:Date.now(),duration:dur,rate:S.rate,paid:+total,pkch:+base,sfee:+fee,vehicle:S.vehicle,phone:S.phone,email:S.email||'',smsSent:false,lotId:S.lotId,valId:S.val?S.val.id:null};
+  const emailVal=document.getElementById('email-inp')?.value||S.email||''; const sess={id:'CPM-'+S.tic++,plate:S.plate.trim(),type,start:Date.now(),duration:dur,rate:S.rate,paid:+total,pkch:+base,sfee:+fee,vehicle:S.vehicle,phone:S.phone,email:emailVal,smsSent:false,lotId:S.lotId,valId:S.val?S.val.id:null};
   S.sess.unshift(sess);S.payData=sess;S.cstep=2;S.val=null;render();
   await saveSession(sess);
 }
