@@ -130,17 +130,14 @@ async function updatePassDB(id,updates){
 }
 
 async function saveUserDB(user){
-  const exists=await db('users','GET',null,`?id=eq.${user.id}&select=id`);
-  const body={
-    id:user.id,name:user.name,username:user.username,
-    password:user.password,role:user.role,active:user.active
-  };
-  if(exists&&exists.length>0)return db('users','PATCH',body,`?id=eq.${user.id}`);
-  return db('users','POST',body);
+  const exists=await db('profiles','GET',null,`?id=eq.${user.id}&select=id`);
+  const body={id:user.id,name:user.name,role:user.role,active:user.active};
+  if(exists&&exists.length>0)return db('profiles','PATCH',body,`?id=eq.${user.id}`);
+  return db('profiles','POST',body);
 }
 
 async function deleteUserDB(id){
-  return db('users','DELETE',null,`?id=eq.${id}`);
+  return db('profiles','DELETE',null,`?id=eq.${id}`);
 }
 async function supabaseLogin(email, password){
   const res = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=password`, {
