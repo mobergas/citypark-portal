@@ -146,6 +146,24 @@ async function saveUserDB(user){
 async function deleteUserDB(id){
   return db('profiles','DELETE',null,`?id=eq.${id}`);
 }
+
+async function createStaffAccount(email, password, name, role){
+  const res = await fetch(`${SUPA_URL}/auth/v1/admin/users`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY
+    },
+    body: JSON.stringify({ email, password, email_confirm: true })
+  });
+  if(!res.ok){ const e=await res.json(); console.error('Auth error:',e); return null; }
+  const data = await res.json();
+  if(!data.id) return null;
+  await db('profiles','POST',{ id:data.id, name, role, active:true });
+  return data;
+}
+
 async function supabaseLogin(email, password){
   const res = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=password`, {
     method: 'POST',
