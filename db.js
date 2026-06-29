@@ -164,14 +164,6 @@ async function createStaffAccount(email, password, name, role){
   await db('profiles','POST',{ id:data.id, name, role, active:true });
   return data;
 }
-    body: JSON.stringify({ email, password, email_confirm: true })
-  });
-  if(!res.ok){ const e=await res.json(); console.error('Auth error:',e); return null; }
-  const data = await res.json();
-  if(!data.id) return null;
-  await db('profiles','POST',{ id:data.id, name, role, active:true });
-  return data;
-}
 
 async function supabaseLogin(email, password){
   const res = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=password`, {
