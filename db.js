@@ -148,13 +148,22 @@ async function deleteUserDB(id){
 }
 
 async function createStaffAccount(email, password, name, role){
+  const SERVICE_KEY = 'your-service-role-key-here';
   const res = await fetch(`${SUPA_URL}/auth/v1/admin/users`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'apikey': SUPA_KEY,
-      'Authorization': 'Bearer ' + SUPA_KEY
+      'apikey': SERVICE_KEY,
+      'Authorization': 'Bearer ' + eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsZGFoaGRidmN4ZGxxZGhtc2pkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTkwMDMzNSwiZXhwIjoyMDk3NDc2MzM1fQ.UGRnp4IkwYtRu2gJ9TLf-MdXwUDc6P9yUBtu3O8aywU
     },
+    body: JSON.stringify({ email, password, email_confirm: true })
+  });
+  if(!res.ok){ const e=await res.json(); console.error('Auth error:',e); return null; }
+  const data = await res.json();
+  if(!data.id) return null;
+  await db('profiles','POST',{ id:data.id, name, role, active:true });
+  return data;
+}
     body: JSON.stringify({ email, password, email_confirm: true })
   });
   if(!res.ok){ const e=await res.json(); console.error('Auth error:',e); return null; }
