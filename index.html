@@ -834,7 +834,8 @@ async function saveUser(){
     closeM('usr-modal');
     render();
   }
-}function attachEv(){
+}
+function attachEv(){
   const ls=document.getElementById('lot-sel');if(ls)ls.addEventListener('change',e=>{S.lotId=e.target.value;S.val=null;render();});
   const vs=document.getElementById('veh-sel');if(vs)vs.addEventListener('change',e=>S.vehicle=e.target.value);
   const pi=document.getElementById('phone-inp');if(pi)pi.addEventListener('input',e=>S.phone=e.target.value);
