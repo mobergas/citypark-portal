@@ -46,6 +46,7 @@ const [lots,vals,passes,sess,profiles]=await Promise.all([
     vals.forEach(v=>{
       S.vals[v.id]={
         id:v.id,name:v.name,code:v.code,lotId:v.lot_id,
+        lotIds:v.lot_ids||[v.lot_id],
         type:v.type,discountPct:v.discount_pct,discountAmt:v.discount_amt,
         maxHours:v.max_hours,active:v.active,notes:v.notes
       };
@@ -111,7 +112,8 @@ async function deleteLotDB(id){
 async function saveValDB(val){
   const exists=await db('validations','GET',null,`?id=eq.${val.id}&select=id`);
   const body={
-    id:val.id,name:val.name,code:val.code,lot_id:val.lotId,type:val.type,
+    id:val.id,name:val.name,code:val.code,lot_id:val.lotIds[0]||val.lotId,
+    lot_ids:val.lotIds,type:val.type,
     discount_pct:val.discountPct,discount_amt:val.discountAmt,
     max_hours:val.maxHours,active:val.active,notes:val.notes
   };
