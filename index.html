@@ -414,9 +414,6 @@ tfoot td{padding:10px;font-size:13px;background:var(--lime-bg);font-weight:600}
 <div class="tb-out">
   <div class="tb">
     <div class="logo-a"><div class="logo-box" id="logo-box" onclick="S.v='pay';S.cstep=1;S.payData=null;S.val=null;render()"><div class="lcp">city park</div><div class="lmg">management</div></div></div>
-    <div class="nav-tabs">
-      <button class="ntab" id="ntab-pay" onclick="S.v='pay';render()"><i class="ti ti-qrcode" style="font-size:13px"></i>Pay</button>
-    </div>
     <div id="tr" style="display:flex;align-items:stretch"></div>
   </div>
   <div class="ls"></div>
@@ -519,7 +516,6 @@ function renderTopbar(){
   if(S.cu&&S.v==='admin'){const ini=S.cu.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();const mgr=isMgr();tb.innerHTML=`<div class="as"><div class="av ${mgr?'av-m':'av-e'}">${ini}</div><div><div class="an">${S.cu.name}</div><span class="rb ${mgr?'rb-m':'rb-e'}">${mgr?'Manager':'Employee'}</span></div><button class="lo-btn" onclick="signOut()"><i class="ti ti-logout" style="font-size:12px"></i>Sign out</button></div>`;}
   else tb.innerHTML='';
   if(ai){ai.className=S.cu?'ti ti-layout-dashboard':'ti ti-lock';ai.style.fontSize='13px';}
-  document.getElementById('ntab-pay').classList.toggle('on',S.v==='pay'||S.v==='extend');
 }
 function switchToAdmin(){S.v='admin';render();}
 function switchToLogin(){S.v='login';render();}
