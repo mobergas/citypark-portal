@@ -148,13 +148,13 @@ async function deleteUserDB(id){
 }
 
 async function createStaffAccount(email, password, name, role){
-  const SERVICE_KEY = 'your-service-role-key-here';
+  const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsZGFoaGRidmN4ZGxxZGhtc2pkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTkwMDMzNSwiZXhwIjoyMDk3NDc2MzM1fQ.UGRnp4IkwYtRu2gJ9TLf-MdXwUDc6P9yUBtu3O8aywU';
   const res = await fetch(`${SUPA_URL}/auth/v1/admin/users`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'apikey': SERVICE_KEY,
-      'Authorization': 'Bearer ' + eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsZGFoaGRidmN4ZGxxZGhtc2pkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTkwMDMzNSwiZXhwIjoyMDk3NDc2MzM1fQ.UGRnp4IkwYtRu2gJ9TLf-MdXwUDc6P9yUBtu3O8aywU
+      'Authorization': 'Bearer ' + SERVICE_KEY
     },
     body: JSON.stringify({ email, password, email_confirm: true })
   });
