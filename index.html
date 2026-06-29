@@ -413,10 +413,9 @@ tfoot td{padding:10px;font-size:13px;background:var(--lime-bg);font-weight:600}
 
 <div class="tb-out">
   <div class="tb">
-    <div class="logo-a"><div class="logo-box" onclick="S.v='pay';S.cstep=1;S.payData=null;S.val=null;render()"><div class="lcp">city park</div><div class="lmg">management</div></div></div>
+    <div class="logo-a"><div class="logo-box" id="logo-box" onclick="S.v='pay';S.cstep=1;S.payData=null;S.val=null;render()"><div class="lcp">city park</div><div class="lmg">management</div></div></div>
     <div class="nav-tabs">
       <button class="ntab" id="ntab-pay" onclick="S.v='pay';render()"><i class="ti ti-qrcode" style="font-size:13px"></i>Pay</button>
-      <button class="ntab" id="ntab-admin" onclick="S.cu?switchToAdmin():switchToLogin()"><i class="ti ti-lock" style="font-size:13px" id="admin-icon"></i>Admin</button>
     </div>
     <div id="tr" style="display:flex;align-items:stretch"></div>
   </div>
@@ -521,7 +520,6 @@ function renderTopbar(){
   else tb.innerHTML='';
   if(ai){ai.className=S.cu?'ti ti-layout-dashboard':'ti ti-lock';ai.style.fontSize='13px';}
   document.getElementById('ntab-pay').classList.toggle('on',S.v==='pay'||S.v==='extend');
-  document.getElementById('ntab-admin').classList.toggle('on',S.v==='admin'||S.v==='login');
 }
 function switchToAdmin(){S.v='admin';render();}
 function switchToLogin(){S.v='login';render();}
@@ -894,6 +892,13 @@ await loadFromDB();
   render();
 }
 init();
+let _lt=0,_lc=0;
+document.getElementById('logo-box').addEventListener('click',function(){
+  const now=Date.now();
+  if(now-_lt<600)_lc++;else _lc=1;
+  _lt=now;
+  if(_lc>=3){_lc=0;S.cu?switchToAdmin():switchToLogin();}
+});
 </script>
 </body>
 </html>
