@@ -483,7 +483,7 @@ const T={
     lot:'Lot',type:'Parking type',duration:'Duration',
     plate:'License plate',vehicle:'Vehicle type',
     phone:'Phone',phoneNote:'* required for receipt · msg & data rates may apply',
-    email:'Email',emailNote:'optional · for email receipt',
+    email:'Email',emailNote:'${t('emailNote')}',
     car:'Car / SUV',truck:'Truck / Van',moto:'Motorcycle',
     hourly:'Hourly',event:'Event Parking',monthly:'Monthly Pass',
     perHour:'per hour',flatRate:'flat rate',perMonth:'per month',
@@ -596,9 +596,9 @@ function render(){
 function renderPay(){
   const l=lot(),p=l.pricing;
   const rates=[];
-  if(l.rates.hourly)rates.push({key:'hourly',label:'Hourly',price:'$'+p.hourly.toFixed(2),sub:'per hour'});
-  if(l.rates.event)rates.push({key:'event',label:'Event Parking',price:'$'+p.event.toFixed(0),sub:'flat rate'});
-  if(l.rates.monthly&&l.monthlyselfsrv)rates.push({key:'monthly',label:'Monthly Pass',price:'$'+p.monthly.toFixed(0),sub:'per month'});
+  if(l.rates.hourly)rates.push({key:'hourly',label:t('hourly'),price:'$'+p.hourly.toFixed(2),sub:t('perHour')});
+  if(l.rates.event)rates.push({key:'event',label:t('event'),price:'$'+p.event.toFixed(0),sub:t('flatRate')});
+  if(l.rates.monthly&&l.monthlyselfsrv)rates.push({key:'monthly',label:t('monthly'),price:'$'+p.monthly.toFixed(0),sub:t('perMonth')});
   if(!rates.find(r=>r.key===S.rate)&&rates.length)S.rate=rates[0].key;
   const{base,fee,disc,discLabel,total}=getTotal();
   const isFree=parseFloat(total)===0;
@@ -617,15 +617,15 @@ function renderPay(){
         </div>
         ${S.rate==='hourly'?`<div class="fg"><label class="fl">${t('duration')}</label><div class="hrs-row"><button class="hrs-btn" onclick="S.hours=Math.max(1,S.hours-1);render()">−</button><div class="hrs-disp">${S.hours}</div><button class="hrs-btn" onclick="S.hours=Math.min(12,S.hours+1);render()">+</button><span class="hrs-lbl">${S.hours===1?'hour':'hours'}</span></div></div>`:''}
         <div class="fg"><label class="fl">${t('plate')}</label><input class="fi" style="font-family:var(--fc);font-size:22px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;text-align:center" id="plate-inp" placeholder="e.g. ABC 1234" value="${escH(S.plate)}" oninput="S.plate=this.value.toUpperCase();this.value=S.plate;updatePayBtn()" maxlength="10"></div>
-        <div class="fg"><label class="fl">${t('vehicle')}</label><select class="fse" id="veh-sel"><option value="car"${S.vehicle==='car'?' selected':''}>Car / SUV</option><option value="truck"${S.vehicle==='truck'?' selected':''}>Truck / Van</option><option value="motorcycle"${S.vehicle==='motorcycle'?' selected':''}>Motorcycle</option></select></div>
+        <div class="fg"><label class="fl">${t('vehicle')}</label><select class="fse" id="veh-sel"><option value="car"${S.vehicle==='car'?' selected':''}>${t('car')}</option><option value="truck"${S.vehicle==='truck'?' selected':''}>${t('truck')}</option><option value="motorcycle"${S.vehicle==='motorcycle'?' selected':''}>${t('moto')}</option></select></div>
         <div class="fg"><label class="fl">Phone <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--red)">${t('phoneNote')}</span></label><div class="ph-row"><div class="ph-pfx"><i class="ti ti-device-mobile" style="font-size:13px"></i> +1</div><input class="fi" id="phone-inp" placeholder="(555) 000-0000" value="${escH(S.phone)}" oninput="S.phone=this.value;updatePayBtn()" style="flex:1" type="tel"></div></div> <div class="fg"><label class="fl">Email <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--t3)">optional · for email receipt</span></label><input class="fi" id="email-inp" placeholder="your@email.com" value="${escH(S.email||'')}" oninput="S.email=this.value" type="email"></div>
         ${!S.val?`<div class="vcode-sec"><div class="fl" style="margin-bottom:8px"><i class="ti ti-discount" style="font-size:12px;margin-right:4px;color:var(--gold)"></i>Have a validation code?</div><div class="vcode-row"><input class="vcode-inp" id="vcode-inp" placeholder="ENTER CODE (e.g. HOTEL2024)" maxlength="30" oninput="this.value=this.value.toUpperCase();S.codeErr=false" onkeydown="if(event.key==='Enter')applyCode()"><button class="vcode-btn" onclick="applyCode()">Apply</button></div><div class="vcode-err${S.codeErr?' show':''}" id="vcode-err">Invalid or inactive code for this lot.</div></div>`:''}
         <div class="psumm">
-          ${S.rate==='hourly'?`<div class="psr"><span class="pl">Rate</span><span class="pv">$${p.hourly.toFixed(2)}/hr</span></div><div class="psr"><span class="pl">Duration</span><span class="pv">${S.hours} hr${S.hours!==1?'s':''}</span></div>`:''}
-          ${S.rate==='event'?`<div class="psr"><span class="pl">Event parking</span><span class="pv">flat rate</span></div>`:''}
-          ${S.rate==='monthly'?`<div class="psr"><span class="pl">Monthly pass</span><span class="pv">30 days</span></div>`:''}
-          <div class="psr"><span class="pl">Subtotal</span><span class="pv">$${base}</span></div>
-          ${parseFloat(fee)>0?`<div class="psr"><span class="pl">Service fee</span><span class="pv">$${fee}</span></div>`:''}
+          ${S.rate==='hourly'?`<div class="psr"><span class="pl">${t('rate')}</span><span class="pv">$${p.hourly.toFixed(2)}/hr</span></div><div class="psr"><span class="pl">${t('dur')}</span><span class="pv">${S.hours} ${S.hours===1?t('hour'):t('hours')}</span></div>`:''}
+          ${S.rate==='event'?`<div class="psr"><span class="pl">${t('event')}</span><span class="pv">${t('flatRate')}</span></div>`:''}
+          ${S.rate==='monthly'?`<div class="psr"><span class="pl">${t('monthly')}</span><span class="pv">30 días</span></div>`:''}
+          <div class="psr"><span class="pl">${t('subtotal')}</span><span class="pv">$${base}</span></div>
+          ${parseFloat(fee)>0?`<div class="psr"><span class="pl">${t('serviceFee')}</span><span class="pv">$${fee}</span></div>`:''}
           ${parseFloat(disc)>0?`<div class="psr dr"><span class="pl"><i class="ti ti-discount" style="font-size:11px;margin-right:3px"></i>${discLabel}</span><span class="pv">−$${disc}</span></div>`:''}
           <div class="psr tot"><span class="pl">Total due</span><span class="pv${isFree?' free':''}">${isFree?'FREE':'$'+total}</span></div>
         </div>
