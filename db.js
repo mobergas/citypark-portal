@@ -22,11 +22,12 @@ async function db(table,method='GET',body=null,filters=''){
 }
 
 async function loadFromDB(){
-const [lots,vals,passes,sess]=await Promise.all([
+const [lots,vals,passes,sess,profiles]=await Promise.all([
     db('lots','GET',null,'?select=*'),
     db('validations','GET',null,'?select=*'),
     db('passes','GET',null,'?select=*&order=created_at.desc'),
     db('sessions','GET',null,'?select=*&order=created_at.desc&limit=200'),
+    db('profiles','GET',null,'?select=*'),
   ]);
   if(lots){
     S.lots={};
@@ -45,6 +46,7 @@ const [lots,vals,passes,sess]=await Promise.all([
     vals.forEach(v=>{
       S.vals[v.id]={
         id:v.id,name:v.name,code:v.code,lotId:v.lot_id,
+        lotIds:v.lot_ids||[v.lot_id],
         type:v.type,discountPct:v.discount_pct,discountAmt:v.discount_amt,
         maxHours:v.max_hours,active:v.active,notes:v.notes
       };
@@ -58,6 +60,12 @@ const [lots,vals,passes,sess]=await Promise.all([
       canceledOn:p.canceled_on?new Date(p.canceled_on):null,
       monthlyAmount:p.monthly_amount,totalBilled:p.total_billed,
       inviteToken:p.invite_token
+    }));
+  }
+  if(profiles){
+    S.users=profiles.map(p=>({
+      id:p.id,name:p.name,role:p.role,active:p.active,
+      username:p.name.toLowerCase().replace(/\s+/g,'.')
     }));
   }
   if(sess){
@@ -82,7 +90,7 @@ async function saveSession(sess){
     start_time:sess.start,duration:sess.duration,paid:sess.paid,
     pkch:sess.pkch,sfee:sess.sfee,vehicle:sess.vehicle,phone:sess.phone,
     sms_sent:sess.smsSent,receipt_sent:sess.receiptSent||false,
-    lot_id:sess.lotId,val_id:sess.valId||null
+    email:sess.email||'',lot_id:sess.lotId,val_id:sess.valId||null
   });
 }
 
@@ -104,7 +112,8 @@ async function deleteLotDB(id){
 async function saveValDB(val){
   const exists=await db('validations','GET',null,`?id=eq.${val.id}&select=id`);
   const body={
-    id:val.id,name:val.name,code:val.code,lot_id:val.lotId,type:val.type,
+    id:val.id,name:val.name,code:val.code,lot_id:val.lotIds[0]||val.lotId,
+    lot_ids:val.lotIds,type:val.type,
     discount_pct:val.discountPct,discount_amt:val.discountAmt,
     max_hours:val.maxHours,active:val.active,notes:val.notes
   };
@@ -130,17 +139,14 @@ async function updatePassDB(id,updates){
 }
 
 async function saveUserDB(user){
-  const exists=await db('users','GET',null,`?id=eq.${user.id}&select=id`);
-  const body={
-    id:user.id,name:user.name,username:user.username,
-    password:user.password,role:user.role,active:user.active
-  };
-  if(exists&&exists.length>0)return db('users','PATCH',body,`?id=eq.${user.id}`);
-  return db('users','POST',body);
+  const exists=await db('profiles','GET',null,`?id=eq.${user.id}&select=id`);
+  const body={id:user.id,name:user.name,role:user.role,active:user.active};
+  if(exists&&exists.length>0)return db('profiles','PATCH',body,`?id=eq.${user.id}`);
+  return db('profiles','POST',body);
 }
 
 async function deleteUserDB(id){
-  return db('users','DELETE',null,`?id=eq.${id}`);
+  return db('profiles','DELETE',null,`?id=eq.${id}`);
 }
 
 async function createPaymentIntent(amount, description, sessionId){
@@ -153,6 +159,22 @@ async function createPaymentIntent(amount, description, sessionId){
     body: JSON.stringify({ amount, description, sessionId })
   });
   return res.json();
+async function createStaffAccount(email, password, name, role){
+  const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsZGFoaGRidmN4ZGxxZGhtc2pkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTkwMDMzNSwiZXhwIjoyMDk3NDc2MzM1fQ.UGRnp4IkwYtRu2gJ9TLf-MdXwUDc6P9yUBtu3O8aywU';
+  const res = await fetch(`${SUPA_URL}/auth/v1/admin/users`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SERVICE_KEY,
+      'Authorization': 'Bearer ' + SERVICE_KEY
+    },
+    body: JSON.stringify({ email, password, email_confirm: true })
+  });
+  if(!res.ok){ const e=await res.json(); console.error('Auth error:',e); return null; }
+  const data = await res.json();
+  if(!data.id) return null;
+  await db('profiles','POST',{ id:data.id, name, role, active:true });
+  return data;
 }
 
 async function supabaseLogin(email, password){
@@ -226,4 +248,22 @@ async function supabaseGetSession(){
   if(!res.ok){ setAuthToken(null); return null; }
   const user = await res.json();
   return { access_token: token, user };
+}
+
+function saveTemplatesToLocal(){
+  localStorage.setItem('cpm_sms_tmpl', S.smsTmpl);
+  localStorage.setItem('cpm_receipt_tmpl', S.receiptTmpl);
+  localStorage.setItem('cpm_invite_tmpl', S.inviteTmpl);
+  localStorage.setItem('cpm_invite_subj', S.inviteSubject);
+}
+
+function loadTemplatesFromLocal(){
+  const sms = localStorage.getItem('cpm_sms_tmpl');
+  const receipt = localStorage.getItem('cpm_receipt_tmpl');
+  const invite = localStorage.getItem('cpm_invite_tmpl');
+  const subj = localStorage.getItem('cpm_invite_subj');
+  if(sms) S.smsTmpl = sms;
+  if(receipt) S.receiptTmpl = receipt;
+  if(invite) S.inviteTmpl = invite;
+  if(subj) S.inviteSubject = subj;
 }
