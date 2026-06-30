@@ -142,6 +142,19 @@ async function saveUserDB(user){
 async function deleteUserDB(id){
   return db('users','DELETE',null,`?id=eq.${id}`);
 }
+
+async function createPaymentIntent(amount, description, sessionId){
+  const res = await fetch(`${SUPA_URL}/functions/v1/stripe-payment`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + (getAuthToken() || SUPA_KEY),
+    },
+    body: JSON.stringify({ amount, description, sessionId })
+  });
+  return res.json();
+}
+
 async function supabaseLogin(email, password){
   const res = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=password`, {
     method: 'POST',
