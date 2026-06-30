@@ -158,7 +158,9 @@ async function createPaymentIntent(amount, description, sessionId){
     },
     body: JSON.stringify({ amount, description, sessionId })
   });
-  return res.json();
+return res.json();
+}
+
 async function createStaffAccount(email, password, name, role){
   const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsZGFoaGRidmN4ZGxxZGhtc2pkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTkwMDMzNSwiZXhwIjoyMDk3NDc2MzM1fQ.UGRnp4IkwYtRu2gJ9TLf-MdXwUDc6P9yUBtu3O8aywU';
   const res = await fetch(`${SUPA_URL}/auth/v1/admin/users`, {
