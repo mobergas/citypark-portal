@@ -455,7 +455,7 @@ const S={
   inviteTmpl:DEFAULT_INVITE_TMPL,
   inviteSubject:'Your City Park monthly parking pass invitation',
   smsLog:[{time:'10:42 AM',plate:'ABC 1234',lot:'Downtown Lot A',msg:'Auto 20 min warning'}],   receiptTmpl:'City Park Management: Receipt for {PLATE} at {LOT} (Zone {ZONE}). Duration: {DURATION}. Amount paid: {AMOUNT}. Thank you for parking with us!',
-  passFilter:'all',passSearch:'',cancelingPassId:null,showExp:false,valSearch:'',
+  passFilter:'all',passSearch:'',cancelingPassId:null,showExp:false,valSearch:'',lang:'en',
 users:[],
   lots:{
     lot1:{id:'lot1',name:'Downtown Lot A',zone:'2987',address:'123 Main St',open:true,
@@ -477,7 +477,65 @@ users:[],
   sess:[],vsess:[],passes:[],
 };
 
-
+const T={
+  en:{
+    zone:'Zone',payHere:'Pay for Parking Here',
+    lot:'Lot',type:'Parking type',duration:'Duration',
+    plate:'License plate',vehicle:'Vehicle type',
+    phone:'Phone',phoneNote:'* required for receipt · msg & data rates may apply',
+    email:'Email',emailNote:'optional · for email receipt',
+    car:'Car / SUV',truck:'Truck / Van',moto:'Motorcycle',
+    hourly:'Hourly',event:'Event Parking',monthly:'Monthly Pass',
+    perHour:'per hour',flatRate:'flat rate',perMonth:'per month',
+    hour:'hour',hours:'hours',
+    rate:'Rate',dur:'Duration',subtotal:'Subtotal',
+    serviceFee:'Service fee',totalDue:'Total due',
+    payBtn:'Pay',claimFree:'Claim Free Parking',
+    valCode:'Have a validation code?',apply:'Apply',
+    invalidCode:'Invalid or inactive code for this lot.',
+    secured:'Secured payment · City Park Management LLC',
+    contact:'Contact',monthlyAvail:'Monthly passes available',
+    monthlyInvite:'Monthly parking at {LOT} is by invitation only. Contact the parking office to request a pass.',
+    confirmed:'Payment Confirmed!',freePark:'Free Parking!',
+    reserved:'Your spot is reserved · Show this screen if asked',
+    validatedBy:'Validated by',freeApplied:'Free parking applied',discount:'discount',
+    ticket:'Ticket',lotLabel:'Lot',zoneLabel:'Zone',expires:'Expires',paid:'Paid',
+    timeLeft:'Time remaining',textAlert:'Text alert set · 20 min before expiry',
+    extend:'Extend My Session',payAnother:'Pay for another vehicle',
+    extendTitle:'Extend Parking',plate2:'Plate',addTime:'Add more time',
+    extendBtn:'Pay & Extend',cancel:'Cancel',back:'← Back to my ticket',
+    extended:'Session Extended!',added:'added',newExpiry:'New expiry',
+  },
+  es:{
+    zone:'Zona',payHere:'Pague su Estacionamiento Aquí',
+    lot:'Estacionamiento',type:'Tipo de estacionamiento',duration:'Duración',
+    plate:'Placa del vehículo',vehicle:'Tipo de vehículo',
+    phone:'Teléfono',phoneNote:'* requerido para recibo · pueden aplicar tarifas',
+    email:'Correo electrónico',emailNote:'opcional · para recibo por correo',
+    car:'Auto / SUV',truck:'Camioneta / Van',moto:'Motocicleta',
+    hourly:'Por hora',event:'Evento',monthly:'Pase mensual',
+    perHour:'por hora',flatRate:'tarifa fija',perMonth:'por mes',
+    hour:'hora',hours:'horas',
+    rate:'Tarifa',dur:'Duración',subtotal:'Subtotal',
+    serviceFee:'Cargo por servicio',totalDue:'Total a pagar',
+    payBtn:'Pagar',claimFree:'Reclamar Estacionamiento Gratis',
+    valCode:'¿Tiene un código de validación?',apply:'Aplicar',
+    invalidCode:'Código inválido o inactivo para este estacionamiento.',
+    secured:'Pago seguro · City Park Management LLC',
+    contact:'Contacto',monthlyAvail:'Pases mensuales disponibles',
+    monthlyInvite:'El estacionamiento mensual en {LOT} es solo por invitación. Contacte la oficina para solicitar un pase.',
+    confirmed:'¡Pago Confirmado!',freePark:'¡Estacionamiento Gratis!',
+    reserved:'Su lugar está reservado · Muestre esta pantalla si se lo piden',
+    validatedBy:'Validado por',freeApplied:'Estacionamiento gratis aplicado',discount:'descuento',
+    ticket:'Ticket',lotLabel:'Estacionamiento',zoneLabel:'Zona',expires:'Vence',paid:'Pagado',
+    timeLeft:'Tiempo restante',textAlert:'Alerta de texto activada · 20 min antes de vencer',
+    extend:'Extender Mi Sesión',payAnother:'Pagar por otro vehículo',
+    extendTitle:'Extender Estacionamiento',plate2:'Placa',addTime:'Agregar más tiempo',
+    extendBtn:'Pagar y Extender',cancel:'Cancelar',back:'← Volver a mi ticket',
+    extended:'¡Sesión Extendida!',added:'agregada(s)',newExpiry:'Nueva hora de vencimiento',
+  }
+};
+function t(k){return T[S.lang][k]||T.en[k]||k;}
 
 function isMgr(){return S.cu?.role==='manager'}
 function lot(){return S.lots[S.lotId]}
@@ -549,9 +607,9 @@ function renderPay(){
   return`<div class="cw">
     ${S.val?`<div class="valbanner"><div class="valicon">🎟️</div><div class="valinfo"><h4>Validation Applied</h4><p>${S.val.name}</p><span class="valbadge">${S.val.type==='free'?'FREE PARKING':S.val.type==='percent'?S.val.discountPct+'% OFF':'$'+S.val.discountAmt.toFixed(2)+' OFF'}</span></div><button onclick="S.val=null;render()" style="background:none;border:none;color:#aaa;cursor:pointer;font-size:20px;margin-left:auto;padding:4px">×</button></div>`:''}
     <div class="ccard">
-      <div class="cchd"><div class="zbadge"><i class="ti ti-parking" style="font-size:11px"></i>Zone ${l.zone}</div><h1 style="font-size:26px">Pay for Parking Here</h1><p style="font-size:20px;color:#fff;margin-top:6px">${l.name} · ${l.address}</p></div>
+      <div class="cchd"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div class="zbadge"><i class="ti ti-parking" style="font-size:11px"></i>${t('zone')} ${l.zone}</div><button onclick="S.lang=S.lang==='en'?'es':'en';render()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 10px;color:#fff;font-family:var(--fc);font-size:13px;font-weight:800;letter-spacing:.06em;cursor:pointer">${S.lang==='en'?'ES':'EN'}</button></div><h1 style="font-size:26px">${t('payHere')}</h1><p style="font-size:20px;color:#fff;margin-top:6px">${l.name} · ${l.address}</p></div>
       <div class="ccbd">
-        <div class="fg"><label class="fl">Lot</label><select class="fse" id="lot-sel">${lotOpts}</select></div>
+        <div class="fg"><label class="fl">${t('lot')}</label><select class="fse" id="lot-sel">${lotOpts}</select></div>
         <div class="fg"><label class="fl">Parking type</label>
           <div class="rg2" style="grid-template-columns:${cols}">
             ${rates.map(r=>`<div class="ro2${S.rate===r.key?' on':''}" onclick="S.rate='${r.key}';render()"><div class="rl">${r.label}</div><div class="rp">${r.price}</div><div class="rs">${r.sub}</div></div>`).join('')}
