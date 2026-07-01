@@ -731,7 +731,6 @@ async function submitCardPayment(){
     return;
   }
 
-  const stripe=Stripe('pk_test_51ToAC1CRGT2uMGb0UnwvpT7KnbgRAzPjoMlnFGt1qWsOOnWQfqc8xOM9gjTQ5GEU360rWLIClQNXKo1v3WhA0zwb00siXv5x5V');
   const {error:confirmError}=await stripe.confirmCardPayment(clientSecret,{
     payment_method:{card:{token:'tok_visa'}}
   });
