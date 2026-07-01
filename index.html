@@ -476,7 +476,7 @@ users:[],
     val4:{id:'val4',name:'Metro Bank',code:'METROBANK',lotId:'lot2',type:'free',discountPct:0,discountAmt:0,maxHours:1,active:false,notes:'Free 1 hr for customers'},
     val5:{id:'val5',name:'Rooftop Bar & Grill',code:'ROOFTOP25',lotId:'lot1',type:'percent',discountPct:25,discountAmt:0,maxHours:4,active:true,notes:'25% off for guests'},
   },
-  sess:[],vsess:[],passes:[],
+  sess:[],vsess:[],passes:[],compCodes:[],
 };
 
 const T={
@@ -645,8 +645,10 @@ function updatePayBtn(){const btn=document.querySelector('.paybtn');if(!btn)retu
   const code=(document.getElementById('vcode-inp')?.value||'').toUpperCase().trim();
   const l=lot();
   const v=Object.values(S.vals).find(x=>x.code===code&&(x.lotIds||[x.lotId]).includes(l.id)&&x.active);
-  if(v){S.val=v;S.codeErr=false;render();}
-  else{S.codeErr=true;const el=document.getElementById('vcode-err');if(el)el.classList.add('show');}
+  if(v){S.val=v;S.codeErr=false;render();return;}
+  const comp=S.compCodes.find(x=>x.code===code&&!x.used_at&&new Date(x.expires_at)>new Date());
+  if(comp){S.val={id:comp.id,name:'Comp Code',code:comp.code,type:'free',discountPct:0,discountAmt:0,maxHours:0,active:true,isComp:true};S.codeErr=false;render();return;}
+  S.codeErr=true;const el=document.getElementById('vcode-err');if(el)el.classList.add('show');
 }
 async function handlePay(){
   if(!S.plate.trim())return;
@@ -660,6 +662,7 @@ async function handlePay(){
     const sess={id:'CPM-'+S.tic++,plate:S.plate.trim(),type,start:Date.now(),duration:dur,rate:S.rate,paid:0,pkch:+base,sfee:+fee,vehicle:S.vehicle,phone:S.phone,email:emailVal,smsSent:false,lotId:S.lotId,valId:S.val?S.val.id:null};
     S.sess.unshift(sess);S.payData=sess;S.cstep=2;S.val=null;render();
     await saveSession(sess);
+    if(S.val?.isComp) await useCompCode(S.val.id, sess.plate);
     return;
   }
 
@@ -718,6 +721,7 @@ async function submitCardPayment(){
   S.sess.unshift(sess);S.payData=sess;S.cstep=2;S.val=null;render();
   localStorage.setItem('cpm_active_session', sess.id);
   await saveSession(sess);
+  if(S.val?.isComp) await useCompCode(S.val.id, sess.plate);
 }
 
 function renderSuccess(){
@@ -834,7 +838,7 @@ function renderAdmin(){
   const expiring=S.sess.filter(s=>gSt(s)==='expiring');
   const aVals=Object.values(S.vals).filter(v=>v.active).length;
   const activePasses=S.passes.filter(p=>p.status==='active').length;
-  const tabs=[{id:'sessions',ic:'ti-list-check',lb:'Sessions'},...(isMgr()?[{id:'lots',ic:'ti-parking',lb:'Lots & Pricing'},{id:'validations',ic:'ti-discount',lb:'Validations'},{id:'passes',ic:'ti-id-badge',lb:'Monthly Passes'},{id:'billing',ic:'ti-file-invoice',lb:'Billing Reports'},{id:'revenue',ic:'ti-chart-bar',lb:'Revenue'},{id:'sms',ic:'ti-message-circle',lb:'SMS & Email'},{id:'users',ic:'ti-users',lb:'Users'}]:[])];
+  const tabs=[{id:'sessions',ic:'ti-list-check',lb:'Sessions'},...(isMgr()?[{id:'lots',ic:'ti-parking',lb:'Lots & Pricing'},{id:'validations',ic:'ti-discount',lb:'Validations'},{id:'passes',ic:'ti-id-badge',lb:'Monthly Passes'},{id:'billing',ic:'ti-file-invoice',lb:'Billing Reports'},{id:'revenue',ic:'ti-chart-bar',lb:'Revenue'},{id:'sms',ic:'ti-message-circle',lb:'SMS & Email'},{id:'comp',ic:'ti-ticket',lb:'Comp Codes'}]:[])];
   if(!tabs.find(t=>t.id===S.tab))S.tab='sessions';
   return`<div class="aw">
     <div class="atb"><div class="att"><h2><i class="ti ti-layout-dashboard" style="color:var(--lime);margin-right:8px;font-size:20px"></i>Admin Dashboard</h2><p>City Park Management · ${S.cu?.name} (${isMgr()?'Manager':'Employee'})</p></div></div>
@@ -848,6 +852,7 @@ function renderAdmin(){
     ${S.tab==='revenue'&&isMgr()?rRevenue():''}
     ${S.tab==='sms'&&isMgr()?rSms():''}
     ${S.tab==='users'&&isMgr()?rUsers():''}
+    ${S.tab==='comp'&&isMgr()?rComp():''}
   </div>`;
 }
 
@@ -961,6 +966,36 @@ function insertPH2(id,ph){const el=document.getElementById(id);if(!el)return;con
 function refreshSP(){const b=document.getElementById('settings-body')?.value||S.inviteTmpl;const s=document.getElementById('settings-subj')?.value||S.inviteSubject;const l=Object.values(S.lots).find(x=>x.rates.monthly)||Object.values(S.lots)[0];const prev=document.getElementById('settings-prev');if(prev)prev.innerHTML=buildEP('James Thornton','james@example.com',l,b,s);const cnt=document.getElementById('inv-cnt');if(cnt)cnt.textContent=b.length+' characters';}
 
 function rUsers(){const mgrs=S.users.filter(u=>u.role==='manager');const emps=S.users.filter(u=>u.role==='employee');return`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div class="pn"><div class="ph"><h3><i class="ti ti-shield-check"></i>Managers</h3><button class="ab" style="border-color:#888;color:#aaa" onclick="openUM(null,'manager')"><i class="ti ti-plus" style="font-size:11px;margin-right:3px"></i>Add</button></div><div class="pb">${mgrs.map(u=>rUC(u)).join('')}</div></div><div class="pn"><div class="ph"><h3><i class="ti ti-user"></i>Employees</h3><button class="ab" style="border-color:#888;color:#aaa" onclick="openUM(null,'employee')"><i class="ti ti-plus" style="font-size:11px;margin-right:3px"></i>Add</button></div><div class="pb">${emps.length===0?`<div style="text-align:center;padding:20px;color:var(--t3);font-size:13px">No employees yet</div>`:''}${emps.map(u=>rUC(u)).join('')}<div style="margin-top:10px;padding:10px 12px;background:var(--lime-bg);border:1px solid var(--lime);border-radius:8px;font-size:12px;color:var(--t2)"><i class="ti ti-info-circle" style="font-size:13px;margin-right:4px;color:var(--lime-dark)"></i>Employees can view sessions and search plates only.</div></div></div></div>`;}
+function rComp(){
+  const active=S.compCodes.filter(c=>!c.used_at&&new Date(c.expires_at)>new Date());
+  const used=S.compCodes.filter(c=>c.used_at);
+  const expired=S.compCodes.filter(c=>!c.used_at&&new Date(c.expires_at)<=new Date());
+  return`<div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div style="font-family:var(--fc);font-size:20px;font-weight:900;text-transform:uppercase">Comp Codes</div>
+      <button onclick="genCompCode()" style="background:var(--lime);color:var(--blk);border:none;border-radius:9px;padding:10px 18px;font-family:var(--fc);font-size:13px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-plus"></i>Generate Code</button>
+    </div>
+    <div class="sg" style="grid-template-columns:repeat(3,1fr)">
+      <div class="sc"><div class="sl">Active</div><div class="sv gn">${active.length}</div></div>
+      <div class="sc"><div class="sl">Used</div><div class="sv">${used.length}</div></div>
+      <div class="sc"><div class="sl">Expired</div><div class="sv am">${expired.length}</div></div>
+    </div>
+    <div class="pn"><div class="ph"><h3><i class="ti ti-ticket"></i>All Comp Codes</h3></div><div style="overflow-x:auto"><table><thead><tr><th>Code</th><th>Status</th><th>Expires</th><th>Notes</th><th>Used By</th><th></th></tr></thead><tbody>${S.compCodes.length===0?`<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--t3)">No comp codes yet</td></tr>`:S.compCodes.map(c=>{const isUsed=!!c.used_at;const isExpired=!isUsed&&new Date(c.expires_at)<=new Date();const status=isUsed?'Used':isExpired?'Expired':'Active';const sc=isUsed?'canceled':isExpired?'expiring':'active';return`<tr><td><span style="font-family:var(--fc);font-size:15px;font-weight:900;letter-spacing:.1em;background:var(--blk);color:var(--lime);padding:3px 10px;border-radius:5px">${c.code}</span></td><td><span class="sp ${sc}">${status}</span></td><td style="font-size:12px;color:var(--t3)">${fmtDate(c.expires_at)}</td><td style="font-size:12px;color:var(--t3)">${c.notes||'—'}</td><td style="font-size:12px;color:var(--t3)">${c.used_by_plate||'—'}</td><td><button class="ab danger" onclick="if(confirm('Delete?')){deleteCompCode('${c.id}');S.compCodes=S.compCodes.filter(x=>x.id!=='${c.id}');render()}"><i class="ti ti-trash" style="font-size:11px"></i></button></td></tr>`;}).join('')}</tbody></table></div></div>
+  </div>`;
+}
+
+function genCompCode(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code='';for(let i=0;i<8;i++)code+=chars[Math.floor(Math.random()*chars.length)];
+  const notes=prompt('Notes for this code (optional):','');
+  if(notes===null)return;
+  const expires=new Date();expires.setMonth(expires.getMonth()+6);
+  const c={id:'comp_'+Date.now(),code,notes:notes||'',expires_at:expires.toISOString(),created_by:S.cu?.name||'admin',used_at:null,used_by_plate:null};
+  S.compCodes.unshift(c);
+  saveCompCode(c);
+  render();
+  alert(`Comp code generated: ${code}\nExpires: ${fmtDate(expires)}`);
+}
 function rUC(u){const isSelf=u.id===S.cu?.id;const ini=u.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();const mgr=u.role==='manager';return`<div class="ucrd"><div class="ui"><div class="uav ${mgr?'av-m':'av-e'}">${ini}</div><div class="ud"><h4>${u.name}${isSelf?' <span style="font-size:10px;color:var(--t3);font-weight:400">(you)</span>':''}</h4><p><span class="rb ${mgr?'rb-m':'rb-e'}">${u.role}</span> · ${u.active?'Active':'Inactive'}</p></div></div><div class="ua"><button class="ab" onclick="openUM('${u.id}')"><i class="ti ti-pencil" style="font-size:11px"></i></button>${!isSelf?`<button class="ab danger" onclick="if(confirm('Delete?')){S.users=S.users.filter(x=>x.id!=='${u.id}');deleteUserDB('${u.id}');render()}"><i class="ti ti-trash" style="font-size:11px"></i></button>`:''}</div></div>`;}
 function openUM(userId,defaultRole){S.eUsr=userId;const u=userId?S.users.find(x=>x.id===userId):null;document.getElementById('umt').textContent=userId?`Edit — ${u.name}`:defaultRole==='manager'?'Add Manager':'Add Employee';document.getElementById('umb').innerHTML=`<div class="fg"><label class="fl">Full name</label><input class="fi" id="um-name" value="${u?escH(u.name):''}" placeholder="e.g. Jane Smith"></div>${!userId?`<div class="fg"><label class="fl">Email</label><input class="fi" id="um-email" type="email" placeholder="e.g. jane@example.com"></div><div class="fg"><label class="fl">Password</label><input class="fi" id="um-pass" type="password" placeholder="Min 6 characters"></div>`:''}<div class="fg"><label class="fl">Role</label><select class="fse" id="um-role"><option value="manager"${(u?.role||defaultRole)==='manager'?' selected':''}>Manager — full access</option><option value="employee"${(u?.role||defaultRole)==='employee'?' selected':''}>Employee — view only</option></select></div><div class="fg" style="display:flex;align-items:center;justify-content:space-between"><div><label class="fl" style="margin:0">Active</label><div style="font-size:11px;color:var(--t3);margin-top:2px">Inactive users cannot log in</div></div><label class="tg"><input type="checkbox" id="um-active"${u?u.active?' checked':'':' checked'}><span class="tgs"></span></label></div>`;document.getElementById('usr-modal').classList.add('show');}
 async function saveUser(){

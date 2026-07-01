@@ -22,12 +22,13 @@ async function db(table,method='GET',body=null,filters=''){
 }
 
 async function loadFromDB(){
-const [lots,vals,passes,sess,profiles]=await Promise.all([
+const [lots,vals,passes,sess,profiles,compCodes]=await Promise.all([
     db('lots','GET',null,'?select=*'),
     db('validations','GET',null,'?select=*'),
     db('passes','GET',null,'?select=*&order=created_at.desc'),
     db('sessions','GET',null,'?select=*&order=created_at.desc&limit=200'),
     db('profiles','GET',null,'?select=*'),
+    db('comp_codes','GET',null,'?select=*&order=created_at.desc'),
   ]);
   if(lots){
     S.lots={};
@@ -67,6 +68,9 @@ const [lots,vals,passes,sess,profiles]=await Promise.all([
       id:p.id,name:p.name,role:p.role,active:p.active,
       username:p.name.toLowerCase().replace(/\s+/g,'.')
     }));
+  }
+  if(compCodes){
+    S.compCodes=compCodes;
   }
   if(sess){
     S.sess=sess.map(s=>({
@@ -268,4 +272,21 @@ function loadTemplatesFromLocal(){
   if(receipt) S.receiptTmpl = receipt;
   if(invite) S.inviteTmpl = invite;
   if(subj) S.inviteSubject = subj;
+}
+
+async function loadCompCodes(){
+  const codes = await db('comp_codes','GET',null,'?select=*&order=created_at.desc');
+  if(codes) S.compCodes = codes;
+}
+
+async function saveCompCode(code){
+  return db('comp_codes','POST',code);
+}
+
+async function deleteCompCode(id){
+  return db('comp_codes','DELETE',null,`?id=eq.${id}`);
+}
+
+async function useCompCode(id, plate){
+  return db('comp_codes','PATCH',{used_at:new Date().toISOString(),used_by_plate:plate},`?id=eq.${id}`);
 }
