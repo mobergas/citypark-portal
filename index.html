@@ -669,7 +669,7 @@ async function handlePay(){
 }
 
 async function mountStripeCard(total){
-  const stripe=Stripe('pk_test_51ToAC1CRGT2uMGb0jxGpqaOEfRM64hPKUg5RyyrZ7jMUh7PITPi5qwWqtYO6IM3YYxZUi1Zow9odSv5VZHIH06bc00vls0A3XF');
+  const stripe=Stripe('pk_test_51ToAC1CRGT2uMGb0UnwvpT7KnbgRAzPjoMlnFGt1qWsOOnWQfqc8xOM9gjTQ5GEU360rWLIClQNXKo1v3WhA0zwb00siXv5x5V');
   const elements=stripe.elements();
   const card=elements.create('card',{
     style:{
