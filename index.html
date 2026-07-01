@@ -653,7 +653,7 @@ function updatePayBtn(){const btn=document.querySelector('.paybtn');if(!btn)retu
 async function handlePay(){
   if(!S.plate.trim())return;
   const l=lot(),{total,base,fee}=getTotal();
-  const dur=S.rate==='hourly'?S.hours:S.rate==='event'?24:720;
+  const dur=S.rate==='hourly'?S.hours:S.rate==='event'?12:720;
   const type=S.rate==='hourly'?'Hourly':S.rate==='event'?'Event Parking':'Monthly';
   const emailVal=document.getElementById('email-inp')?.value||S.email||'';
   const isFree=parseFloat(total)===0;
