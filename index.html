@@ -411,6 +411,8 @@ tfoot td{padding:10px;font-size:13px;background:var(--lime-bg);font-weight:600}
 <div class="mov" id="usr-modal"><div class="md" style="width:420px"><div class="mdh"><h3 id="umt">Add User</h3></div><div class="mds" id="umb"></div><div class="mdf"><button class="bcl" onclick="closeM('usr-modal')">Cancel</button><button class="bsv3" onclick="saveUser()">✓ Save</button></div></div></div>
 <div class="mov" id="pass-modal"><div class="md" style="width:580px"><div class="mdh ba"><h3 id="pmt">Send Pass Invite</h3></div><div class="mds" id="pmb"></div><div class="mdf"><button class="bcl" onclick="closeM('pass-modal')">Cancel</button><button class="bsv3 bl" onclick="sendPassInvite()"><i class="ti ti-mail" style="font-size:14px;margin-right:5px"></i>Send Invite</button></div></div></div>
 <div class="mov" id="cancel-modal"><div class="md" style="width:440px"><div class="mdh" style="background:#7f1d1d"><h3 id="cmt">Cancel Pass</h3></div><div class="mds" id="cmb"></div><div class="mdf"><button class="bcl" onclick="closeM('cancel-modal')">Keep Active</button><button class="bsv3 rl" onclick="confirmCancel()">Cancel Pass</button></div></div></div>
+<div class="mov" id="cancel-modal"><div class="md" style="width:440px"><div class="mdh" style="background:#7f1d1d"><h3 id="cmt">Cancel Pass</h3></div><div class="mds" id="cmb"></div><div class="mdf"><button class="bcl" onclick="closeM('cancel-modal')">Keep Active</button><button class="bsv3 rl" onclick="confirmCancel()">Cancel Pass</button></div></div></div>
+<div class="mov" id="card-modal"><div class="md" style="width:420px"><div class="mdh"><h3>Enter Payment Info</h3></div><div class="mds"><p style="font-size:13px;color:var(--t2);margin-bottom:16px;line-height:1.6">Your card is processed securely by Stripe. We never store your card details.</p><div class="fg"><label class="fl">Card details</label><div id="card-element" style="background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:12px 13px;"></div><div id="card-errors" style="color:var(--red);font-size:12px;margin-top:6px;min-height:18px"></div></div></div><div class="mdf"><button class="bcl" onclick="closeM('card-modal')">Cancel</button><button class="bsv3" id="card-pay-btn" onclick="submitCardPayment()">Pay</button></div></div></div>
 
 <div class="tb-out">
   <div class="tb">
@@ -659,6 +661,62 @@ async function handlePay(){
     await saveSession(sess);
     return;
   }
+
+  // Show card modal
+  S._payPending={total,base,fee,dur,type,emailVal};
+  document.getElementById('card-modal').classList.add('show');
+  const cpb=document.getElementById('card-pay-btn');if(cpb)cpb.textContent=`Pay $${total}`;
+  setTimeout(()=>mountStripeCard(total),100);
+}
+
+async function mountStripeCard(total){
+  const stripe=Stripe('pk_test_51ToAC1CRGT2uMGb0jxGpqaOEfRM64hPKUg5RyyrZ7jMUh7PITPi5qwWqtYO6IM3YYxZUi1Zow9odSv5VZHIH06bc00vls0A3XF');
+  const elements=stripe.elements();
+  const card=elements.create('card',{
+    style:{
+      base:{fontFamily:'Barlow, sans-serif',fontSize:'16px',color:'#0d0d0d','::placeholder':{color:'#888'}},
+      invalid:{color:'#d32f2f'}
+    }
+  });
+  card.mount('#card-element');
+  card.on('change',e=>{
+    const err=document.getElementById('card-errors');
+    if(err)err.textContent=e.error?e.error.message:'';
+  });
+  window._stripeCard=card;
+  window._stripe=stripe;
+}
+
+async function submitCardPayment(){
+  const btn=document.getElementById('card-pay-btn');
+  if(btn){btn.textContent='Processing...';btn.disabled=true;}
+  const {total,base,fee,dur,type,emailVal}=S._payPending;
+  const l=lot();
+  const sessId='CPM-'+S.tic++;
+  const desc=`${type} parking - ${l.name} - ${S.plate.trim()}`;
+  const {clientSecret,error}=await createPaymentIntent(+total,desc,sessId);
+
+  if(error||!clientSecret){
+    document.getElementById('card-errors').textContent='Payment error. Please try again.';
+    if(btn){btn.textContent=`Pay $${total}`;btn.disabled=false;}
+    return;
+  }
+
+  const {error:confirmError,paymentIntent}=await window._stripe.confirmCardPayment(clientSecret,{
+    payment_method:{card:window._stripeCard}
+  });
+
+  if(confirmError){
+    document.getElementById('card-errors').textContent=confirmError.message;
+    if(btn){btn.textContent=`Pay $${total}`;btn.disabled=false;}
+    return;
+  }
+
+  document.getElementById('card-modal').classList.remove('show');
+  const sess={id:sessId,plate:S.plate.trim(),type,start:Date.now(),duration:dur,rate:S.rate,paid:+total,pkch:+base,sfee:+fee,vehicle:S.vehicle,phone:S.phone,email:emailVal,smsSent:false,lotId:S.lotId,valId:S.val?S.val.id:null};
+  S.sess.unshift(sess);S.payData=sess;S.cstep=2;S.val=null;render();
+  await saveSession(sess);
+}
 
   const btn=document.querySelector('.paybtn');
   if(btn){btn.textContent='Processing...';btn.disabled=true;}
