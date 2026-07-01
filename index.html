@@ -600,7 +600,7 @@ function renderPay(){
   const l=lot(),p=l.pricing;
   const rates=[];
   if(l.rates.hourly)rates.push({key:'hourly',label:t('hourly'),price:'$'+p.hourly.toFixed(2),sub:t('perHour')});
-  if(l.rates.event)rates.push({key:'event',label:t('event'),price:'$'+p.event.toFixed(0),sub:t('flatRate')});
+  if(l.rates.event)rates.push({key:'event',label:t('event'),price:'$'+p.event.toFixed(0),sub:'12 hr max'});
   if(l.rates.monthly&&l.monthlyselfsrv)rates.push({key:'monthly',label:t('monthly'),price:'$'+p.monthly.toFixed(0),sub:t('perMonth')});
   if(!rates.find(r=>r.key===S.rate)&&rates.length)S.rate=rates[0].key;
   const{base,fee,disc,discLabel,total}=getTotal();
