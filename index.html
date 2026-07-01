@@ -411,7 +411,6 @@ tfoot td{padding:10px;font-size:13px;background:var(--lime-bg);font-weight:600}
 <div class="mov" id="usr-modal"><div class="md" style="width:420px"><div class="mdh"><h3 id="umt">Add User</h3></div><div class="mds" id="umb"></div><div class="mdf"><button class="bcl" onclick="closeM('usr-modal')">Cancel</button><button class="bsv3" onclick="saveUser()">✓ Save</button></div></div></div>
 <div class="mov" id="pass-modal"><div class="md" style="width:580px"><div class="mdh ba"><h3 id="pmt">Send Pass Invite</h3></div><div class="mds" id="pmb"></div><div class="mdf"><button class="bcl" onclick="closeM('pass-modal')">Cancel</button><button class="bsv3 bl" onclick="sendPassInvite()"><i class="ti ti-mail" style="font-size:14px;margin-right:5px"></i>Send Invite</button></div></div></div>
 <div class="mov" id="cancel-modal"><div class="md" style="width:440px"><div class="mdh" style="background:#7f1d1d"><h3 id="cmt">Cancel Pass</h3></div><div class="mds" id="cmb"></div><div class="mdf"><button class="bcl" onclick="closeM('cancel-modal')">Keep Active</button><button class="bsv3 rl" onclick="confirmCancel()">Cancel Pass</button></div></div></div>
-<div class="mov" id="cancel-modal"><div class="md" style="width:440px"><div class="mdh" style="background:#7f1d1d"><h3 id="cmt">Cancel Pass</h3></div><div class="mds" id="cmb"></div><div class="mdf"><button class="bcl" onclick="closeM('cancel-modal')">Keep Active</button><button class="bsv3 rl" onclick="confirmCancel()">Cancel Pass</button></div></div></div>
 <div class="mov" id="card-modal"><div class="md" style="width:420px"><div class="mdh"><h3>Enter Payment Info</h3></div><div class="mds"><p style="font-size:13px;color:var(--t2);margin-bottom:16px;line-height:1.6">Your card is processed securely by Stripe. We never store your card details.</p><div class="fg"><label class="fl">Card details</label><div id="card-element" style="background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:12px 13px;"></div><div id="card-errors" style="color:var(--red);font-size:12px;margin-top:6px;min-height:18px"></div></div></div><div class="mdf"><button class="bcl" onclick="closeM('card-modal')">Cancel</button><button class="bsv3" id="card-pay-btn" onclick="submitCardPayment()">Pay</button></div></div></div>
 
 <div class="tb-out">
@@ -718,33 +717,6 @@ async function submitCardPayment(){
   await saveSession(sess);
 }
 
-  const btn=document.querySelector('.paybtn');
-  if(btn){btn.textContent='Processing...';btn.disabled=true;}
-
-  const sessId='CPM-'+S.tic++;
-  const desc=`${type} parking - ${l.name} - ${S.plate.trim()}`;
-  const {clientSecret,error}=await createPaymentIntent(+total,desc,sessId);
-
-  if(error||!clientSecret){
-    alert('Payment error. Please try again.');
-    if(btn){btn.textContent=`Pay $${total}`;btn.disabled=false;}
-    return;
-  }
-
-  const {error:confirmError}=await stripe.confirmCardPayment(clientSecret,{
-    payment_method:{card:{token:'tok_visa'}}
-  });
-
-  if(confirmError){
-    alert('Payment failed: '+confirmError.message);
-    if(btn){btn.textContent=`Pay $${total}`;btn.disabled=false;}
-    return;
-  }
-
-  const sess={id:sessId,plate:S.plate.trim(),type,start:Date.now(),duration:dur,rate:S.rate,paid:+total,pkch:+base,sfee:+fee,vehicle:S.vehicle,phone:S.phone,email:emailVal,smsSent:false,lotId:S.lotId,valId:S.val?S.val.id:null};
-  S.sess.unshift(sess);S.payData=sess;S.cstep=2;S.val=null;render();
-  await saveSession(sess);
-}
 function renderSuccess(){
   const d=S.payData,l=S.lots[d.lotId],rem=remMs(d);
   const exp=new Date(d.start+d.duration*3600000);
