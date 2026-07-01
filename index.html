@@ -589,6 +589,7 @@ function render(){
   else if(S.v==='extend')mc.innerHTML=renderExtend();
   else if(S.v==='login')mc.innerHTML=renderLogin();
   else if(S.v==='admin')mc.innerHTML=renderAdmin();
+  else if(S.v==='lookup')mc.innerHTML=renderLookup();
   attachEv();
   if(S.v==='pay'&&S.cstep===2)startTimer();
   if(S.v==='admin')startAdminTimer();
@@ -635,6 +636,7 @@ function renderPay(){
       </div>
     </div>
     ${l.rates.monthly&&!l.monthlyselfsrv?`<div class="monthly-invite-notice"><i class="ti ti-id-badge"></i><div><h4>Monthly passes available</h4><p>Monthly parking at ${l.name} is by invitation only. Contact the parking office to request a pass.</p></div></div>`:''}
+    <div style="text-align:center;margin-bottom:12px"><button onclick="S.v='lookup';render()" style="background:none;border:none;color:var(--lime-dark);font-family:var(--fc);font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;text-decoration:underline">🔍 Find My Ticket</button></div>
     <div style="text-align:center;font-size:11px;color:var(--t3);padding-bottom:16px;margin-top:8px"><i class="ti ti-lock" style="font-size:11px;margin-right:4px"></i>${t('secured')}<br>${t('contact')}: info@cityparkmanagement.com</div>
   </div>`;
 }
@@ -742,6 +744,45 @@ function renderExtend(){
   const ec=p.hourly*S.extHrs,et=(ec+fee).toFixed(2);
   if(S.extDone){const ne=new Date(s.start+s.duration*3600000);return`<div class="cw"><div class="ext-pnl"><div class="ext-hd"><h2>Session Extended!</h2><p>${l.name} · Zone ${l.zone}</p></div><div class="ext-bd"><div style="background:var(--lime-bg);border:2px solid var(--lime-dark);border-radius:10px;padding:16px;text-align:center;margin-bottom:14px"><div style="font-size:28px;margin-bottom:6px">✓</div><div style="font-family:var(--fc);font-size:18px;font-weight:900;text-transform:uppercase">+${S.extHrs} hour${S.extHrs!==1?'s':''} added</div><div style="font-size:13px;color:var(--t2);margin-top:4px">New expiry: <strong>${ne.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</strong></div></div><div class="tmr"><div class="tmrn">${fmtT(remMs(s))}</div><div class="tmrl">Updated time remaining</div></div><button class="oln" style="margin-top:0" onclick="S.v='pay';S.cstep=S.payData&&S.payData.id===S.extId?2:1;S.extId=null;S.extDone=false;render()">← Back to my ticket</button></div></div></div>`;}
   return`<div class="cw"><div class="ext-pnl"><div class="ext-hd"><h2>Extend Parking</h2><p>${l.name} · Plate: <strong style="color:var(--lime)">${s.plate}</strong></p></div><div class="ext-bd"><div class="tmr"><div class="tmrn">${fmtT(remMs(s))}</div><div class="tmrl">Time remaining</div></div><div style="margin:16px 0 6px"><label class="fl">Add more time ($${p.hourly.toFixed(2)}/hr)</label></div><div class="ext-opts">${[1,2,3,4].map(h=>`<div class="ext-opt${S.extHrs===h?' on':''}" onclick="S.extHrs=${h};render()"><div class="eh">+${h}hr</div><div class="ep">$${(p.hourly*h).toFixed(2)}${fee>0?' + fee':''}</div></div>`).join('')}</div><div class="psumm"><div class="psr"><span class="pl">+${S.extHrs}hr @ $${p.hourly.toFixed(2)}/hr</span><span class="pv">$${ec.toFixed(2)}</span></div>${fee>0?`<div class="psr"><span class="pl">Service fee</span><span class="pv">$${fee.toFixed(2)}</span></div>`:''}<div class="psr tot"><span class="pl">Total due</span><span class="pv">$${et}</span></div></div><button class="paybtn" onclick="const s2=S.sess.find(x=>x.id===S.extId);s2.duration+=S.extHrs;s2.paid=+(s2.paid+S.lots[s2.lotId].pricing.hourly*S.extHrs+(S.lots[s2.lotId].fees.hourly.enabled?S.lots[s2.lotId].fees.hourly.amount:0)).toFixed(2);S.extDone=true;render()"><i class="ti ti-credit-card"></i> Pay $${et} &amp; Extend</button><button class="oln" style="margin-top:8px" onclick="S.v='pay';S.cstep=S.payData&&S.payData.id===S.extId?2:1;S.extId=null;render()">← Cancel</button></div></div></div>`;
+}
+
+function renderLookup(){
+  return`<div class="cw"><div class="ccard">
+    <div class="cchd"><h1 style="font-size:24px">Find My Ticket</h1><p style="color:#aaa;font-size:13px;margin-top:4px">Enter your license plate to find your active session</p></div>
+    <div class="ccbd">
+      <div class="fg"><label class="fl">License plate</label><input class="fi" style="font-family:var(--fc);font-size:22px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;text-align:center" id="lookup-plate" placeholder="e.g. ABC 1234" maxlength="10" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')doLookup()"></div>
+      <div id="lookup-result" style="margin-bottom:16px"></div>
+      <button class="paybtn" onclick="doLookup()"><i class="ti ti-search"></i> Find Ticket</button>
+      <button class="oln" onclick="S.v='pay';render()">← Back to Pay</button>
+    </div>
+  </div></div>`;
+}
+
+function doLookup(){
+  const plate=(document.getElementById('lookup-plate')?.value||'').trim().toUpperCase();
+  if(!plate)return;
+  const matches=S.sess.filter(s=>s.plate===plate&&remMs(s)>0);
+  const el=document.getElementById('lookup-result');
+  if(!el)return;
+  if(!matches.length){
+    el.innerHTML=`<div style="background:#fff0f0;border:1.5px solid #ffcdd2;border-radius:8px;padding:12px 14px;font-size:13px;color:var(--red);text-align:center">No active sessions found for <strong>${plate}</strong></div>`;
+    return;
+  }
+  el.innerHTML=matches.map(s=>{
+    const l=S.lots[s.lotId]||{name:'?',zone:'?'};
+    const exp=new Date(s.start+s.duration*3600000);
+    return`<div style="background:var(--lime-bg);border:1.5px solid var(--lime);border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer" onclick="S.payData=S.sess.find(x=>x.id==='${s.id}');S.cstep=2;S.v='pay';localStorage.setItem('cpm_active_session','${s.id}');render()">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-family:var(--fc);font-size:16px;font-weight:900;color:var(--lime-dark)">${s.plate}</span>
+        <span style="font-family:var(--fc);font-size:12px;font-weight:700;color:var(--t3)">${s.type}</span>
+      </div>
+      <div style="font-size:13px;color:var(--t2);margin-bottom:4px">${l.name} · Zone ${l.zone}</div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--t3)">
+        <span>Expires ${exp.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
+        <span style="color:var(--lime-dark);font-weight:700">${fmtT(remMs(s))} left</span>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function renderLogin(){return`<div class="lw"><div class="lc"><div class="lh"><div class="li2"><i class="ti ti-lock" style="font-size:22px;color:var(--lime)"></i></div><h2>Staff Login</h2><p>Sign in with your City Park credentials.</p></div><div class="lb"><div class="lerr${S.loginErr?' show':''}" id="lerr"><i class="ti ti-alert-circle" style="font-size:15px;flex-shrink:0"></i> Incorrect username or password.</div><div class="fg2"><label class="fl2">Email</label><input class="fi2" id="lu" type="text" placeholder="Enter email address" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div><div class="fg2"><label class="fl2">Password</label><input class="fi2" id="lp" type="${S.showPw?'text':'password'}" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:44px"><button class="pwtog" onclick="S.showPw=!S.showPw;const v=document.getElementById('lp')?.value||'';render();setTimeout(()=>{const n=document.getElementById('lp');if(n){n.value=v;n.focus();}},20)" type="button"><i class="ti ${S.showPw?'ti-eye-off':'ti-eye'}" style="font-size:17px"></i></button></div><button class="lbtn" onclick="doLogin()"><i class="ti ti-login" style="font-size:15px;margin-right:6px"></i>Sign In</button></div></div></div>`;}
