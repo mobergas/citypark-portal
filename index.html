@@ -710,6 +710,7 @@ async function submitCardPayment(){
   const {error:confirmError,paymentIntent}=await window._stripe.confirmCardPayment(clientSecret,{
     payment_method:{card:window._stripeCard}
   });
+  console.log('confirmError:', confirmError, 'paymentIntent:', paymentIntent);
 
   if(confirmError){
     document.getElementById('card-errors').textContent=confirmError.message;
