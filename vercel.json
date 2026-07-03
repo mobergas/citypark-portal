@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/sms-terms", "destination": "/sms-terms.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
