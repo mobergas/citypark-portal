@@ -669,6 +669,7 @@ async function handlePay(){
   // Show card modal
   S._payPending={total,base,fee,dur,type,emailVal};
   document.getElementById('card-modal').classList.add('show');
+  document.getElementById('card-element').innerHTML='';
   const cpb=document.getElementById('card-pay-btn');if(cpb)cpb.textContent=`Pay $${total}`;
   setTimeout(()=>mountStripeCard(total),100);
 }
