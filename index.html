@@ -692,6 +692,7 @@ async function mountStripeCard(total){
 }
 
 async function submitCardPayment(){
+  console.log('submitCardPayment called');
   const btn=document.getElementById('card-pay-btn');
   if(btn){btn.textContent='Processing...';btn.disabled=true;}
   const {total,base,fee,dur,type,emailVal}=S._payPending;
