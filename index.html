@@ -728,6 +728,7 @@ function renderSuccess(){
   const d=S.payData,l=S.lots[d.lotId],rem=remMs(d);
   const exp=new Date(d.start+d.duration*3600000);
   const val=d.valId?S.vals[d.valId]:null;
+  const valWindowMs=10*60*1000;const valWindowRem=Math.max(0,d.start+valWindowMs-Date.now());const inValWindow=valWindowRem>0&&d.paymentIntentId&&!d.captured&&d.paid>0;
   return`<div class="cw"><div class="ccard">
     <div class="suc-hd"><div style="font-size:36px;margin-bottom:4px">${d.paid===0?'🎟️':'✓'}</div><h2>${d.paid===0?'Free Parking!':'Payment Confirmed!'}</h2><p style="font-size:12px;color:var(--blk);opacity:.7">Your spot is reserved · Show this screen if asked</p></div>
     <div class="ccbd">
@@ -735,12 +736,36 @@ function renderSuccess(){
       <div class="tkt"><div class="tkt-top"><span class="tkt-id">${d.id}</span><span style="font-family:var(--fc);font-size:10px;font-weight:700;text-transform:uppercase;color:#888">${d.type}</span></div>
         <div class="tkt-bd"><div class="tkr"><span class="tkl">Plate</span><span class="tkv">${d.plate}</span></div><div class="tkr"><span class="tkl">Lot</span><span class="tkv">${l.name}</span></div><div class="tkr"><span class="tkl">Zone</span><span class="tkv">${l.zone}</span></div><div class="tkr"><span class="tkl">Expires</span><span class="tkv">${exp.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · ${exp.toLocaleDateString([],{month:'short',day:'numeric'})}</span></div><div class="tkr"><span class="tkl">Paid</span><span class="tkv" style="color:${d.paid===0?'#10b981':'var(--grn)'}">$${d.paid.toFixed(2)}</span></div></div>
       </div>
+      ${inValWindow?`<div style="background:linear-gradient(135deg,#1a1a1a,#2a2a2a);border:2px solid var(--gold);border-radius:12px;padding:14px 16px;margin-bottom:14px"><div style="font-family:var(--fc);font-size:13px;font-weight:900;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">🎟️ Have a validation code?</div><div style="font-size:12px;color:#ccc;margin-bottom:10px">Apply within <strong id="val-countdown">${Math.floor(valWindowRem/60000)}:${String(Math.floor((valWindowRem%60000)/1000)).padStart(2,'0')}</strong> to reduce or waive your charge.</div><div style="display:flex;gap:8px"><input class="vcode-inp" id="post-val-inp" placeholder="ENTER CODE" maxlength="30" oninput="this.value=this.value.toUpperCase()" style="flex:1;background:#1a1a1a;border-color:#444;color:#fff" onkeydown="if(event.key==='Enter')applyPostVal()"><button onclick="applyPostVal()" style="background:var(--gold);color:var(--blk);border:none;border-radius:8px;padding:10px 16px;font-family:var(--fc);font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer">Apply</button></div><div id="post-val-err" style="color:var(--red);font-size:12px;margin-top:6px;min-height:16px"></div></div>`:''}
       <div class="tmr"><div class="tmrn" id="cdown">${fmtT(rem)}</div><div class="tmrl">Time remaining</div></div>
       ${d.phone?`<div class="smsnote"><i class="ti ti-message-circle" style="color:var(--lime-dark);font-size:15px;flex-shrink:0;margin-top:1px"></i><div><div style="font-weight:600;margin-bottom:3px">Text alert set · 20 min before expiry</div></div></div>`:''}
       <button class="paybtn" onclick="S.extId='${d.id}';S.extHrs=1;S.extDone=false;S.v='extend';render()"><i class="ti ti-clock-plus"></i> Extend My Session</button>
       <button class="oln" onclick="S.cstep=1;S.plate='';S.phone='';S.payData=null;S.rate='hourly';S.hours=2;S.val=null;localStorage.removeItem('cpm_active_session');render()">Pay for another vehicle</button>
     </div>
   </div></div>`;
+}
+async function applyPostVal(){
+  const code=(document.getElementById('post-val-inp')?.value||'').toUpperCase().trim();
+  const d=S.payData;
+  if(!code||!d)return;
+  const v=Object.values(S.vals).find(x=>x.code===code&&(x.lotIds||[x.lotId]).includes(d.lotId)&&x.active);
+  const comp=S.compCodes.find(x=>x.code===code&&!x.used_at&&new Date(x.expires_at)>new Date());
+  const matched=v||(comp?{id:comp.id,name:'Comp Code',code:comp.code,type:'free',discountPct:0,discountAmt:0,maxHours:0,active:true,isComp:true}:null);
+  if(!matched){const el=document.getElementById('post-val-err');if(el)el.textContent='Invalid or inactive code.';return;}
+  let newAmount=d.paid;
+  if(matched.type==='free')newAmount=0;
+  else if(matched.type==='percent')newAmount=Math.max(0,+(d.pkch*(1-matched.discountPct/100)+d.sfee).toFixed(2));
+  else if(matched.type==='flat')newAmount=Math.max(0,+(d.paid-matched.discountAmt).toFixed(2));
+  const btn=document.querySelector('#post-val-inp+button');
+  if(btn){btn.textContent='Applying...';btn.disabled=true;}
+  if(newAmount===0){
+    await fetch(`${SUPA_URL}/functions/v1/stripe-capture`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(getAuthToken()||SUPA_KEY)},body:JSON.stringify({paymentIntentId:d.paymentIntentId,cancel:true})});
+  } else {
+    await capturePayment(d.paymentIntentId,newAmount);
+  }
+  d.paid=newAmount;d.captured=true;d.valId=matched.id;S.val=matched;
+  if(matched.isComp)await useCompCode(matched.id,d.plate);
+  render();
 }
 function renderExtend(){
   const s=S.sess.find(x=>x.id===S.extId);if(!s)return`<p style="text-align:center;padding:40px;color:var(--t3)">Session not found.</p>`;
@@ -1047,7 +1072,25 @@ document.addEventListener('keydown',resetInactivity);
 document.addEventListener('click',resetInactivity);
 document.addEventListener('touchstart',resetInactivity);
 resetInactivity();
-function startTimer(){if(timerInt)clearInterval(timerInt);timerInt=setInterval(()=>{const el=document.getElementById('cdown');if(!el){clearInterval(timerInt);return;}if(S.payData)el.textContent=fmtT(remMs(S.payData));},15000);}
+function startTimer(){
+  if(timerInt)clearInterval(timerInt);
+  timerInt=setInterval(()=>{
+    const el=document.getElementById('cdown');
+    if(!el){clearInterval(timerInt);return;}
+    if(S.payData)el.textContent=fmtT(remMs(S.payData));
+    const vc=document.getElementById('val-countdown');
+    if(vc&&S.payData){
+      const rem=Math.max(0,S.payData.start+10*60*1000-Date.now());
+      if(rem===0&&S.payData.paymentIntentId&&!S.payData.captured&&S.payData.paid>0){
+        S.payData.captured=true;
+        capturePayment(S.payData.paymentIntentId,S.payData.paid);
+        render();
+      } else {
+        vc.textContent=Math.floor(rem/60000)+':'+String(Math.floor((rem%60000)/1000)).padStart(2,'0');
+      }
+    }
+  },1000);
+}
 function bReceipt(s,l){const dur=s.rate==='hourly'?s.duration+'hr':s.rate==='event'?'Event':'Monthly';return S.receiptTmpl.replace('{PLATE}',s.plate).replace('{LOT}',l.name).replace('{ZONE}',l.zone).replace('{DURATION}',dur).replace('{AMOUNT}','$'+s.paid.toFixed(2));}
 function startAdminTimer(){if(adminInt)clearInterval(adminInt);adminInt=setInterval(()=>{S.sess.forEach(s=>{if(!s.smsSent&&s.phone&&gSt(s)==='expiring'&&remMs(s)>0){s.smsSent=true;const t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),l=S.lots[s.lotId]||{name:'?',zone:''};const msg=bSms(s.plate,l,s.id);S.smsLog.unshift({time:t,plate:s.plate,lot:l.name,msg:'Auto 20 min warning'});sendSMS(s.phone,msg);}if(!s.receiptSent&&s.phone&&gSt(s)==='expired'&&(Date.now()-s.start)<(s.duration*3600000+300000)){s.receiptSent=true;const t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),l=S.lots[s.lotId]||{name:'?',zone:''};S.smsLog.unshift({time:t,plate:s.plate,lot:l.name,msg:'Receipt sent'});if(s.email)sendEmail(s.email,'Your City Park Parking Receipt',buildReceiptEmail(s,l));}});},30000);}
 function buildReceiptEmail(s,l){
