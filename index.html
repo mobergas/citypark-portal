@@ -720,6 +720,7 @@ async function submitCardPayment(){
 
   document.getElementById('card-modal').classList.remove('show');
   const sess={id:sessId,plate:S.plate.trim(),type,start:Date.now(),duration:dur,rate:S.rate,paid:+total,pkch:+base,sfee:+fee,vehicle:S.vehicle,phone:S.phone,email:emailVal,smsSent:false,lotId:S.lotId,valId:S.val?S.val.id:null,paymentIntentId:paymentIntent.id,captured:false};
+  console.log('sess created:', sess);
   S.sess.unshift(sess);S.payData=sess;S.cstep=2;S.val=null;render();
   localStorage.setItem('cpm_active_session', sess.id);
   await saveSession(sess);
