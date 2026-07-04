@@ -670,7 +670,7 @@ async function handlePay(){
   S._payPending={total,base,fee,dur,type,emailVal};
   document.getElementById('card-modal').classList.add('show');
   document.getElementById('card-element').innerHTML='';
-  const cpb=document.getElementById('card-pay-btn');if(cpb)cpb.textContent=`Pay $${total}`;
+  const cpb=document.getElementById('card-pay-btn');if(cpb){cpb.textContent=`Pay $${total}`;cpb.disabled=false;}
   setTimeout(()=>mountStripeCard(total),100);
 }
 
