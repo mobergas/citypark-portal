@@ -764,7 +764,9 @@ async function applyPostVal(){
   if(newAmount===0){
     await fetch(`${SUPA_URL}/functions/v1/stripe-capture`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(getAuthToken()||SUPA_KEY)},body:JSON.stringify({paymentIntentId:d.paymentIntentId,cancel:true})});
   } else {
-    await capturePayment(d.paymentIntentId,newAmount);
+    console.log('Capturing amount:', newAmount, 'paymentIntentId:', d.paymentIntentId);
+    const result = await capturePayment(d.paymentIntentId,newAmount);
+    console.log('Capture result:', result);
   }
   d.paid=newAmount;d.captured=true;d.valId=matched.id;S.val=matched;
   if(matched.isComp)await useCompCode(matched.id,d.plate);
