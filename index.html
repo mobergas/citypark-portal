@@ -674,6 +674,8 @@ async function handlePay(){
   setTimeout(()=>mountStripeCard(total),100);
 }
 
+if(window._stripeCard){try{window._stripeCard.destroy();}catch(e){}}
+  window._stripeCard=null;window._stripe=null;
 async function mountStripeCard(total){
   const stripe=Stripe('pk_test_51ToAC1CRGT2uMGb0UnwvpT7KnbgRAzPjoMlnFGt1qWsOOnWQfqc8xOM9gjTQ5GEU360rWLIClQNXKo1v3WhA0zwb00siXv5x5V');
   const elements=stripe.elements();
@@ -741,7 +743,7 @@ function renderSuccess(){
       <div class="tmr"><div class="tmrn" id="cdown">${fmtT(rem)}</div><div class="tmrl">Time remaining</div></div>
       ${d.phone?`<div class="smsnote"><i class="ti ti-message-circle" style="color:var(--lime-dark);font-size:15px;flex-shrink:0;margin-top:1px"></i><div><div style="font-weight:600;margin-bottom:3px">Text alert set · 20 min before expiry</div></div></div>`:''}
       <button class="paybtn" onclick="S.extId='${d.id}';S.extHrs=1;S.extDone=false;S.v='extend';render()"><i class="ti ti-clock-plus"></i> Extend My Session</button>
-      <button class="oln" onclick="S.cstep=1;S.plate='';S.phone='';S.payData=null;S.rate='hourly';S.hours=2;S.val=null;localStorage.removeItem('cpm_active_session');render()">Pay for another vehicle</button>
+      <button class="oln" onclick="S.cstep=1;S.plate='';S.phone='';S.payData=null;S.rate='hourly';S.hours=2;S.val=null;localStorage.removeItem('cpm_active_session');window._stripeCard=null;window._stripe=null;render()">Pay for another vehicle</button>
     </div>
   </div></div>`;
 }
