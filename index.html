@@ -755,7 +755,6 @@ async function applyPostVal(){
   const comp=S.compCodes.find(x=>x.code===code&&!x.used_at&&new Date(x.expires_at)>new Date());
   const matched=v||(comp?{id:comp.id,name:'Comp Code',code:comp.code,type:'free',discountPct:0,discountAmt:0,maxHours:0,active:true,isComp:true}:null);
   if(!matched){const el=document.getElementById('post-val-err');if(el)el.textContent='Invalid or inactive code.';return;}
-  console.log('matched:', matched, 'paid:', d.paid);
   let newAmount=d.paid;
   if(matched.type==='free')newAmount=0;
   else if(matched.type==='percent')newAmount=Math.max(0,+(d.pkch*(1-matched.discountPct/100)+d.sfee).toFixed(2));
@@ -765,9 +764,7 @@ async function applyPostVal(){
   if(newAmount===0){
     await fetch(`${SUPA_URL}/functions/v1/stripe-capture`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(getAuthToken()||SUPA_KEY)},body:JSON.stringify({paymentIntentId:d.paymentIntentId,cancel:true})});
   } else {
-    console.log('Capturing amount:', newAmount, 'paymentIntentId:', d.paymentIntentId);
-    const result = await capturePayment(d.paymentIntentId,newAmount);
-    console.log('Capture result:', result);
+    await capturePayment(d.paymentIntentId,newAmount);
   }
   d.paid=newAmount;d.captured=true;d.valId=matched.id;S.val=matched;
   if(matched.isComp)await useCompCode(matched.id,d.plate);
