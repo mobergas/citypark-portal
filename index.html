@@ -946,6 +946,30 @@ function buildEP(name,email,l,bodyTmpl,subj){
   if(typeof sendEmail==='undefined') return previewHtml;
   buildEP._lastHtml=emailHtml;
   return previewHtml;
+async function resendInvite(id){
+  const p=S.passes.find(x=>x.id===id);
+  if(!p)return;
+  const l=S.lots[p.lotId];
+  const signupLink=`https://cityparkmanagement.app/pass/signup?token=${p.inviteToken}&lot=${p.lotId}`;
+  const html=buildInviteEmail(p.name,p.email,l,p.monthlyAmount,signupLink);
+  await sendEmail(p.email,S.inviteSubject,html);
+  document.getElementById('sab').innerHTML=`Invite resent to <strong>${p.name}</strong><br>${p.email}`;
+  document.getElementById('smsalert').classList.add('show');
+  setTimeout(()=>document.getElementById('smsalert').classList.remove('show'),5000);
+}
+
+async function rescindInvite(id){
+  if(!confirm('Rescind this invite? The signup link will no longer work.'))return;
+  const p=S.passes.find(x=>x.id===id);
+  if(!p)return;
+  p.status='canceled';
+  p.canceledOn=new Date();
+  await updatePassDB(id,{status:'canceled',canceled_on:p.canceledOn});
+  render();
+  document.getElementById('sab').innerHTML=`Invite rescinded for <strong>${p.name}</strong>`;
+  document.getElementById('smsalert').classList.add('show');
+  setTimeout(()=>document.getElementById('smsalert').classList.remove('show'),4000);
+}
 }
 function sendPassInvite(){
   const name=document.getElementById('pi-name')?.value.trim();
