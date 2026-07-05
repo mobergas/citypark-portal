@@ -139,7 +139,8 @@ async function savePassDB(pass){
     custom_price:pass.custom_price||null,
     signup_token:pass.signup_token||null,
     lot_name:pass.lot_name||null,
-    holder_name:pass.holder_name||null
+    holder_name:pass.holder_name||null,
+    plate:pass.plate||null
   });
 }
 

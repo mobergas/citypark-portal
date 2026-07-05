@@ -122,6 +122,10 @@ function showSignup(pass){
       <div class="info-row"><span class="info-label">Next billing date</span><span class="info-val">${nextBillStr}</span></div>
       <div class="divider"></div>
       <div class="fg">
+        <label class="fl">License Plate</label>
+        <input class="fi" id="plate-inp" placeholder="e.g. ABC 1234" maxlength="10" oninput="this.value=this.value.toUpperCase()" style="font-family:Barlow Condensed,sans-serif;font-size:22px;font-weight:800;letter-spacing:.12em;text-align:center;text-transform:uppercase">
+      </div>
+        <div class="fg">
         <label class="fl">Card details</label>
         <div class="card-el" id="card-element"></div>
         <div class="err" id="card-errors"></div>
@@ -198,13 +202,15 @@ async function submitSignup(prorated){
   }
 
   // Update pass in database
+  const plate=(document.getElementById('plate-inp')?.value||'').toUpperCase().trim();
   await db('passes','PATCH',{
     status:'active',
     token_used:true,
     stripe_customer_id:data.customerId,
     stripe_payment_method_id:data.paymentMethodId,
     next_bill_date:nextBill.toISOString(),
-    start_date:new Date().toISOString()
+    start_date:new Date().toISOString(),
+    plate:plate||null
   },`?signup_token=eq.${passData.signup_token}`);
 
   showSuccess(passData,price,nextBill);
