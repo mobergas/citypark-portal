@@ -135,7 +135,11 @@ async function savePassDB(pass){
     id:pass.id,name:pass.name,email:pass.email,lot_id:pass.lotId,
     status:pass.status,start_date:pass.startDate,next_bill_date:pass.nextBillDate,
     canceled_on:pass.canceledOn,monthly_amount:pass.monthlyAmount,
-    total_billed:pass.totalBilled,invite_token:pass.inviteToken
+    total_billed:pass.totalBilled,invite_token:pass.inviteToken,
+    custom_price:pass.custom_price||null,
+    signup_token:pass.signup_token||null,
+    lot_name:pass.lot_name||null,
+    holder_name:pass.holder_name||null
   });
 }
 

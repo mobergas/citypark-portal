@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/pass/signup", "destination": "/pass-signup.html" },
     { "source": "/sms-terms", "destination": "/sms-terms.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
