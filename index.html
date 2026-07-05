@@ -578,29 +578,28 @@ function genValQR(valId,sm){const val=S.vals[valId];const url=`https://cityparkm
 function renderQRCanvas(id,url,size){
   const canvas=document.getElementById(id);
   if(!canvas)return;
-  const qr=new QRCode(document.createElement('div'),{text:url,width:size*4,height:size*4,correctLevel:QRCode.CorrectLevel.H});
+  const tmpDiv=document.createElement('div');
+  tmpDiv.style.display='none';
+  document.body.appendChild(tmpDiv);
+  const qr=new QRCode(tmpDiv,{text:url,width:size*4,height:size*4,correctLevel:QRCode.CorrectLevel.H});
   setTimeout(()=>{
-    const qrImg=qr._el.querySelector('img')||qr._el.querySelector('canvas');
+    const qrCanvas=tmpDiv.querySelector('canvas');
+    if(!qrCanvas){document.body.removeChild(tmpDiv);return;}
     const ctx=canvas.getContext('2d');
-    const tmp=new Image();
-    tmp.crossOrigin='anonymous';
-    tmp.onload=()=>{
-      ctx.drawImage(tmp,0,0,size,size);
-      const logo=new Image();
-      logo.crossOrigin='anonymous';
-      logo.onload=()=>{
-        const lsize=size*0.22;
-        const lx=(size-lsize)/2;
-        const ly=(size-lsize)/2;
-        ctx.fillStyle='#fff';
-        ctx.fillRect(lx-3,ly-3,lsize+6,lsize+6);
-        ctx.drawImage(logo,lx,ly,lsize,lsize);
-      };
-      logo.src=QR_LOGO_URL;
+    ctx.drawImage(qrCanvas,0,0,size,size);
+    document.body.removeChild(tmpDiv);
+    const logo=new Image();
+    logo.crossOrigin='anonymous';
+    logo.onload=()=>{
+      const lsize=size*0.22;
+      const lx=(size-lsize)/2;
+      const ly=(size-lsize)/2;
+      ctx.fillStyle='#fff';
+      ctx.fillRect(lx-3,ly-3,lsize+6,lsize+6);
+      ctx.drawImage(logo,lx,ly,lsize,lsize);
     };
-    if(qrImg.tagName==='IMG'){tmp.src=qrImg.src;}
-    else{tmp.src=qrImg.toDataURL();}
-  },100);
+    logo.src=QR_LOGO_URL;
+  },200);
 }
 
 function renderTopbar(){
