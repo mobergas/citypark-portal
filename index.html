@@ -569,9 +569,9 @@ function getTotal(){
 }
 function renderInviteBody(tmpl,name,l,link){const fn=name.split(' ')[0]||'there';return tmpl.replace(/\{FIRST_NAME\}/g,fn).replace(/\{LOT_NAME\}/g,l?.name||'the lot').replace(/\{ZONE\}/g,l?.zone||'—').replace(/\{MONTHLY_RATE\}/g,'$'+(l?.pricing?.monthly||120).toFixed(2)).replace(/\{SIGNUP_LINK\}/g,link);}
 
-const QR_LOGO=encodeURIComponent('https://sldahhdbvcxdlqdhmsjd.supabase.co/storage/v1/object/public/assets/city%20park%20logo.png');
-function genQR(lotId,sm){const l=S.lots[lotId];const url=`https://cityparkmanagement.app/pay?lot=${lotId}&zone=${l.zone}`;const size=sm?60:126;const dlSize=600;return`<img src="https://api.qrserver.com/v1/create-qr-code/?size=${dlSize}x${dlSize}&data=${encodeURIComponent(url)}&qzone=1&color=0-0-0&bgcolor=255-255-255&logo=${QR_LOGO}&logosize=25" width="${size}" height="${size}" style="display:block">`;}
-function genValQR(valId,sm){const val=S.vals[valId];const url=`https://cityparkmanagement.app/pay?lot=${val.lotId}&code=${val.code}`;const size=sm?60:126;const dlSize=600;return`<img src="https://api.qrserver.com/v1/create-qr-code/?size=${dlSize}x${dlSize}&data=${encodeURIComponent(url)}&qzone=1&color=0-0-0&bgcolor=255-255-255&logo=${QR_LOGO}&logosize=25" width="${size}" height="${size}" style="display:block">`;}
+const QR_LOGO='https://sldahhdbvcxdlqdhmsjd.supabase.co/storage/v1/object/public/assets/city%20park%20logo.png';
+function genQR(lotId,sm){const l=S.lots[lotId];const url=`https://cityparkmanagement.app/pay?lot=${lotId}&zone=${l.zone}`;const size=sm?60:126;const dlSize=600;return`<img src="https://api.qrserver.com/v1/create-qr-code/?size=${dlSize}x${dlSize}&data=${encodeURIComponent(url)}&qzone=1&color=0-0-0&bgcolor=255-255-255&logo=${encodeURIComponent(QR_LOGO)}&logowidth=80&logoheight=80" width="${size}" height="${size}" style="display:block">`;}
+function genValQR(valId,sm){const val=S.vals[valId];const url=`https://cityparkmanagement.app/pay?lot=${val.lotId}&code=${val.code}`;const size=sm?60:126;const dlSize=600;return`<img src="https://api.qrserver.com/v1/create-qr-code/?size=${dlSize}x${dlSize}&data=${encodeURIComponent(url)}&qzone=1&color=0-0-0&bgcolor=255-255-255&logo=${encodeURIComponent(QR_LOGO)}&logowidth=80&logoheight=80" width="${size}" height="${size}" style="display:block">`;}
 
 function renderTopbar(){
   const tb=document.getElementById('tr');
