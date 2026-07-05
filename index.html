@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://js.stripe.com/v3/"></script>
 <script src="db.js"></script>
 <style>
@@ -406,7 +407,7 @@ tfoot td{padding:10px;font-size:13px;background:var(--lime-bg);font-weight:600}
 </div>
 
 <div class="mov" id="lot-modal"><div class="md"><div class="mdh"><h3 id="lmt">Edit Lot</h3></div><div class="mds" id="lmb"></div><div class="mdf"><button class="bcl" onclick="closeM('lot-modal')">Cancel</button><button class="bsv3" onclick="saveLot()">✓ Save</button></div></div></div>
-<div class="mov" id="qr-modal"><div class="md" style="width:380px"><div class="mdh"><h3 id="qrt">QR Code</h3></div><div class="qmb" id="qrb"></div><div class="mdf"><button class="bcl" onclick="closeM('qr-modal')">Close</button><button class="bsv3" onclick="const img=document.querySelector('#qrb img');if(img){const a=document.createElement('a');a.href=img.src;a.download='CityPark_QR_'+document.getElementById('qrt').textContent.replace(/\s+/g,'_')+'.png';a.click();}">⬇ Download</button></div></div></div>
+<div class="mov" id="qr-modal"><div class="md" style="width:380px"><div class="mdh"><h3 id="qrt">QR Code</h3></div><div class="qmb" id="qrb"></div><div class="mdf"><button class="bcl" onclick="closeM('qr-modal')">Close</button><button class="bsv3" onclick="const c=document.querySelector('#qrb canvas');if(c){const a=document.createElement('a');a.href=c.toDataURL('image/png');a.download='CityPark_QR_'+document.getElementById('qrt').textContent.replace(/\s+/g,'_')+'.png';a.click();}">⬇ Download</button></div></div></div>
 <div class="mov" id="val-modal"><div class="md" style="width:500px"><div class="mdh ga"><h3 id="vmt">New Validation</h3></div><div class="mds" id="vmb"></div><div class="mdf"><button class="bcl" onclick="closeM('val-modal')">Cancel</button><button class="bsv3 go" onclick="saveVal()">✓ Save</button></div></div></div>
 <div class="mov" id="vqr-modal"><div class="md" style="width:400px"><div class="mdh ga"><h3 id="vqrt">Validation QR</h3></div><div class="qmb" id="vqrb"></div><div class="mdf"><button class="bcl" onclick="closeM('vqr-modal')">Close</button><button class="bsv3 go" onclick="alert('QR downloaded')">⬇ Download</button></div></div></div>
 <div class="mov" id="inv-modal"><div class="md" style="width:600px"><div class="mdh ga"><h3 id="ivt">Invoice</h3></div><div class="mds" id="ivb"></div><div class="mdf"><button class="bcl" onclick="closeM('inv-modal')">Close</button><button class="bsv3 go" onclick="alert('PDF export ready')">⬇ Export PDF</button></div></div></div>
@@ -569,9 +570,38 @@ function getTotal(){
 }
 function renderInviteBody(tmpl,name,l,link){const fn=name.split(' ')[0]||'there';return tmpl.replace(/\{FIRST_NAME\}/g,fn).replace(/\{LOT_NAME\}/g,l?.name||'the lot').replace(/\{ZONE\}/g,l?.zone||'—').replace(/\{MONTHLY_RATE\}/g,'$'+(l?.pricing?.monthly||120).toFixed(2)).replace(/\{SIGNUP_LINK\}/g,link);}
 
-const QR_LOGO='https://sldahhdbvcxdlqdhmsjd.supabase.co/storage/v1/object/public/assets/city%20park%20logo.png';
-function genQR(lotId,sm){const l=S.lots[lotId];const url=`https://cityparkmanagement.app/pay?lot=${lotId}&zone=${l.zone}`;const size=sm?60:126;const dlSize=600;return`<img src="https://api.qrserver.com/v1/create-qr-code/?size=${dlSize}x${dlSize}&data=${encodeURIComponent(url)}&qzone=1&color=0-0-0&bgcolor=255-255-255&logo=${encodeURIComponent(QR_LOGO)}&logowidth=80&logoheight=80" width="${size}" height="${size}" style="display:block">`;}
-function genValQR(valId,sm){const val=S.vals[valId];const url=`https://cityparkmanagement.app/pay?lot=${val.lotId}&code=${val.code}`;const size=sm?60:126;const dlSize=600;return`<img src="https://api.qrserver.com/v1/create-qr-code/?size=${dlSize}x${dlSize}&data=${encodeURIComponent(url)}&qzone=1&color=0-0-0&bgcolor=255-255-255&logo=${encodeURIComponent(QR_LOGO)}&logowidth=80&logoheight=80" width="${size}" height="${size}" style="display:block">`;}
+const QR_LOGO_URL='https://sldahhdbvcxdlqdhmsjd.supabase.co/storage/v1/object/public/assets/city%20park%20logo.png';
+
+function genQR(lotId,sm){const l=S.lots[lotId];const url=`https://cityparkmanagement.app/pay?lot=${lotId}&zone=${l.zone}`;const size=sm?60:126;const id='qr-'+lotId+'-'+(sm?'sm':'lg');return`<canvas id="${id}" width="${size}" height="${size}" style="display:block"></canvas><script>setTimeout(()=>renderQRCanvas('${id}','${url}',${size}),50)<\/script>`;}
+function genValQR(valId,sm){const val=S.vals[valId];const url=`https://cityparkmanagement.app/pay?lot=${val.lotId}&code=${val.code}`;const size=sm?60:126;const id='qr-val-'+valId+'-'+(sm?'sm':'lg');return`<canvas id="${id}" width="${size}" height="${size}" style="display:block"></canvas><script>setTimeout(()=>renderQRCanvas('${id}','${url}',${size}),50)<\/script>`;}
+
+function renderQRCanvas(id,url,size){
+  const canvas=document.getElementById(id);
+  if(!canvas)return;
+  const qr=new QRCode(document.createElement('div'),{text:url,width:size*4,height:size*4,correctLevel:QRCode.CorrectLevel.H});
+  setTimeout(()=>{
+    const qrImg=qr._el.querySelector('img')||qr._el.querySelector('canvas');
+    const ctx=canvas.getContext('2d');
+    const tmp=new Image();
+    tmp.crossOrigin='anonymous';
+    tmp.onload=()=>{
+      ctx.drawImage(tmp,0,0,size,size);
+      const logo=new Image();
+      logo.crossOrigin='anonymous';
+      logo.onload=()=>{
+        const lsize=size*0.22;
+        const lx=(size-lsize)/2;
+        const ly=(size-lsize)/2;
+        ctx.fillStyle='#fff';
+        ctx.fillRect(lx-3,ly-3,lsize+6,lsize+6);
+        ctx.drawImage(logo,lx,ly,lsize,lsize);
+      };
+      logo.src=QR_LOGO_URL;
+    };
+    if(qrImg.tagName==='IMG'){tmp.src=qrImg.src;}
+    else{tmp.src=qrImg.toDataURL();}
+  },100);
+}
 
 function renderTopbar(){
   const tb=document.getElementById('tr');
