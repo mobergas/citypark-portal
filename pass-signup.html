@@ -210,7 +210,8 @@ async function submitSignup(prorated){
     stripe_payment_method_id:data.paymentMethodId,
     next_bill_date:nextBill.toISOString(),
     start_date:new Date().toISOString(),
-    plate:plate||null
+    plate:plate||null,
+    billed_at:new Date().toISOString()
   },`?signup_token=eq.${passData.signup_token}`);
 
   showSuccess(passData,price,nextBill);
