@@ -130,7 +130,8 @@ tfoot td{padding:10px;font-size:13px;background:var(--lime-bg);font-weight:600}
 .svb:hover{background:var(--lime-dark)}
 .stt{display:none;background:var(--lime-bg);border:1.5px solid var(--lime);color:#3a6b00;border-radius:7px;padding:9px 12px;font-size:12px;text-align:center;margin-top:6px}
 .stt.show{display:block}
-.stabs{display:flex;gap:0;border-bottom:2px solid var(--g2);margin-bottom:16px;flex-wrap:wrap;overflow-x:auto}
+.stabs{display:flex;gap:0;border-bottom:2px solid var(--g2);margin-bottom:16px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;}
+.stabs::-webkit-scrollbar{display:none;}
 .stab{padding:8px 11px;font-family:var(--fc);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3);border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
 .stab.on{color:var(--lime-dark);border-bottom-color:var(--lime-dark)}
 .stab:hover:not(.on){color:var(--t2)}
