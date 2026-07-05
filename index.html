@@ -1020,13 +1020,21 @@ function exportExcel(){
 function doExportExcel(lotFilter){
   const wb=XLSX.utils.book_new();
   const lotName=lotFilter==='all'?'All Lots':(S.lots[lotFilter]?.name||lotFilter);
+  const dateRange=S.rvF+' to '+S.rvT;
+
+  function makeSheet(rows,colWidths){
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=colWidths.map(w=>({wch:w}));
+    ws['!freeze']={xSplit:0,ySplit:1,topLeftCell:'A2',activePane:'bottomLeft',state:'frozen'};
+    return ws;
+  }
 
   // Sheet 1: Daily Summary
   const dailyData=bDaily(S.rvF,S.rvT,lotFilter);
   const dailyRows=[['Date','Transactions','Parking Charges','Service Fees','Total Revenue']];
   dailyData.forEach(d=>dailyRows.push([d.label,d.n,+d.pk.toFixed(2),+d.fe.toFixed(2),+d.tot.toFixed(2)]));
   dailyRows.push(['TOTAL',dailyData.reduce((a,d)=>a+d.n,0),+dailyData.reduce((a,d)=>a+d.pk,0).toFixed(2),+dailyData.reduce((a,d)=>a+d.fe,0).toFixed(2),+dailyData.reduce((a,d)=>a+d.tot,0).toFixed(2)]);
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(dailyRows),'Daily Summary');
+  XLSX.utils.book_append_sheet(wb,makeSheet(dailyRows,[12,14,18,14,16]),'Daily Summary');
 
   // Sheet 2: All Sessions
   const sessRows=[['Ticket ID','Date','Plate','Vehicle','Type','Lot','Duration (hrs)','Base Charge','Service Fee','Total Paid','Validation','Phone','Email']];
@@ -1036,7 +1044,7 @@ function doExportExcel(lotFilter){
     const d=new Date(s.start);
     sessRows.push([s.id,d.toLocaleDateString(),s.plate,s.vehicle,s.type,l.name,s.duration,+s.pkch.toFixed(2),+s.sfee.toFixed(2),+s.paid.toFixed(2),val?val.name:'',s.phone||'',s.email||'']);
   });
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sessRows),'All Sessions');
+  XLSX.utils.book_append_sheet(wb,makeSheet(sessRows,[20,12,12,10,14,18,14,13,13,13,16,14,24]),'All Sessions');
 
   // Sheet 3: Validations
   const valRows=[['Code','Name','Lots','Type','Discount','Active','Max Hours']];
@@ -1045,7 +1053,7 @@ function doExportExcel(lotFilter){
     const disc=v.type==='percent'?v.discountPct+'%':v.type==='flat'?'$'+v.discountAmt:'Free';
     valRows.push([v.code,v.name,lots,v.type,disc,v.active?'Yes':'No',v.maxHours||'']);
   });
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(valRows),'Validations');
+  XLSX.utils.book_append_sheet(wb,makeSheet(valRows,[12,20,30,10,10,8,10]),'Validations');
 
   // Sheet 4: Monthly Passes
   const passRows=[['Pass ID','Name','Email','Plate','Lot','Status','Monthly Rate','Total Billed','Start Date','Next Bill Date']];
@@ -1053,10 +1061,10 @@ function doExportExcel(lotFilter){
     const l=S.lots[p.lotId]||{name:'?'};
     passRows.push([p.id,p.name,p.email,p.plate||'',l.name,p.status,+(p.custom_price||p.monthlyAmount||0).toFixed(2),+(p.totalBilled||0).toFixed(2),p.startDate?new Date(p.startDate).toLocaleDateString():'',p.nextBillDate?new Date(p.nextBillDate).toLocaleDateString():'']);
   });
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(passRows),'Monthly Passes');
+  XLSX.utils.book_append_sheet(wb,makeSheet(passRows,[12,18,26,12,18,10,13,13,12,14]),'Monthly Passes');
 
   const suffix=lotFilter==='all'?'All_Lots':lotName.replace(/\s+/g,'_');
-  XLSX.writeFile(wb,'CityPark_Export_'+suffix+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  XLSX.writeFile(wb,`Revenue_Summary_${suffix}_${S.rvF}_to_${S.rvT}.xlsx`);
 }
 function rRevenue(){const lotIds=Object.keys(S.lots);const data=bDaily(S.rvF,S.rvT,S.rvL);const tp=data.reduce((a,d)=>a+d.pk,0),tf=data.reduce((a,d)=>a+d.fe,0),gt=tp+tf;const mx=Math.max(...data.map(d=>d.tot),1);const ln=S.rvL==='all'?'All Lots':(S.lots[S.rvL]?.name||'');const rl=fmtRL(S.rvF,S.rvT);return`<div><div class="fbar" style="justify-content:flex-end"><button onclick="exportRevenueCSV()" style="background:var(--lime);color:var(--blk);border:none;border-radius:7px;padding:7px 14px;font-family:var(--fc);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer"><i class="ti ti-file-spreadsheet" style="font-size:12px;margin-right:4px"></i>Export CSV</button><button onclick="exportExcel()" style="background:#1e7e34;color:#fff;border:none;border-radius:7px;padding:7px 12px;font-family:var(--fc);font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:4px"><i class="ti ti-table-export" style="font-size:12px"></i>Export Excel</button></div><div class="fbar"><span class="flbl">Range:</span>${[{v:'7d',l:'7 Days'},{v:'14d',l:'14 Days'},{v:'30d',l:'30 Days'},{v:'month',l:'This Month'},{v:'custom',l:'Custom'}].map(p=>`<button class="pbtn${S.rvP===p.v?' on':''}" onclick="applyRvP('${p.v}')">${p.l}</button>`).join('')}<div class="fdiv"></div><input id="rv-from" type="date" class="din" value="${S.rvF}"><span style="color:var(--t3);font-size:12px">to</span><input id="rv-to" type="date" class="din" value="${S.rvT}"><button class="apb" onclick="const f=document.getElementById('rv-from')?.value,t=document.getElementById('rv-to')?.value;if(f)S.rvF=f;if(t)S.rvT=t;S.rvP='custom';render()">Apply</button><div class="fdiv"></div><span class="flbl">Lot:</span><select class="din" onchange="S.rvL=this.value;render()" style="min-width:180px"><option value="all">All Lots</option>${lotIds.map(id=>`<option value="${id}"${S.rvL===id?' selected':''}>${S.lots[id].name}</option>`).join('')}</select></div><div class="rsc"><div class="rc tot"><div class="rcl">Total — ${ln}</div><div class="rcv">$${gt.toFixed(2)}</div><div class="rcs">${rl} · ${data.reduce((a,d)=>a+d.n,0)} transactions</div></div><div class="rc prk"><div class="rcl">Parking Charges</div><div class="rcv" style="color:#2563eb">$${tp.toFixed(2)}</div><div class="rcs">${gt>0?((tp/gt)*100).toFixed(1):0}% of total</div></div><div class="rc fee"><div class="rcl">Service Fees</div><div class="rcv">$${tf.toFixed(2)}</div><div class="rcs">${gt>0?((tf/gt)*100).toFixed(1):0}% of total</div></div></div><div class="rg2a"><div class="chartwrap"><div class="cwh2"><h3><i class="ti ti-chart-bar"></i>Daily Breakdown — ${ln}</h3></div><div class="cwb2"><div class="leg"><div class="lgi"><div class="lgd" style="background:#2563eb"></div>Parking</div><div class="lgi"><div class="lgd" style="background:#0d0d0d"></div>Fees</div></div><div class="bc">${data.map(d=>{const pw=Math.round((d.pk/mx)*200),fw=Math.round((d.fe/mx)*200);return`<div class="br"><div class="bda">${d.label}</div><div class="bt"><div class="bsw"><div class="bs pk" style="width:${Math.max(pw,2)}px"></div><div class="bla">$${d.pk.toFixed(0)}</div></div>${d.fe>0?`<div class="bsw"><div class="bs fe" style="width:${Math.max(fw,2)}px"></div><div class="bla" style="color:#555">$${d.fe.toFixed(2)}</div></div>`:''}</div><div class="bto">$${d.tot.toFixed(0)}</div></div>`;}).join('')}</div></div></div><div class="pn"><div class="ph"><h3><i class="ti ti-table"></i>Daily Summary — ${ln}</h3></div><div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Txns</th><th>Parking</th><th>Fees</th><th>Total</th></tr></thead><tbody>${[...data].reverse().map(d=>`<tr><td style="font-family:var(--fc);font-size:13px;font-weight:700">${d.label}</td><td style="color:var(--t3)">${d.n}</td><td style="font-family:var(--fc);font-weight:700;font-size:13px;color:#2563eb">$${d.pk.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:700;font-size:13px">$${d.fe.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:700;font-size:14px">$${d.tot.toFixed(2)}</td></tr>`).join('')}<tr style="background:var(--lime-bg)"><td style="font-family:var(--fc);font-weight:800;font-size:13px">TOTAL</td><td style="font-family:var(--fc);font-weight:800">${data.reduce((a,d)=>a+d.n,0)}</td><td style="font-family:var(--fc);font-weight:800;font-size:13px;color:#2563eb">$${tp.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:800;font-size:13px">$${tf.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:800;font-size:15px">$${gt.toFixed(2)}</td></tr></tbody></table></div></div></div></div>`;}
 function applyRvP(p){if(p==='7d'){S.rvF=toDS(new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()-6));S.rvT=toDS(NOW);}else if(p==='14d'){S.rvF=toDS(new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()-13));S.rvT=toDS(NOW);}else if(p==='30d'){S.rvF=toDS(new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()-29));S.rvT=toDS(NOW);}else if(p==='month'){S.rvF=toDS(new Date(NOW.getFullYear(),NOW.getMonth(),1));S.rvT=toDS(NOW);}S.rvP=p;render();}
