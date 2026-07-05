@@ -569,8 +569,8 @@ function getTotal(){
 }
 function renderInviteBody(tmpl,name,l,link){const fn=name.split(' ')[0]||'there';return tmpl.replace(/\{FIRST_NAME\}/g,fn).replace(/\{LOT_NAME\}/g,l?.name||'the lot').replace(/\{ZONE\}/g,l?.zone||'—').replace(/\{MONTHLY_RATE\}/g,'$'+(l?.pricing?.monthly||120).toFixed(2)).replace(/\{SIGNUP_LINK\}/g,link);}
 
-function genQR(lotId,sm){const l=S.lots[lotId];const url=`https://cityparkmanagement.app/pay?lot=${lotId}&zone=${l.zone}`;const size=sm?60:126;return`<img src="https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(url)}" width="${size}" height="${size}" style="display:block">`;}
-function genValQR(valId,sm){const val=S.vals[valId];const url=`https://cityparkmanagement.app/pay?lot=${val.lotId}&code=${val.code}`;const size=sm?60:126;return`<img src="https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(url)}" width="${size}" height="${size}" style="display:block">`;}
+function genQR(lotId,sm){const l=S.lots[lotId];const url=`https://cityparkmanagement.app/pay?lot=${lotId}&zone=${l.zone}`;const size=sm?60:126;const dlSize=600;return`<img src="https://api.qrserver.com/v1/create-qr-code/?size=${dlSize}x${dlSize}&data=${encodeURIComponent(url)}" width="${size}" height="${size}" style="display:block">`;}
+function genValQR(valId,sm){const val=S.vals[valId];const url=`https://cityparkmanagement.app/pay?lot=${val.lotId}&code=${val.code}`;const size=sm?60:126;const dlSize=600;return`<img src="https://api.qrserver.com/v1/create-qr-code/?size=${dlSize}x${dlSize}&data=${encodeURIComponent(url)}" width="${size}" height="${size}" style="display:block">`;}
 
 function renderTopbar(){
   const tb=document.getElementById('tr');
