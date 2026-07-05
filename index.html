@@ -861,7 +861,7 @@ async function signOut(){
 
 function renderAdmin(){
   const today=S.sess.filter(s=>{const d=new Date();d.setHours(0,0,0,0);return s.start>=d});
-  const todayRev=today.reduce((a,s)=>a+s.paid,0);const todayStart=new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate());const todayEnd=new Date(todayStart.getTime()+86400000);const todayMonthly=S.passes.filter(p=>{if(!p.nextBillDate)return false;const nb=new Date(p.nextBillDate);return nb>=todayStart&&nb<todayEnd&&p.status==='active';}).reduce((a,p)=>a+(p.custom_price||p.monthlyAmount||0),0);const todayStart=new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate());const todayEnd=new Date(todayStart.getTime()+86400000);const todayMonthly=S.passes.filter(p=>{if(!p.nextBillDate)return false;const nb=new Date(p.nextBillDate);return nb>=todayStart&&nb<todayEnd&&p.status==='active';}).reduce((a,p)=>a+(p.custom_price||p.monthlyAmount||0),0);
+  const todayRev=today.reduce((a,s)=>a+s.paid,0);const todayStart=new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate());const todayEnd=new Date(todayStart.getTime()+86400000);const todayMonthly=S.passes.filter(p=>{if(!p.nextBillDate)return false;const nb=new Date(p.nextBillDate);return nb>=todayStart&&nb<todayEnd&&p.status==='active';}).reduce((a,p)=>a+(p.custom_price||p.monthlyAmount||0),0);
   const active=S.sess.filter(s=>gSt(s)!=='expired');
   const expiring=S.sess.filter(s=>gSt(s)==='expiring');
   const aVals=Object.values(S.vals).filter(v=>v.active).length;
