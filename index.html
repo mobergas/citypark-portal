@@ -572,8 +572,8 @@ function renderInviteBody(tmpl,name,l,link){const fn=name.split(' ')[0]||'there'
 
 const QR_LOGO_URL='https://sldahhdbvcxdlqdhmsjd.supabase.co/storage/v1/object/public/assets/QR%20Logo.png';
 
-function genQR(lotId,sm){const l=S.lots[lotId];const url=`https://cityparkmanagement.app/pay?lot=${lotId}&zone=${l.zone}`;const size=sm?60:126;const id='qr-'+lotId+'-'+(sm?'sm':'lg');return`<canvas id="${id}" width="${size}" height="${size}" style="display:block"></canvas><script>setTimeout(()=>renderQRCanvas('${id}','${url}',${size}),50)<\/script>`;}
-function genValQR(valId,sm){const val=S.vals[valId];const url=`https://cityparkmanagement.app/pay?lot=${val.lotId}&code=${val.code}`;const size=sm?60:126;const id='qr-val-'+valId+'-'+(sm?'sm':'lg');return`<canvas id="${id}" width="${size}" height="${size}" style="display:block"></canvas><script>setTimeout(()=>renderQRCanvas('${id}','${url}',${size}),50)<\/script>`;}
+function genQR(lotId,sm){const l=S.lots[lotId];const url=`https://cityparkmanagement.app/pay?lot=${lotId}&zone=${l.zone}`;const size=sm?60:126;if(sm)return`<img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(url)}" width="${size}" height="${size}" style="display:block">`;const id='qr-'+lotId;return`<canvas id="${id}" width="800" height="800" style="display:block;width:${size}px;height:${size}px"></canvas><script>setTimeout(()=>renderQRCanvas('${id}','${url}',800),50)<\/script>`;}
+function genValQR(valId,sm){const val=S.vals[valId];const url=`https://cityparkmanagement.app/pay?lot=${val.lotId}&code=${val.code}`;const size=sm?60:126;if(sm)return`<img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(url)}" width="${size}" height="${size}" style="display:block">`;const id='qr-val-'+valId;return`<canvas id="${id}" width="800" height="800" style="display:block;width:${size}px;height:${size}px"></canvas><script>setTimeout(()=>renderQRCanvas('${id}','${url}',800),50)<\/script>`;}
 
 function renderQRCanvas(id,url,size){
   const canvas=document.getElementById(id);
