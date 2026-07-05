@@ -60,7 +60,8 @@ const [lots,vals,passes,sess,profiles,compCodes]=await Promise.all([
       nextBillDate:p.next_bill_date?new Date(p.next_bill_date):null,
       canceledOn:p.canceled_on?new Date(p.canceled_on):null,
       monthlyAmount:p.monthly_amount,totalBilled:p.total_billed,
-      inviteToken:p.invite_token
+      inviteToken:p.invite_token,
+      plate:p.plate||null
     }));
   }
   if(profiles){
