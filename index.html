@@ -570,7 +570,7 @@ function getTotal(){
 }
 function renderInviteBody(tmpl,name,l,link){const fn=name.split(' ')[0]||'there';return tmpl.replace(/\{FIRST_NAME\}/g,fn).replace(/\{LOT_NAME\}/g,l?.name||'the lot').replace(/\{ZONE\}/g,l?.zone||'—').replace(/\{MONTHLY_RATE\}/g,'$'+(l?.pricing?.monthly||120).toFixed(2)).replace(/\{SIGNUP_LINK\}/g,link);}
 
-const QR_LOGO_URL='https://sldahhdbvcxdlqdhmsjd.supabase.co/storage/v1/object/public/assets/city%20park%20logo.png';
+const QR_LOGO_URL='https://sldahhdbvcxdlqdhmsjd.supabase.co/storage/v1/object/public/assets/QR%20Logo.png';
 
 function genQR(lotId,sm){const l=S.lots[lotId];const url=`https://cityparkmanagement.app/pay?lot=${lotId}&zone=${l.zone}`;const size=sm?60:126;const id='qr-'+lotId+'-'+(sm?'sm':'lg');return`<canvas id="${id}" width="${size}" height="${size}" style="display:block"></canvas><script>setTimeout(()=>renderQRCanvas('${id}','${url}',${size}),50)<\/script>`;}
 function genValQR(valId,sm){const val=S.vals[valId];const url=`https://cityparkmanagement.app/pay?lot=${val.lotId}&code=${val.code}`;const size=sm?60:126;const id='qr-val-'+valId+'-'+(sm?'sm':'lg');return`<canvas id="${id}" width="${size}" height="${size}" style="display:block"></canvas><script>setTimeout(()=>renderQRCanvas('${id}','${url}',${size}),50)<\/script>`;}
