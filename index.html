@@ -867,7 +867,7 @@ function renderAdmin(){
   const expiring=S.sess.filter(s=>gSt(s)==='expiring');
   const aVals=Object.values(S.vals).filter(v=>v.active).length;
   const activePasses=S.passes.filter(p=>p.status==='active').length;
-  const tabs=[{id:'sessions',ic:'ti-list-check',lb:'Sessions'},...(isMgr()?[{id:'lots',ic:'ti-parking',lb:'Lots & Pricing'},{id:'validations',ic:'ti-discount',lb:'Validations'},{id:'passes',ic:'ti-id-badge',lb:'Monthly Passes'},{id:'billing',ic:'ti-file-invoice',lb:'Billing Reports'},{id:'revenue',ic:'ti-chart-bar',lb:'Revenue'},{id:'sms',ic:'ti-message-circle',lb:'SMS & Email'},{id:'comp',ic:'ti-ticket',lb:'Comp Codes'}]:[])];
+  const tabs=[{id:'sessions',ic:'ti-list-check',lb:'Sessions'},...(isMgr()?[{id:'lots',ic:'ti-parking',lb:'Lots & Pricing'},{id:'validations',ic:'ti-discount',lb:'Validations'},{id:'passes',ic:'ti-id-badge',lb:'Monthly Passes'},{id:'billing',ic:'ti-file-invoice',lb:'Billing Reports'},{id:'revenue',ic:'ti-chart-bar',lb:'Revenue'},{id:'sms',ic:'ti-message-circle',lb:'SMS & Email'},{id:'comp',ic:'ti-ticket',lb:'Comp Codes'},{id:'users',ic:'ti-users',lb:'Users'}]:[])];
   if(!tabs.find(t=>t.id===S.tab))S.tab='sessions';
   return`<div class="aw">
     <div class="atb"><div class="att"><h2><i class="ti ti-layout-dashboard" style="color:var(--lime);margin-right:8px;font-size:20px"></i>Admin Dashboard</h2><p>City Park Management · ${S.cu?.name} (${isMgr()?'Manager':'Employee'})</p></div></div>
