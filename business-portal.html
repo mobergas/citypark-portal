@@ -115,7 +115,7 @@ function render(){
 function confirmRegen(){
   document.getElementById('confirm-area').innerHTML=`
     <div class="confirm-box">
-      <strong>Are you sure?</strong> A new code will be generated. Your current code <strong>${valData.code}</strong> will continue to work until end of day (11:59 PM).
+      <strong>Are you sure?</strong> A new code will be generated. Your current code <strong>${valData.code}</strong> will be deactivated immediately.
     </div>
     <button class="btn danger" onclick="regenCode()"><i class="ti ti-refresh"></i>Yes, Generate New Code</button>
     <button class="btn-outline" onclick="document.getElementById('confirm-area').innerHTML=''">Cancel</button>
