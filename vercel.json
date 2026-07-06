@@ -2,6 +2,8 @@
   "rewrites": [
     { "source": "/pass/signup", "destination": "/pass-signup.html" },
     { "source": "/business", "destination": "/business-portal.html" },
+    { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/terms", "destination": "/terms.html" },
     { "source": "/sms-terms", "destination": "/sms-terms.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

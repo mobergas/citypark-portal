@@ -669,7 +669,7 @@ function renderPay(){
     </div>
     ${l.rates.monthly&&!l.monthlyselfsrv?`<div class="monthly-invite-notice"><i class="ti ti-id-badge"></i><div><h4>Monthly passes available</h4><p>Monthly parking at ${l.name} is by invitation only. Contact the parking office to request a pass.</p></div></div>`:''}
     <button onclick="S.v='lookup';render()" style="background:none;border:1.5px solid var(--lime-dark);border-radius:8px;padding:10px 20px;color:var(--lime-dark);font-family:var(--fc);font-size:15px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;width:100%">🔍 Find My Ticket</button>
-    <div style="text-align:center;font-size:11px;color:var(--t3);padding-bottom:16px;margin-top:8px"><i class="ti ti-lock" style="font-size:11px;margin-right:4px"></i>${t('secured')}<br>${t('contact')}: info@cityparkmanagement.com</div>
+    <div style="text-align:center;font-size:11px;color:var(--t3);padding-bottom:16px;margin-top:8px"><i class="ti ti-lock" style="font-size:11px;margin-right:4px"></i>${t('secured')}<br>${t('contact')}: info@cityparkmanagement.com<br><a href="/privacy" target="_blank" style="color:var(--t3);font-size:11px">Privacy Policy</a> · <a href="/terms" target="_blank" style="color:var(--t3);font-size:11px">Terms of Service</a></div>
   </div>`;
 }
 function updatePayBtn(){const btn=document.querySelector('.paybtn');if(!btn)return;const ready=S.plate.trim()&&S.phone.trim()&&S.smsConsent;btn.disabled=!ready;}
