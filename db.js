@@ -124,7 +124,9 @@ async function saveValDB(val){
     id:val.id,name:val.name,code:val.code,lot_id:val.lotIds[0]||val.lotId,
     lot_ids:val.lotIds,type:val.type,
     discount_pct:val.discountPct,discount_amt:val.discountAmt,
-    max_hours:val.maxHours,active:val.active,notes:val.notes
+    max_hours:val.maxHours,active:val.active,notes:val.notes,
+    business_token:val.business_token||null,
+    previous_codes:val.previous_codes||[]
   };
   if(exists&&exists.length>0)return db('validations','PATCH',body,`?id=eq.${val.id}`);
   return db('validations','POST',body);
