@@ -88,7 +88,6 @@ function render(){
           <div class="code">${v.code}</div>
           <div class="code-label">Current Active Code</div>
         </div>
-        <div class="qr-wrap"><div id="qr-box"></div></div>
         <p style="font-size:12px;color:#888;text-align:center;margin-bottom:16px">Customers enter this code on the parking payment screen</p>
         <button class="btn" onclick="confirmRegen()"><i class="ti ti-refresh"></i>Generate New Code</button>
       </div>
@@ -111,15 +110,6 @@ function render(){
     <div id="confirm-area"></div>
     <p style="font-size:12px;color:#aaa;text-align:center;margin-top:20px">Questions? Contact us at info@cityparkmanagement.com</p>
   `;
-
-  // Generate QR code
-  setTimeout(()=>{
-    const box=document.getElementById('qr-box');
-    if(box){
-      box.innerHTML='';
-      new QRCode(box,{text:`https://cityparkmanagement.app/pay?code=${v.code}`,width:160,height:160,correctLevel:QRCode.CorrectLevel.H});
-    }
-  },100);
 }
 
 function confirmRegen(){
@@ -134,11 +124,10 @@ function confirmRegen(){
 
 async function regenCode(){
   const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let newCode='';for(let i=0;i<8;i++)newCode+=chars[Math.floor(Math.random()*chars.length)];
+  let newCode='';for(let i=0;i<6;i++)newCode+=chars[Math.floor(Math.random()*chars.length)];
   
-  const endOfDay=new Date();endOfDay.setHours(23,59,59,999);
   const prev=valData.previous_codes||[];
-  prev.push({code:valData.code,generated_at:new Date().toISOString(),expires_at:endOfDay.toISOString()});
+  prev.push({code:valData.code,generated_at:new Date().toISOString(),expires_at:new Date().toISOString()});
 
   const res=await db('validations','PATCH',{code:newCode,previous_codes:prev},`?business_token=eq.${valData.business_token}`);
   if(res){
