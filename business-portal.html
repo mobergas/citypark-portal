@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Business Parking Portal · City Park Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Barlow:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--blk:#0d0d0d;--lime:#b5d96e;--lime-dark:#7a9e3b;--gold:#f0c040;--red:#d32f2f;--fc:'Barlow Condensed',sans-serif;--fb:'Barlow',sans-serif;}
+body{font-family:var(--fb);background:#f5f5f5;color:var(--blk);min-height:100vh;}
+.hd{background:var(--blk);padding:16px 24px;border-bottom:5px solid var(--lime)}
+.logo{font-family:var(--fc);font-weight:900;font-size:22px;color:#fff;text-decoration:none;display:block}
+.logo span{color:var(--lime);font-size:11px;display:block;letter-spacing:.12em;text-transform:uppercase}
+.wrap{max-width:560px;margin:32px auto;padding:0 16px 60px}
+.card{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.10);margin-bottom:20px}
+.card-hd{background:var(--blk);padding:20px 24px;border-bottom:4px solid var(--lime)}
+.card-hd h1{font-family:var(--fc);font-size:26px;font-weight:900;color:#fff;text-transform:uppercase}
+.card-hd p{color:#aaa;font-size:13px;margin-top:4px}
+.card-bd{padding:24px}
+.code-display{background:var(--blk);border-radius:10px;padding:20px;text-align:center;margin-bottom:16px}
+.code-display .code{font-family:var(--fc);font-size:48px;font-weight:900;color:var(--lime);letter-spacing:.15em}
+.code-display .code-label{font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-top:4px}
+.btn{width:100%;background:var(--lime);color:var(--blk);border:none;border-radius:10px;padding:14px;font-family:var(--fc);font-size:16px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;margin-top:8px;transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn:hover{opacity:.9}
+.btn.danger{background:#d32f2f;color:#fff;}
+.btn-outline{width:100%;background:transparent;color:var(--blk);border:1.5px solid #e0e0e0;border-radius:10px;padding:12px;font-family:var(--fc);font-size:14px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;margin-top:8px}
+.history-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:14px}
+.history-row:last-child{border-bottom:none}
+.old-code{font-family:var(--fc);font-size:18px;font-weight:900;color:#888;letter-spacing:.1em}
+.badge{display:inline-block;font-family:var(--fc);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:4px}
+.badge.active{background:#e8f5e9;color:#2e7d32}
+.badge.expired{background:#f5f5f5;color:#888}
+.qr-wrap{display:flex;justify-content:center;padding:16px 0}
+.loading{text-align:center;padding:60px;color:#888}
+.error-page{text-align:center;padding:40px}
+.error-page h2{font-family:var(--fc);font-size:28px;color:var(--red);margin-bottom:8px}
+.confirm-box{background:#fff3cd;border:1.5px solid #ffc107;border-radius:10px;padding:16px;margin-bottom:16px;font-size:14px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="hd"><a class="logo" href="/">city park<span>management</span></a></div>
+<div class="wrap" id="main">
+  <div class="loading"><p>Loading your portal...</p></div>
+</div>
+
+<script>
+const SUPA_URL='https://sldahhdbvcxdlqdhmsjd.supabase.co';
+const SUPA_KEY='sb_publishable_ZGELlV5vw7QFvva8_8NGcA_pQplXd46';
+let valData=null;
+
+async function db(table,method,body,query=''){
+  const res=await fetch(`${SUPA_URL}/rest/v1/${table}${query}`,{
+    method,
+    headers:{'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Prefer':'return=representation'},
+    body:body?JSON.stringify(body):undefined
+  });
+  if(!res.ok)return null;
+  return res.json();
+}
+
+async function init(){
+  const params=new URLSearchParams(window.location.search);
+  const token=params.get('token');
+  if(!token){showError('Invalid portal link.');return;}
+  const vals=await db('validations','GET',null,`?business_token=eq.${token}&select=*`);
+  if(!vals||!vals.length){showError('Portal not found. Please contact City Park Management.');return;}
+  valData=vals[0];
+  render();
+}
+
+function render(){
+  const v=valData;
+  const prev=v.previous_codes||[];
+  const endOfDay=new Date();endOfDay.setHours(23,59,59,999);
+  const endOfDayStr=endOfDay.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+
+  document.getElementById('main').innerHTML=`
+    <div class="card">
+      <div class="card-hd">
+        <h1>${v.name}</h1>
+        <p>Parking Validation Portal · ${v.lot_name||'All Lots'}</p>
+      </div>
+      <div class="card-bd">
+        <div class="code-display">
+          <div class="code">${v.code}</div>
+          <div class="code-label">Current Active Code</div>
+        </div>
+        <div class="qr-wrap"><div id="qr-box"></div></div>
+        <p style="font-size:12px;color:#888;text-align:center;margin-bottom:16px">Customers enter this code on the parking payment screen</p>
+        <button class="btn" onclick="confirmRegen()"><i class="ti ti-refresh"></i>Generate New Code</button>
+      </div>
+    </div>
+
+    ${prev.length>0?`<div class="card">
+      <div class="card-hd"><h1>Code History</h1><p>Previous codes expire at end of day</p></div>
+      <div class="card-bd">
+        ${prev.slice().reverse().map(p=>`
+          <div class="history-row">
+            <span class="old-code">${p.code}</span>
+            <div style="text-align:right">
+              <span class="badge ${p.expires_at&&new Date(p.expires_at)>new Date()?'active':'expired'}">${p.expires_at&&new Date(p.expires_at)>new Date()?'Active until '+new Date(p.expires_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'Expired'}</span>
+              <div style="font-size:11px;color:#aaa;margin-top:2px">Generated ${new Date(p.generated_at).toLocaleDateString()}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`:''}
+
+    <div id="confirm-area"></div>
+    <p style="font-size:12px;color:#aaa;text-align:center;margin-top:20px">Questions? Contact us at info@cityparkmanagement.com</p>
+  `;
+
+  // Generate QR code
+  setTimeout(()=>{
+    const box=document.getElementById('qr-box');
+    if(box){
+      box.innerHTML='';
+      new QRCode(box,{text:`https://cityparkmanagement.app/pay?code=${v.code}`,width:160,height:160,correctLevel:QRCode.CorrectLevel.H});
+    }
+  },100);
+}
+
+function confirmRegen(){
+  document.getElementById('confirm-area').innerHTML=`
+    <div class="confirm-box">
+      <strong>Are you sure?</strong> A new code will be generated. Your current code <strong>${valData.code}</strong> will continue to work until end of day (11:59 PM).
+    </div>
+    <button class="btn danger" onclick="regenCode()"><i class="ti ti-refresh"></i>Yes, Generate New Code</button>
+    <button class="btn-outline" onclick="document.getElementById('confirm-area').innerHTML=''">Cancel</button>
+  `;
+}
+
+async function regenCode(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let newCode='';for(let i=0;i<8;i++)newCode+=chars[Math.floor(Math.random()*chars.length)];
+  
+  const endOfDay=new Date();endOfDay.setHours(23,59,59,999);
+  const prev=valData.previous_codes||[];
+  prev.push({code:valData.code,generated_at:new Date().toISOString(),expires_at:endOfDay.toISOString()});
+
+  const res=await db('validations','PATCH',{code:newCode,previous_codes:prev},`?business_token=eq.${valData.business_token}`);
+  if(res){
+    valData.previous_codes=prev;
+    valData.code=newCode;
+    document.getElementById('confirm-area').innerHTML='';
+    render();
+  } else {
+    alert('Error updating code. Please try again.');
+  }
+}
+
+function showError(msg){
+  document.getElementById('main').innerHTML=`<div class="error-page"><h2>⚠️ Oops!</h2><p style="color:#666">${msg}</p></div>`;
+}
+
+init();
+</script>
+</body>
+</html>

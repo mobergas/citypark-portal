@@ -48,6 +48,8 @@ const [lots,vals,passes,sess,profiles,compCodes]=await Promise.all([
       S.vals[v.id]={
         id:v.id,name:v.name,code:v.code,lotId:v.lot_id,
         lotIds:v.lot_ids||[v.lot_id],
+        business_token:v.business_token||null,
+        previous_codes:v.previous_codes||[],
         type:v.type,discountPct:v.discount_pct,discountAmt:v.discount_amt,
         maxHours:v.max_hours,active:v.active,notes:v.notes
       };
