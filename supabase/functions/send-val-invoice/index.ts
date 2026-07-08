@@ -5,11 +5,11 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
-async function sendEmail(to: string, subject: string, html: string) {
+async function sendEmail(to: string, subject: string, html: string, attachments?: any[]) {
   await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}` },
-    body: JSON.stringify({ to, subject, html })
+    body: JSON.stringify({ to, subject, html, attachments })
   });
 }
 
@@ -86,27 +86,7 @@ Deno.serve(async (req) => {
     });
 
     // Build invoice email
-    const sessionsTable = sessions.length > 0 ? `
-      <table width="100%" cellpadding="6" cellspacing="0" style="border-collapse:collapse;margin-bottom:20px;">
-        <thead>
-          <tr style="background:#f5f5f5;">
-            <th style="text-align:left;font-size:12px;color:#888;padding:8px;border-bottom:1px solid #e0e0e0;">Date</th>
-            <th style="text-align:left;font-size:12px;color:#888;padding:8px;border-bottom:1px solid #e0e0e0;">Plate</th>
-            <th style="text-align:left;font-size:12px;color:#888;padding:8px;border-bottom:1px solid #e0e0e0;">Type</th>
-            <th style="text-align:right;font-size:12px;color:#888;padding:8px;border-bottom:1px solid #e0e0e0;">Discount</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${sessions.map((s: any) => `
-            <tr>
-              <td style="padding:8px;font-size:13px;border-bottom:1px solid #f0f0f0;">${s.date}</td>
-              <td style="padding:8px;font-size:13px;font-weight:700;border-bottom:1px solid #f0f0f0;">${s.plate}</td>
-              <td style="padding:8px;font-size:13px;border-bottom:1px solid #f0f0f0;">${s.type}</td>
-              <td style="padding:8px;font-size:13px;text-align:right;border-bottom:1px solid #f0f0f0;">$${s.discount.toFixed(2)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>` : '<p style="color:#888;font-size:13px;">No validated sessions this period.</p>';
+    const sessionsTable = `<p style="font-size:13px;color:#666;">A detailed breakdown of all ${sessions.length} validated sessions is attached as a CSV file.</p>`;
 
     const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:30px 0;">

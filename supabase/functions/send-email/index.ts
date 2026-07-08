@@ -11,9 +11,20 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { to, subject, html } = await req.json();
+    const { to, subject, html, attachments } = await req.json();
 
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
+
+    const body: any = {
+      from: 'City Park Management <info@cityparkmanagement.com>',
+      to,
+      subject,
+      html,
+    };
+
+    if (attachments && attachments.length > 0) {
+      body.attachments = attachments;
+    }
 
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -21,12 +32,7 @@ Deno.serve(async (req) => {
         'Authorization': `Bearer ${resendApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        from: 'City Park Management <info@cityparkmanagement.com>',
-        to,
-        subject,
-        html,
-      }),
+      body: JSON.stringify(body),
     });
 
     const data = await response.json();
