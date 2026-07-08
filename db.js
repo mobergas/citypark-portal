@@ -53,6 +53,7 @@ const [lots,vals,passes,sess,profiles,compCodes]=await Promise.all([
         billingEmail:v.billing_email||null,
         billingContact:v.billing_contact||null,
         monthlyRate:v.monthly_rate||0,
+        billingMethod:v.billing_method||'flat',
         type:v.type,discountPct:v.discount_pct,discountAmt:v.discount_amt,
         maxHours:v.max_hours,active:v.active,notes:v.notes
       };
@@ -132,7 +133,8 @@ async function saveValDB(val){
     previous_codes:val.previous_codes||[],
     billing_email:val.billingEmail||null,
     billing_contact:val.billingContact||null,
-    monthly_rate:val.monthlyRate||0
+    monthly_rate:val.monthlyRate||0,
+    billing_method:val.billingMethod||'flat'
   };
   if(exists&&exists.length>0)return db('validations','PATCH',body,`?id=eq.${val.id}`);
   return db('validations','POST',body);
