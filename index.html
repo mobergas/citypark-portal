@@ -964,27 +964,76 @@ function openVM(valId){S.eVal=valId;const val=valId?S.vals[valId]:null;if(!val)S
 function setVT(t){S.newVT=t;document.querySelectorAll('.dto').forEach(el=>{el.classList.toggle('on',el.querySelector('.dtl').textContent.toLowerCase().includes(t==='free'?'free':t==='percent'?'percentage':'flat'));});const f=document.getElementById('vdf');if(f)f.innerHTML=t==='percent'?`<div class="fg"><label class="fl">Discount %</label><div class="piw" style="max-width:130px"><span>%</span><input type="number" id="vm-pct" min="1" max="100" step="1" value="50"></div></div>`:t==='flat'?`<div class="fg"><label class="fl">Amount Off</label><div class="piw" style="max-width:130px"><span>$</span><input type="number" id="vm-amt" min="0.50" step="0.50" value="5"></div></div>`:'';}
 function saveVal(){const name=document.getElementById('vm-name')?.value.trim(),code=(document.getElementById('vm-code')?.value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');const lotIds=Object.keys(S.lots).filter(id=>document.getElementById('vl-'+id)?.checked);if(!lotIds.length){alert('Select at least one lot.');return;}const lotId=lotIds[0];const maxHours=parseInt(document.getElementById('vm-hours')?.value)||0,notes=document.getElementById('vm-notes')?.value||'',active=document.getElementById('vm-active')?.checked||false;if(!name){alert('Business name required.');return;}if(!code){alert('Validation code required.');return;}if(codeTaken(code,S.eVal)){const el=document.getElementById('vce');if(el)el.style.display='block';return;}const dp=S.newVT==='percent'?parseFloat(document.getElementById('vm-pct')?.value)||50:0,da=S.newVT==='flat'?parseFloat(document.getElementById('vm-amt')?.value)||5:0;const billingContact=document.getElementById('vm-bcontact')?.value.trim()||'';const billingEmail=document.getElementById('vm-bemail')?.value.trim()||'';const monthlyRate=parseFloat(document.getElementById('vm-rate')?.value)||0;
 const billingMethod=S._billingMethod||'flat';if(S.eVal){Object.assign(S.vals[S.eVal],{name,code,lotId,lotIds,type:S.newVT,discountPct:dp,discountAmt:da,maxHours,notes,active,billingContact,billingEmail,monthlyRate,billingMethod});saveValDB(S.vals[S.eVal]);}else{const id='val'+Date.now();const bizTok='biz_'+Math.random().toString(36).slice(2,14);const nv={id,name,code,lotId,lotIds,type:S.newVT,discountPct:dp,discountAmt:da,maxHours,active,notes,business_token:bizTok,previous_codes:[],billingContact,billingEmail,monthlyRate,billingMethod};S.vals[id]=nv;saveValDB(nv);}closeM('val-modal');render();}
-async function sendValInvoice(valId){
+function sendValInvoice(valId){
   const val=S.vals[valId];
   if(!val?.billingEmail){alert('No billing email set for this validation.');return;}
+  
   const now=new Date();
   const firstOfMonth=new Date(now.getFullYear(),now.getMonth(),1);
   const firstOfLastMonth=new Date(now.getFullYear(),now.getMonth()-1,1);
-  const sessions=S.sess.filter(s=>s.valId===valId&&new Date(s.start)>=firstOfLastMonth&&new Date(s.start)<firstOfMonth);
-  if(!sessions.length){if(!confirm('No sessions found for last month. Send invoice anyway?'))return;}
+  const lastOfLastMonth=new Date(firstOfMonth-1);
+
+  const modal=document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center';
+  modal.classList.add('inv-picker-modal');
+  modal.innerHTML=`<div style="background:#fff;border-radius:14px;padding:28px;width:420px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+    <div style="font-family:var(--fc);font-size:22px;font-weight:900;text-transform:uppercase;margin-bottom:4px">Send Invoice</div>
+    <div style="font-size:13px;color:#888;margin-bottom:20px">${val.name} · ${val.billingEmail}</div>
+    <div style="margin-bottom:16px">
+      <label style="font-family:var(--fc);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#666;display:block;margin-bottom:6px">Billing Period</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="date" id="inv-start" value="${firstOfLastMonth.toISOString().slice(0,10)}" style="flex:1;padding:10px;border:1.5px solid #e0e0e0;border-radius:8px;font-family:var(--fc);font-size:14px" onchange="updateInvPreview('${valId}')">
+        <span style="color:#888">to</span>
+        <input type="date" id="inv-end" value="${lastOfLastMonth.toISOString().slice(0,10)}" style="flex:1;padding:10px;border:1.5px solid #e0e0e0;border-radius:8px;font-family:var(--fc);font-size:14px" onchange="updateInvPreview('${valId}')">
+      </div>
+    </div>
+    <div id="inv-preview" style="background:#f5f5f5;border-radius:10px;padding:14px;margin-bottom:16px;font-size:14px;line-height:1.8">
+      <div style="display:flex;justify-content:space-between"><span style="color:#888">Sessions found</span><span id="inv-sess-count" style="font-weight:700">—</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#888">Amount due</span><span id="inv-amount" style="font-weight:900;font-size:18px;color:#2e7d32">—</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#888">Billing method</span><span style="font-weight:600">${val.billingMethod==='actual'?'Actual discount given':'Flat rate ($'+((val.monthlyRate||0).toFixed(2))+')'}</span></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="this.closest('.inv-picker-modal').remove()" style="flex:1;background:#f0f0f0;border:none;border-radius:8px;padding:12px;font-family:var(--fc);font-size:14px;font-weight:700;cursor:pointer">Cancel</button>
+      <button id="inv-send-btn" onclick="confirmSendInvoice('${valId}')" style="flex:2;background:#2563eb;color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fc);font-size:14px;font-weight:900;cursor:pointer">Send Invoice</button>
+    </div>
+  </div>`;
+  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+  document.body.appendChild(modal);
+  setTimeout(()=>updateInvPreview(valId),50);
+}
+
+function updateInvPreview(valId){
+  const val=S.vals[valId];
+  const start=new Date(document.getElementById('inv-start')?.value);
+  const end=new Date(document.getElementById('inv-end')?.value);
+  end.setHours(23,59,59,999);
+  const sessions=S.sess.filter(s=>s.valId===valId&&new Date(s.start)>=start&&new Date(s.start)<=end);
   const totalDiscount=sessions.reduce((a,s)=>a+(s.pkch-s.paid+s.sfee),0);
-  const amount=val.billingMethod==='actual'?+sessions.reduce((a,s)=>a+(s.pkch-s.paid+s.sfee),0).toFixed(2):val.monthlyRate||0;
-  if(amount<=0&&val.billingMethod!=='actual'){alert('Monthly rate is $0. Please set a rate in the validation settings first.');return;}
-  if(amount<=0){alert('No discount amount to invoice for this period.');return;}
-  const btn=event.target;
-  btn.textContent='Sending...';btn.disabled=true;
+  const amount=val.billingMethod==='actual'?+totalDiscount.toFixed(2):val.monthlyRate||0;
+  const countEl=document.getElementById('inv-sess-count');
+  const amountEl=document.getElementById('inv-amount');
+  if(countEl)countEl.textContent=sessions.length+' sessions';
+  if(amountEl)amountEl.textContent='$'+amount.toFixed(2);
+}
+
+async function confirmSendInvoice(valId){
+  const val=S.vals[valId];
+  const start=new Date(document.getElementById('inv-start')?.value);
+  const end=new Date(document.getElementById('inv-end')?.value);
+  end.setHours(23,59,59,999);
+  const sessions=S.sess.filter(s=>s.valId===valId&&new Date(s.start)>=start&&new Date(s.start)<=end);
+  const totalDiscount=sessions.reduce((a,s)=>a+(s.pkch-s.paid+s.sfee),0);
+  const amount=val.billingMethod==='actual'?+totalDiscount.toFixed(2):val.monthlyRate||0;
+  if(amount<=0){alert('Amount due is $0. Nothing to invoice.');return;}
+  const btn=document.getElementById('inv-send-btn');
+  if(btn){btn.textContent='Sending...';btn.disabled=true;}
   const res=await fetch(`${SUPA_URL}/functions/v1/send-val-invoice`,{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+(getAuthToken()||SUPA_KEY)},
-    body:JSON.stringify({valId,valName:val.name,billingEmail:val.billingEmail,billingContact:val.billingContact||val.name,amount,sessions:sessions.map(s=>({id:s.id,date:new Date(s.start).toLocaleDateString(),plate:s.plate,type:s.type,discount:+(s.pkch-s.paid+s.sfee).toFixed(2)})),periodStart:firstOfLastMonth.toLocaleDateString(),periodEnd:new Date(firstOfMonth-1).toLocaleDateString()})
+    body:JSON.stringify({valId,valName:val.name,billingEmail:val.billingEmail,billingContact:val.billingContact||val.name,amount,sessions:sessions.map(s=>({id:s.id,date:new Date(s.start).toLocaleDateString(),plate:s.plate,type:s.type,discount:+(s.pkch-s.paid+s.sfee).toFixed(2)})),periodStart:start.toLocaleDateString(),periodEnd:end.toLocaleDateString()})
   });
   const data=await res.json();
-  btn.textContent='Invoice';btn.disabled=false;
+  document.querySelector('.inv-picker-modal')?.remove();
   if(data.error){alert('Error sending invoice: '+data.error);return;}
   document.getElementById('sab').innerHTML=`Invoice sent to <strong>${val.billingEmail}</strong>`;
   document.getElementById('smsalert').classList.add('show');
