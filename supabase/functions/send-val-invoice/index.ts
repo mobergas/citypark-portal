@@ -13,10 +13,9 @@ async function sendEmail(to: string, subject: string, html: string, attachments?
   });
 }
 
-async function createStripePaymentLink(amount: number, description: string) {
+async function createStripePaymentLink(amount: number, description: string, invoiceId: string) {
   const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
   
-  // Create a price
   const priceBody = new URLSearchParams({
     'unit_amount': Math.round(amount * 100).toString(),
     'currency': 'usd',
@@ -34,10 +33,11 @@ async function createStripePaymentLink(amount: number, description: string) {
   const price = await priceRes.json();
   if (!priceRes.ok) throw new Error(price.error?.message || 'Failed to create price');
 
-  // Create payment link
   const linkBody = new URLSearchParams({
     'line_items[0][price]': price.id,
     'line_items[0][quantity]': '1',
+    'metadata[invoiceId]': invoiceId,
+    'metadata[type]': 'validation_invoice',
   });
 
   const linkRes = await fetch('https://api.stripe.com/v1/payment_links', {
@@ -67,12 +67,10 @@ Deno.serve(async (req) => {
   try {
     const { valId, valName, billingEmail, billingContact, amount, sessions, periodStart, periodEnd } = await req.json();
 
-    // Create Stripe payment link
-    const description = `Parking Validation Invoice - ${valName} - ${periodStart} to ${periodEnd}`;
-    const paymentLink = await createStripePaymentLink(amount, description);
-
-    // Save invoice to database
     const invoiceId = 'INV-' + Date.now();
+    const description = `Parking Validation Invoice - ${valName} - ${periodStart} to ${periodEnd}`;
+    const paymentLink = await createStripePaymentLink(amount, description, invoiceId);
+
     await supabase.from('invoices').insert({
       id: invoiceId,
       validation_id: valId,
@@ -85,7 +83,6 @@ Deno.serve(async (req) => {
       stripe_payment_link: paymentLink,
     });
 
-    // Build invoice email
     const sessionsTable = `<p style="font-size:13px;color:#666;">A detailed breakdown of all ${sessions.length} validated sessions is attached as a CSV file.</p>`;
 
     const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
@@ -113,13 +110,28 @@ Deno.serve(async (req) => {
               </div>
               <p style="font-size:13px;color:#888;">Questions? Contact us at <a href="mailto:info@cityparkmanagement.com">info@cityparkmanagement.com</a></p>
             </td></tr>
-            <tr><td style="background:#f5f5f5;padding:16px 32px;text-align:center;font-size:11px;color:#888;">City Park Management LLC · info@cityparkmanagement.com</td></tr>
+            <tr><td style="background:#f5f5f5;padding:16px 32px;text-align:center;font-size:11px;color:#888;">City Park Holdings LLC · info@cityparkmanagement.com</td></tr>
           </table>
         </td></tr>
       </table>
     </body></html>`;
 
-    await sendEmail(billingEmail, `Parking Validation Invoice - ${valName} - ${periodStart} to ${periodEnd}`, html);
+    // Generate CSV attachment
+    const csvRows = [
+      ['Date', 'Ticket ID', 'Plate', 'Type', 'Discount Given'],
+      ...sessions.map((s: any) => [s.date, s.id, s.plate, s.type, `$${s.discount.toFixed(2)}`]),
+      [],
+      ['', '', '', 'TOTAL DISCOUNT', `$${sessions.reduce((a: number, s: any) => a + s.discount, 0).toFixed(2)}`],
+      ['', '', '', 'AMOUNT DUE', `$${amount.toFixed(2)}`],
+    ];
+    const csv = csvRows.map(r => r.map((c: any) => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
+    const csvBase64 = btoa(unescape(encodeURIComponent(csv)));
+    const attachments = [{
+      filename: `Invoice_${valName.replace(/\s+/g, '_')}_${periodStart.replace(/\//g, '-')}_to_${periodEnd.replace(/\//g, '-')}.csv`,
+      content: csvBase64,
+    }];
+
+    await sendEmail(billingEmail, `Parking Validation Invoice - ${valName} - ${periodStart} to ${periodEnd}`, html, attachments);
 
     return new Response(JSON.stringify({ success: true, invoiceId, paymentLink }), {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }

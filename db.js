@@ -22,13 +22,14 @@ async function db(table,method='GET',body=null,filters=''){
 }
 
 async function loadFromDB(){
-const [lots,vals,passes,sess,profiles,compCodes]=await Promise.all([
+const [lots,vals,passes,sess,profiles,compCodes,invoices]=await Promise.all([
     db('lots','GET',null,'?select=*'),
     db('validations','GET',null,'?select=*'),
     db('passes','GET',null,'?select=*&order=created_at.desc'),
     db('sessions','GET',null,'?select=*&order=created_at.desc&limit=200'),
     db('profiles','GET',null,'?select=*'),
     db('comp_codes','GET',null,'?select=*&order=created_at.desc'),
+    db('invoices','GET',null,'?select=*&order=created_at.desc'),
   ]);
   if(lots){
     S.lots={};
@@ -79,6 +80,9 @@ const [lots,vals,passes,sess,profiles,compCodes]=await Promise.all([
   }
   if(compCodes){
     S.compCodes=compCodes;
+  }
+  if(invoices){
+    S.invoices=invoices;
   }
   if(sess){
     S.sess=sess.map(s=>({
