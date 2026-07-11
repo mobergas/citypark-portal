@@ -107,6 +107,45 @@ Deno.serve(async (req) => {
 
     if (event.type === 'payment_intent.succeeded') {
       console.log('Payment succeeded:', paymentIntent.id);
+      
+      const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
+      
+      // Get checkout session ID from payment details
+      const checkoutSessionId = paymentIntent.payment_details?.order_reference;
+      console.log('Checkout session ID:', checkoutSessionId);
+      
+      if(checkoutSessionId){
+        // Look up checkout session to get payment link
+        const csRes = await fetch(`https://api.stripe.com/v1/checkout/sessions/${checkoutSessionId}`, {
+          headers: { 'Authorization': 'Basic ' + btoa(stripeKey + ':') }
+        });
+        const csData = await csRes.json();
+        const paymentLinkId = csData.payment_link;
+        console.log('Payment link ID:', paymentLinkId);
+        
+        if(paymentLinkId){
+          const { data: invoices } = await supabase
+            .from('invoices')
+            .select('*')
+            .eq('stripe_payment_link_id', paymentLinkId)
+            .eq('status', 'unpaid');
+          
+          const invoice = invoices?.[0];
+          if(invoice){
+            await supabase.from('invoices').update({
+              status: 'paid',
+              paid_at: new Date().toISOString(),
+            }).eq('id', invoice.id);
+
+            await sendEmail(
+              'info@cityparkmanagement.com',
+              `✅ Invoice Paid - ${invoice.id}`,
+              `<p>Invoice ${invoice.id} has been paid. Amount: $${(paymentIntent.amount/100).toFixed(2)}</p>`
+            );
+            console.log('Invoice marked paid:', invoice.id);
+          }
+        }
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), {

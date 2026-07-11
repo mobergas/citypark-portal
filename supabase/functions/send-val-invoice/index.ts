@@ -51,7 +51,7 @@ async function createStripePaymentLink(amount: number, description: string, invo
   const link = await linkRes.json();
   if (!linkRes.ok) throw new Error(link.error?.message || 'Failed to create payment link');
   
-  return link.url;
+  return { url: link.url, id: link.id };
 }
 
 Deno.serve(async (req) => {
@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
 
     const invoiceId = 'INV-' + Date.now();
     const description = `Parking Validation Invoice - ${valName} - ${periodStart} to ${periodEnd}`;
-    const paymentLink = await createStripePaymentLink(amount, description, invoiceId);
+    const { url: paymentLink, id: paymentLinkId } = await createStripePaymentLink(amount, description, invoiceId);
 
     await supabase.from('invoices').insert({
       id: invoiceId,
@@ -81,6 +81,7 @@ Deno.serve(async (req) => {
       amount_due: amount,
       status: 'unpaid',
       stripe_payment_link: paymentLink,
+      stripe_payment_link_id: paymentLinkId,
     });
 
     const sessionsTable = `<p style="font-size:13px;color:#666;">A detailed breakdown of all ${sessions.length} validated sessions is attached as a CSV file.</p>`;
