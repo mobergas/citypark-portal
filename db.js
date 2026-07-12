@@ -90,7 +90,9 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices]=await Promise.all([
       start:s.start_time,duration:s.duration,paid:s.paid,
       pkch:s.pkch,sfee:s.sfee,vehicle:s.vehicle,phone:s.phone,
       smsSent:s.sms_sent,receiptSent:s.receipt_sent,
-      lotId:s.lot_id,valId:s.val_id
+      lotId:s.lot_id,valId:s.val_id,
+      paymentIntentId:s.payment_intent_id||null,
+      captured:s.captured||false
     }));
   }
 }
