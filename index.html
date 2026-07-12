@@ -815,7 +815,7 @@ function renderLookup(){
   return`<div class="cw"><div class="ccard">
     <div class="cchd"><h1 style="font-size:24px">Find My Ticket</h1><p style="color:#aaa;font-size:13px;margin-top:4px">Enter your license plate to find your active session</p></div>
     <div class="ccbd">
-      <div class="fg"><label class="fl">License plate</label><input class="fi" style="font-family:var(--fc);font-size:22px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;text-align:center" id="lookup-plate" placeholder="e.g. ABC 1234" maxlength="10" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')doLookup()"></div>
+      <div class="fg"><label class="fl">License plate or phone number</label><input class="fi" style="font-family:var(--fc);font-size:22px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;text-align:center" id="lookup-plate" placeholder="e.g. ABC 1234 or 5551234567" maxlength="15" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')doLookup()"></div>
       <div id="lookup-result" style="margin-bottom:16px"></div>
       <button class="paybtn" onclick="doLookup()"><i class="ti ti-search"></i> Find Ticket</button>
       <button class="oln" onclick="S.v='pay';render()">← Back to Pay</button>
@@ -826,7 +826,7 @@ function renderLookup(){
 function doLookup(){
   const plate=(document.getElementById('lookup-plate')?.value||'').trim().toUpperCase();
   if(!plate)return;
-  const matches=S.sess.filter(s=>s.plate===plate&&remMs(s)>0);
+  const matches=S.sess.filter(s=>(s.plate===plate||s.phone===plate)&&remMs(s)>0);
   const el=document.getElementById('lookup-result');
   if(!el)return;
   if(!matches.length){
