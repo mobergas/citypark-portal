@@ -1197,7 +1197,61 @@ function exportRevenueCSV(){const data=bDaily(S.rvF,S.rvT,S.rvL);const rows=[['D
 </div>`;}
 function insertPH2(id,ph){const el=document.getElementById(id);if(!el)return;const s=el.selectionStart,e=el.selectionEnd;el.value=el.value.slice(0,s)+ph+el.value.slice(e);el.selectionStart=el.selectionEnd=s+ph.length;el.focus();refreshSP();}
 function refreshSP(){const b=document.getElementById('settings-body')?.value||S.inviteTmpl;const s=document.getElementById('settings-subj')?.value||S.inviteSubject;const l=Object.values(S.lots).find(x=>x.rates.monthly)||Object.values(S.lots)[0];const prev=document.getElementById('settings-prev');if(prev)prev.innerHTML=buildEP('James Thornton','james@example.com',l,b,s);const cnt=document.getElementById('inv-cnt');if(cnt)cnt.textContent=b.length+' characters';}
+function viewInvoice(invId){
+  const inv=S.invoices.find(i=>i.id===invId);
+  if(!inv)return;
+  const val=Object.values(S.vals).find(v=>v.id===inv.validation_id);
+  document.getElementById('ivt').textContent=`Invoice — ${val?.name||inv.id}`;
+  document.getElementById('ivb').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;padding-bottom:16px;border-bottom:2px solid var(--g2)">
+      <div><div style="font-family:var(--fc);font-size:22px;font-weight:900;text-transform:uppercase">City Park Holdings</div>
+      <div style="font-size:13px;color:var(--t3);margin-top:3px">Parking Validation Services</div></div>
+      <div style="text-align:right"><div style="font-family:var(--fc);font-size:11px;font-weight:700;text-transform:uppercase;color:var(--t3);margin-bottom:4px">Bill To</div>
+      <div style="font-size:14px;font-weight:600">${val?.billingContact||val?.name||'—'}</div>
+      <div style="font-size:12px;color:var(--t3)">${val?.billingEmail||''}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+      ${[['Invoice #',inv.id],['Period',`${inv.period_start||'—'} to ${inv.period_end||'—'}`],['Sessions',inv.sessions_count||0],['Status',inv.status==='paid'?'✅ Paid':'⏳ Unpaid']].map(([lb,v])=>`
+        <div style="background:var(--g1);border-radius:6px;padding:8px 12px">
+          <div style="font-family:var(--fc);font-size:10px;font-weight:700;text-transform:uppercase;color:var(--t3);margin-bottom:2px">${lb}</div>
+          <div style="font-family:var(--fc);font-size:14px;font-weight:800">${v}</div>
+        </div>`).join('')}
+    </div>
+    <div style="background:var(--blk);border-radius:10px;padding:16px;margin-bottom:16px">
+      <div style="font-family:var(--fc);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-bottom:10px"><i class="ti ti-receipt" style="font-size:13px;margin-right:5px"></i>Invoice Summary</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0 0;border-top:1px solid #333;margin-top:6px">
+        <span style="color:#fff;font-family:var(--fc);font-weight:900;font-size:14px;text-transform:uppercase">Amount Due</span>
+        <span style="color:var(--gold);font-family:var(--fc);font-weight:900;font-size:26px">$${(inv.amount_due||0).toFixed(2)}</span>
+      </div>
+    </div>
+    ${inv.stripe_payment_link&&inv.status!=='paid'?`<div style="text-align:center"><a href="${inv.stripe_payment_link}" target="_blank" style="background:var(--lime);color:var(--blk);font-weight:900;font-size:15px;padding:14px 28px;border-radius:10px;text-decoration:none;display:inline-block;text-transform:uppercase;font-family:var(--fc)">Pay Now — $${(inv.amount_due||0).toFixed(2)}</a></div>`:''}
+    ${inv.paid_at?`<p style="text-align:center;font-size:12px;color:var(--grn);margin-top:12px">✅ Paid on ${new Date(inv.paid_at).toLocaleDateString()}</p>`:''}
+  `;
+  document.getElementById('inv-modal').classList.add('show');
+}
 
+async function resendInvoice(invId){
+  const inv=S.invoices.find(i=>i.id===invId);
+  if(!inv)return;
+  const val=Object.values(S.vals).find(v=>v.id===inv.validation_id);
+  if(!val?.billingEmail){alert('No billing email for this validation.');return;}
+  if(!confirm(`Resend invoice ${inv.id} to ${val.billingEmail}?`))return;
+  const res=await fetch(`${SUPA_URL}/functions/v1/send-val-invoice`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+(getAuthToken()||SUPA_KEY)},
+    body:JSON.stringify({
+      valId:val.id,valName:val.name,billingEmail:val.billingEmail,
+      billingContact:val.billingContact||val.name,
+      amount:inv.amount_due,sessions:[],
+      periodStart:inv.period_start||'',periodEnd:inv.period_end||''
+    })
+  });
+  const data=await res.json();
+  if(data.error){alert('Error: '+data.error);return;}
+  document.getElementById('sab').innerHTML=`Invoice resent to <strong>${val.billingEmail}</strong>`;
+  document.getElementById('smsalert').classList.add('show');
+  setTimeout(()=>document.getElementById('smsalert').classList.remove('show'),4000);
+}
 function rInvoices(){
   const sorted=[...S.invoices].sort((a,b)=>new Date(b.created_at).getTime()-new Date(a.created_at).getTime());
   const unpaid=sorted.filter(i=>i.status==='unpaid');
@@ -1225,7 +1279,7 @@ function rInvoices(){
         <td style="font-family:var(--fc);font-weight:800;font-size:15px;color:${isPaid?'var(--grn)':'var(--t1)'}">$${(inv.amount_due||0).toFixed(2)}</td>
         <td><span class="sp ${isPaid?'active':'pending'}">${isPaid?'Paid':'Unpaid'}</span></td>
         <td style="font-size:12px;color:var(--t3)">${inv.paid_at?new Date(inv.paid_at).toLocaleDateString():'—'}</td>
-        <td>${inv.stripe_payment_link?`<a href="${inv.stripe_payment_link}" target="_blank" style="font-family:var(--fc);font-size:11px;font-weight:700;color:#2563eb;text-decoration:none">Pay Link ↗</a>`:'—'}</td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap">${inv.stripe_payment_link?`<a href="${inv.stripe_payment_link}" target="_blank" style="font-family:var(--fc);font-size:11px;font-weight:700;color:#2563eb;text-decoration:none;white-space:nowrap">Pay Link ↗</a>`:'—'}<button onclick="viewInvoice('${inv.id}')" class="ab" style="font-size:10px">View</button><button onclick="resendInvoice('${inv.id}')" class="ab" style="font-size:10px">Resend</button></td>
       </tr>`;
     }).join('')}
     </tbody></table></div></div>
