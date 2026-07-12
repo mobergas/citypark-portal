@@ -1301,7 +1301,7 @@ function exportInvoicePDF(){
   doc.setTextColor(130,130,130);
   doc.setFontSize(8);
   doc.setFont('helvetica','normal');
-  doc.text('City Park Holdings LLC · info@cityparkmanagement.com · cityparkmanagement.app',14,280);
+  doc.text('City Park Holdings LLC · info@cityparkmanagement.com',14,280);
   doc.text('Thank you for your business!',14,287);
 
   doc.save(`Invoice_${inv.id}_${val?.name?.replace(/\s+/g,'_')||'CityPark'}.pdf`);
