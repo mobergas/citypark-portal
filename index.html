@@ -1198,6 +1198,114 @@ function exportRevenueCSV(){const data=bDaily(S.rvF,S.rvT,S.rvL);const rows=[['D
 </div>`;}
 function insertPH2(id,ph){const el=document.getElementById(id);if(!el)return;const s=el.selectionStart,e=el.selectionEnd;el.value=el.value.slice(0,s)+ph+el.value.slice(e);el.selectionStart=el.selectionEnd=s+ph.length;el.focus();refreshSP();}
 function refreshSP(){const b=document.getElementById('settings-body')?.value||S.inviteTmpl;const s=document.getElementById('settings-subj')?.value||S.inviteSubject;const l=Object.values(S.lots).find(x=>x.rates.monthly)||Object.values(S.lots)[0];const prev=document.getElementById('settings-prev');if(prev)prev.innerHTML=buildEP('James Thornton','james@example.com',l,b,s);const cnt=document.getElementById('inv-cnt');if(cnt)cnt.textContent=b.length+' characters';}
+function exportInvoicePDF(){
+  const invId=document.getElementById('ivt').textContent.replace('Invoice — ','').trim();
+  const inv=S.invoices.find(i=>{const val=Object.values(S.vals).find(v=>v.id===i.validation_id);return val?.name===invId||i.id===invId;});
+  if(!inv){alert('Invoice not found.');return;}
+  const val=Object.values(S.vals).find(v=>v.id===inv.validation_id);
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF();
+  
+  // Header
+  doc.setFillColor(13,13,13);
+  doc.rect(0,0,210,40,'F');
+  doc.setTextColor(181,217,110);
+  doc.setFontSize(20);
+  doc.setFont('helvetica','bold');
+  doc.text('CITY PARK HOLDINGS',14,18);
+  doc.setFontSize(9);
+  doc.setTextColor(150,150,150);
+  doc.text('PARKING VALIDATION SERVICES',14,26);
+  doc.setTextColor(255,255,255);
+  doc.text('info@cityparkmanagement.com',14,34);
+
+  // Invoice title
+  doc.setTextColor(13,13,13);
+  doc.setFontSize(22);
+  doc.setFont('helvetica','bold');
+  doc.text('INVOICE',14,58);
+  doc.setFontSize(10);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(100,100,100);
+  doc.text(`Invoice #: ${inv.id}`,14,66);
+  doc.text(`Date: ${new Date().toLocaleDateString()}`,14,72);
+  doc.text(`Status: ${inv.status==='paid'?'PAID':'UNPAID'}`,14,78);
+
+  // Bill To
+  doc.setFontSize(10);
+  doc.setFont('helvetica','bold');
+  doc.setTextColor(13,13,13);
+  doc.text('BILL TO:',120,58);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(60,60,60);
+  doc.text(val?.billingContact||val?.name||'—',120,66);
+  doc.text(val?.billingEmail||'',120,72);
+
+  // Divider
+  doc.setDrawColor(181,217,110);
+  doc.setLineWidth(1);
+  doc.line(14,85,196,85);
+
+  // Details table
+  doc.setFontSize(9);
+  doc.setFont('helvetica','bold');
+  doc.setTextColor(100,100,100);
+  doc.text('VALIDATION',14,95);
+  doc.text('PERIOD',80,95);
+  doc.text('SESSIONS',130,95);
+  doc.text('AMOUNT DUE',160,95);
+
+  doc.setDrawColor(220,220,220);
+  doc.setLineWidth(0.3);
+  doc.line(14,98,196,98);
+
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(13,13,13);
+  doc.setFontSize(10);
+  doc.text(val?.name||'—',14,107);
+  doc.text(`${inv.period_start||'—'} to ${inv.period_end||'—'}`,80,107);
+  doc.text(String(inv.sessions_count||0),130,107);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(12);
+  doc.setTextColor(46,125,50);
+  doc.text(`$${(inv.amount_due||0).toFixed(2)}`,160,107);
+
+  // Total box
+  doc.setFillColor(13,13,13);
+  doc.rect(120,120,76,25,'F');
+  doc.setTextColor(150,150,150);
+  doc.setFontSize(9);
+  doc.setFont('helvetica','normal');
+  doc.text('TOTAL AMOUNT DUE',122,129);
+  doc.setTextColor(181,217,110);
+  doc.setFontSize(16);
+  doc.setFont('helvetica','bold');
+  doc.text(`$${(inv.amount_due||0).toFixed(2)}`,122,141);
+
+  // Payment status
+  if(inv.status==='paid'){
+    doc.setTextColor(46,125,50);
+    doc.setFontSize(28);
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(46,125,50);
+    doc.text('PAID',14,140);
+    doc.setFontSize(10);
+    doc.setFont('helvetica','normal');
+    doc.setTextColor(100,100,100);
+    doc.text(`Paid on: ${inv.paid_at?new Date(inv.paid_at).toLocaleDateString():'-'}`,14,150);
+  }
+
+  // Footer
+  doc.setFillColor(245,245,245);
+  doc.rect(0,270,210,30,'F');
+  doc.setTextColor(130,130,130);
+  doc.setFontSize(8);
+  doc.setFont('helvetica','normal');
+  doc.text('City Park Holdings LLC · info@cityparkmanagement.com · cityparkmanagement.app',14,280);
+  doc.text('Thank you for your business!',14,287);
+
+  doc.save(`Invoice_${inv.id}_${val?.name?.replace(/\s+/g,'_')||'CityPark'}.pdf`);
+}
 function viewInvoice(invId){
   const inv=S.invoices.find(i=>i.id===invId);
   if(!inv)return;
