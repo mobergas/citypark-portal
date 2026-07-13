@@ -146,7 +146,7 @@ async function init(){
   });
 
   // Load violation types
-  const vts=await db('violation_types','GET',null,'?select=*&eq.active=true&order=name');
+  const vts=await db('violation_types','GET',null,'?select=*&active=eq.true&order=name');
   violationTypes=vts||[];
 
   // Check saved lot
