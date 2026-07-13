@@ -176,7 +176,14 @@ function selectLot(lotId){
 
 function updateLotBadge(){
   const b=document.getElementById('lot-badge');
-  if(currentLot){b.textContent=currentLot.name;b.style.display='block';}
+  if(currentLot){b.innerHTML=`${currentLot.name} <span onclick="changeLot()" style="cursor:pointer;opacity:.7;font-size:10px;margin-left:4px">✕</span>`;b.style.display='block';}
+}
+
+function changeLot(){
+  currentLot=null;
+  localStorage.removeItem('enforce_lot');
+  showScreen('lot');
+  document.getElementById('lot-badge').style.display='none';
 }
 
 function showScreen(name){
