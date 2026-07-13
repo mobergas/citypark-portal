@@ -1464,8 +1464,8 @@ function rViolations(){
     <div class="pn" style="margin-top:16px"><div class="ph"><h3><i class="ti ti-settings"></i>Violation Types & Fines</h3></div>
     <div style="overflow-x:auto"><table><thead><tr><th>Violation</th><th>Fine Amount</th><th>Status</th></tr></thead><tbody>
     ${S.violationTypes.map(vt=>`<tr>
-      <td style="font-weight:600">${vt.name}</td>
-      <td style="font-family:var(--fc);font-weight:900;font-size:15px">$${vt.fine_amount.toFixed(2)}</td>
+      <td style="font-weight:600;color:var(--t1)">${vt.name}</td>
+      <td style="font-family:var(--fc);font-weight:900;font-size:15px;color:var(--t1)">$${vt.fine_amount.toFixed(2)}</td>
       <td><span class="sp ${vt.active?'active':'expired'}">${vt.active?'Active':'Inactive'}</span></td>
     </tr>`).join('')}
     </tbody></table></div></div>
