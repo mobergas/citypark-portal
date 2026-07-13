@@ -4,6 +4,7 @@
     { "source": "/business", "destination": "/business-portal.html" },
     { "source": "/privacy", "destination": "/privacy.html" },
     { "source": "/terms", "destination": "/terms.html" },
+    { "source": "/update-card", "destination": "/update-card.html" },
     { "source": "/sms-terms", "destination": "/sms-terms.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

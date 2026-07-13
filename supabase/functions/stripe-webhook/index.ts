@@ -53,10 +53,15 @@ Deno.serve(async (req) => {
             `<p>Payment failed for ${pass.holder_name || pass.name} (${pass.email}). Pass marked as past_due. Stripe PI: ${paymentIntent.id}</p>`
           );
           if (pass.email) {
+            // Generate card update token
+            const updateToken = 'cu_' + crypto.randomUUID().replace(/-/g,'').slice(0,16);
+            await supabase.from('passes').update({ card_update_token: updateToken }).eq('id', pass.id);
+            const updateLink = `https://cityparkmanagement.app/update-card?token=${updateToken}`;
+            
             await sendEmail(
               pass.email,
               'Action Required: Monthly Parking Pass Payment Failed',
-              `<p>Hi ${pass.holder_name || pass.name}, we were unable to process your monthly parking pass payment. Please contact us at info@cityparkmanagement.com to update your payment method.</p>`
+              `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:30px 0;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;"><tr><td style="background:#0d0d0d;padding:24px 32px;border-bottom:5px solid #d32f2f;"><span style="font-weight:900;font-size:22px;color:#ffffff;">city park</span><span style="font-weight:900;font-size:11px;color:#b5d96e;letter-spacing:0.12em;text-transform:uppercase;display:block;margin-top:2px;">holdings</span></td></tr><tr><td style="padding:32px;font-size:15px;line-height:1.7;color:#444;"><h2 style="color:#d32f2f;margin-bottom:8px;">Payment Failed</h2><p>Hi ${pass.holder_name || pass.name},</p><p style="margin-top:12px">We were unable to process your monthly parking pass payment of <strong>$${(pass.custom_price || pass.monthly_amount || 0).toFixed(2)}</strong> for <strong>${pass.lot_name || 'your lot'}</strong>.</p><p style="margin-top:12px">Please update your payment method to keep your parking spot.</p><div style="text-align:center;margin:28px 0;"><a href="${updateLink}" style="background:#d32f2f;color:#fff;font-weight:900;font-size:16px;padding:16px 32px;border-radius:10px;text-decoration:none;display:inline-block;text-transform:uppercase;">Update Payment Method</a></div><p style="font-size:13px;color:#888;">If you have questions, contact us at <a href="mailto:info@cityparkmanagement.com">info@cityparkmanagement.com</a></p></td></tr><tr><td style="background:#f5f5f5;padding:16px 32px;text-align:center;font-size:11px;color:#888;">City Park Holdings LLC · info@cityparkmanagement.com</td></tr></table></td></tr></table></body></html>`
             );
           }
         }
