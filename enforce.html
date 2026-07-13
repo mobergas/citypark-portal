@@ -45,10 +45,12 @@ body{font-family:var(--fb);background:#0d0d0d;color:#fff;min-height:100vh;}
 .sp.paid{background:#0a2e0a;color:#4caf50}
 .photo-upload{background:#222;border:2px dashed #333;border-radius:10px;padding:20px;text-align:center;cursor:pointer;margin-bottom:12px}
 @media print{
+  *{margin:0!important;padding:0!important}
   body{background:#fff!important;color:#000!important}
-  .hd,.wrap>div:not(#screen-issued),.btn,#issued-summary{display:none!important}
-  #screen-issued{display:block!important}
-  #print-ticket{box-shadow:none!important;border:none!important}
+  .hd,.wrap>div:not(#screen-issued),.btn,#issued-summary,#screen-issued>div:first-child,#screen-issued>div:nth-child(2),.btn{display:none!important}
+  #screen-issued{display:block!important;padding:0!important}
+  #print-ticket{box-shadow:none!important;margin:0!important;padding:0!important}
+  @page{margin:0;size:3in auto}
 }
 </style>
 </head>
@@ -353,7 +355,7 @@ async function issueViolation(){
 
   // Build print ticket
   document.getElementById('print-ticket').innerHTML=`
-    <div style="width:80mm;font-family:monospace;font-size:12px;color:#000;background:#fff;padding:4mm;margin:0 auto">
+    <div style="width:3in;font-family:monospace;font-size:11px;color:#000;background:#fff;padding:3mm;margin:0 auto;border:2px solid #000;box-sizing:border-box">
       <div style="text-align:center;margin-bottom:4mm">
         <div style="font-size:16px;font-weight:900;letter-spacing:2px">CITY PARK MANAGEMENT</div>
         <div style="font-size:10px">PARKING VIOLATION NOTICE</div>
