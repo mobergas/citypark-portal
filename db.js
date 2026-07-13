@@ -26,7 +26,7 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices]=await Promise.all([
     db('lots','GET',null,'?select=*'),
     db('validations','GET',null,'?select=*'),
     db('passes','GET',null,'?select=*&order=created_at.desc'),
-    db('sessions','GET',null,'?select=*&order=created_at.desc&limit=200'),
+    db('sessions','GET',null,`?select=*&order=created_at.desc&limit=100&start_time=gte.${Date.now()-30*24*3600*1000}`),
     db('profiles','GET',null,'?select=*'),
     db('comp_codes','GET',null,'?select=*&order=created_at.desc'),
     db('invoices','GET',null,'?select=*&order=created_at.desc'),
@@ -94,6 +94,26 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices]=await Promise.all([
       paymentIntentId:s.payment_intent_id||null,
       captured:s.captured||false
     }));
+  }
+}
+
+async function loadMoreSessions(){
+  const oldest=S.sess.length>0?Math.min(...S.sess.map(s=>s.start)):Date.now();
+  const more=await db('sessions','GET',null,`?select=*&order=created_at.desc&limit=100&start_time=lt.${oldest}`);
+  if(more&&more.length>0){
+    const mapped=more.map(s=>({
+      id:s.id,plate:s.plate,type:s.type,rate:s.rate,
+      start:s.start_time,duration:s.duration,paid:s.paid,
+      pkch:s.pkch,sfee:s.sfee,vehicle:s.vehicle,phone:s.phone,
+      smsSent:s.sms_sent,receiptSent:s.receipt_sent,
+      lotId:s.lot_id,valId:s.val_id,
+      paymentIntentId:s.payment_intent_id||null,
+      captured:s.captured||false
+    }));
+    S.sess=[...S.sess,...mapped];
+    render();
+  } else {
+    alert('No more sessions to load.');
   }
 }
 
