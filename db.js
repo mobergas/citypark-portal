@@ -241,7 +241,12 @@ async function createStaffAccount(email, password, name, role){
   return data;
 }
 
-const _loginState={attempts:0,lockedUntil:null};
+const _loginState={
+  get attempts(){return parseInt(localStorage.getItem('_la')||'0');},
+  set attempts(v){localStorage.setItem('_la',v);},
+  get lockedUntil(){return parseInt(localStorage.getItem('_ll')||'0')||null;},
+  set lockedUntil(v){v?localStorage.setItem('_ll',v):localStorage.removeItem('_ll');}
+};
 
 async function supabaseLogin(email, password){
   // Check lockout
