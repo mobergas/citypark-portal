@@ -186,7 +186,8 @@ async function submitPayment(){
     body:JSON.stringify({
       amount:violationData.fine_amount,
       description:`Parking Violation Payment - ${violationData.violation_name} - ${violationData.plate}`,
-      sessionId:violationData.id
+      sessionId:violationData.id,
+      immediate:true
     })
   });
   const piData=await piRes.json();
