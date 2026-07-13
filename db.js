@@ -39,7 +39,8 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices]=await Promise.all([
         rates:l.rates||{},
         fees:l.fees||{},
         pricing:l.pricing||{},
-        monthlyselfsrv:l.monthlyselfsrv
+        monthlyselfsrv:l.monthlyselfsrv,
+        total_spaces:l.total_spaces||0
       };
     });
   }
@@ -142,7 +143,8 @@ async function saveLotDB(lot){
   const body={
     id:lot.id,name:lot.name,zone:lot.zone,address:lot.address,
     open:lot.open,rates:lot.rates,monthlyselfsrv:lot.monthlyselfsrv,
-    fees:lot.fees,pricing:lot.pricing
+    fees:lot.fees,pricing:lot.pricing,
+    total_spaces:lot.total_spaces||0
   };
   if(exists&&exists.length>0)return db('lots','PATCH',body,`?id=eq.${lot.id}`);
   return db('lots','POST',body);
