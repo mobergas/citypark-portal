@@ -22,7 +22,7 @@ async function db(table,method='GET',body=null,filters=''){
 }
 
 async function loadFromDB(){
-const [lots,vals,passes,sess,profiles,compCodes,invoices]=await Promise.all([
+const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTypes]=await Promise.all([
     db('lots','GET',null,'?select=*'),
     db('validations','GET',null,'?select=*'),
     db('passes','GET',null,'?select=*&order=created_at.desc'),
@@ -30,6 +30,8 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices]=await Promise.all([
     db('profiles','GET',null,'?select=*'),
     db('comp_codes','GET',null,'?select=*&order=created_at.desc'),
     db('invoices','GET',null,'?select=*&order=created_at.desc'),
+    db('violations','GET',null,'?select=*&order=created_at.desc&limit=200'),
+    db('violation_types','GET',null,'?select=*&order=name'),
   ]);
   if(lots){
     S.lots={};
@@ -85,6 +87,8 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices]=await Promise.all([
   if(invoices){
     S.invoices=invoices;
   }
+  if(violations){S.violations=violations;}
+  if(violationTypes){S.violationTypes=violationTypes;}
   if(sess){
     S.sess=sess.map(s=>({
       id:s.id,plate:s.plate,type:s.type,rate:s.rate,

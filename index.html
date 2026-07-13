@@ -480,7 +480,7 @@ users:[],
     val4:{id:'val4',name:'Metro Bank',code:'METROBANK',lotId:'lot2',type:'free',discountPct:0,discountAmt:0,maxHours:1,active:false,notes:'Free 1 hr for customers'},
     val5:{id:'val5',name:'Rooftop Bar & Grill',code:'ROOFTOP25',lotId:'lot1',type:'percent',discountPct:25,discountAmt:0,maxHours:4,active:true,notes:'25% off for guests'},
   },
-  sess:[],vsess:[],passes:[],compCodes:[],invoices:[],
+  sess:[],vsess:[],passes:[],compCodes:[],invoices:[],violations:[],violationTypes:[],
 };
 
 const T={
@@ -962,7 +962,7 @@ function renderAdmin(){
   const expiring=S.sess.filter(s=>gSt(s)==='expiring');
   const aVals=Object.values(S.vals).filter(v=>v.active).length;
   const activePasses=S.passes.filter(p=>p.status==='active').length;
-  const tabs=[{id:'sessions',ic:'ti-list-check',lb:'Sessions'},...(isMgr()?[{id:'lots',ic:'ti-parking',lb:'Lots & Pricing'},{id:'validations',ic:'ti-discount',lb:'Validations'},{id:'comp',ic:'ti-ticket',lb:'Comp Codes'},{id:'passes',ic:'ti-id-badge',lb:'Monthly Passes'},{id:'revenue',ic:'ti-chart-bar',lb:'Revenue'},{id:'billing',ic:'ti-file-invoice',lb:'Billing Reports'},{id:'invoices',ic:'ti-receipt',lb:'Invoices'},{id:'sms',ic:'ti-message-circle',lb:'SMS & Email'},{id:'users',ic:'ti-users',lb:'Users'}]:[])];
+  const tabs=[{id:'sessions',ic:'ti-list-check',lb:'Sessions'},...(isMgr()?[{id:'lots',ic:'ti-parking',lb:'Lots & Pricing'},{id:'validations',ic:'ti-discount',lb:'Validations'},{id:'comp',ic:'ti-ticket',lb:'Comp Codes'},{id:'passes',ic:'ti-id-badge',lb:'Monthly Passes'},{id:'revenue',ic:'ti-chart-bar',lb:'Revenue'},{id:'billing',ic:'ti-file-invoice',lb:'Billing Reports'},{id:'invoices',ic:'ti-receipt',lb:'Invoices'},{id:'sms',ic:'ti-message-circle',lb:'SMS & Email'},{id:'users',ic:'ti-users',lb:'Users'},{id:'violations',ic:'ti-alert-triangle',lb:'Violations'}]:[])];
   if(!tabs.find(t=>t.id===S.tab))S.tab='sessions';
   return`<div class="aw">
     <div class="atb"><div class="att"><h2><i class="ti ti-layout-dashboard" style="color:var(--lime);margin-right:8px;font-size:20px"></i>Admin Dashboard</h2><p>City Park Management · ${S.cu?.name} (${isMgr()?'Manager':'Employee'})</p></div></div>
@@ -977,6 +977,7 @@ function renderAdmin(){
     ${S.tab==='sms'&&isMgr()?rSms():''}
     ${S.tab==='users'&&isMgr()?rUsers():''}
     ${S.tab==='invoices'&&isMgr()?rInvoices():''}
+    ${S.tab==='violations'&&isMgr()?rViolations():''}
     ${S.tab==='comp'&&isMgr()?rComp():''}
   </div>`;
 }
@@ -1426,6 +1427,49 @@ async function resendInvoice(invId){
   document.getElementById('sab').innerHTML=`Invoice resent to <strong>${val.billingEmail}</strong>`;
   document.getElementById('smsalert').classList.add('show');
   setTimeout(()=>document.getElementById('smsalert').classList.remove('show'),4000);
+}
+function rViolations(){
+  const unpaid=S.violations.filter(v=>v.status==='unpaid');
+  const paid=S.violations.filter(v=>v.status==='paid');
+  const totalFines=S.violations.reduce((a,v)=>a+v.fine_amount,0);
+  const collectedFines=paid.reduce((a,v)=>a+v.fine_amount,0);
+  return`<div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div style="font-family:var(--fc);font-size:20px;font-weight:900;text-transform:uppercase">Violations</div>
+      <a href="/enforce" target="_blank" style="background:var(--red);color:#fff;border:none;border-radius:9px;padding:10px 18px;font-family:var(--fc);font-size:13px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:6px"><i class="ti ti-device-mobile" style="font-size:13px"></i>Open Enforcement App</button>
+    </div>
+    <div class="sg" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+      <div class="sc"><div class="sl">Total</div><div class="sv">${S.violations.length}</div></div>
+      <div class="sc"><div class="sl">Unpaid</div><div class="sv am">${unpaid.length}</div></div>
+      <div class="sc"><div class="sl">Collected</div><div class="sv gn">$${collectedFines.toFixed(2)}</div></div>
+      <div class="sc"><div class="sl">Outstanding</div><div class="sv am">$${unpaid.reduce((a,v)=>a+v.fine_amount,0).toFixed(2)}</div></div>
+    </div>
+    <div class="pn"><div class="ph"><h3><i class="ti ti-alert-triangle"></i>All Violations</h3></div>
+    <div style="overflow-x:auto"><table><thead><tr>
+      <th>ID</th><th>Date</th><th>Plate</th><th>Lot</th><th>Violation</th><th>Fine</th><th>Status</th><th>Photo</th>
+    </tr></thead><tbody>
+    ${S.violations.length===0?`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--t3)">No violations yet</td></tr>`:
+    S.violations.map(v=>`<tr>
+      <td style="font-family:var(--fc);font-size:12px;font-weight:800">${v.id}</td>
+      <td style="font-size:12px;color:var(--t3)">${new Date(v.created_at).toLocaleDateString()}</td>
+      <td style="font-family:var(--fc);font-size:15px;font-weight:900">${v.plate}</td>
+      <td style="font-size:12px;color:var(--t2)">${v.lot_name||'—'}</td>
+      <td style="font-size:13px;font-weight:600">${v.violation_name||'—'}</td>
+      <td style="font-family:var(--fc);font-weight:900;font-size:15px;color:${v.status==='paid'?'var(--grn)':'var(--red)'}">$${v.fine_amount.toFixed(2)}</td>
+      <td><span class="sp ${v.status==='paid'?'active':'pending'}">${v.status==='paid'?'Paid':'Unpaid'}</span></td>
+      <td>${v.photo_url?`<a href="${v.photo_url}" target="_blank" style="color:#2563eb;font-size:12px">View</a>`:'—'}</td>
+    </tr>`).join('')}
+    </tbody></table></div></div>
+
+    <div class="pn" style="margin-top:16px"><div class="ph"><h3><i class="ti ti-settings"></i>Violation Types & Fines</h3></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Violation</th><th>Fine Amount</th><th>Status</th></tr></thead><tbody>
+    ${S.violationTypes.map(vt=>`<tr>
+      <td style="font-weight:600">${vt.name}</td>
+      <td style="font-family:var(--fc);font-weight:900;font-size:15px">$${vt.fine_amount.toFixed(2)}</td>
+      <td><span class="sp ${vt.active?'active':'expired'}">${vt.active?'Active':'Inactive'}</span></td>
+    </tr>`).join('')}
+    </tbody></table></div></div>
+  </div>`;
 }
 function rInvoices(){
   const sorted=[...S.invoices].sort((a,b)=>new Date(b.created_at).getTime()-new Date(a.created_at).getTime());
