@@ -241,7 +241,15 @@ async function createStaffAccount(email, password, name, role){
   return data;
 }
 
+const _loginState={attempts:0,lockedUntil:null};
+
 async function supabaseLogin(email, password){
+  // Check lockout
+  if(_loginState.lockedUntil&&Date.now()<_loginState.lockedUntil){
+    const remaining=Math.ceil((_loginState.lockedUntil-Date.now())/60000);
+    throw new Error(`Too many failed attempts. Try again in ${remaining} minute${remaining===1?'':'s'}.`);
+  }
+
   const res = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=password`, {
     method: 'POST',
     headers: {
@@ -250,8 +258,21 @@ async function supabaseLogin(email, password){
     },
     body: JSON.stringify({ email, password })
   });
-  if(!res.ok) return null;
-  return res.json(); // returns { access_token, user, ... }
+
+  if(!res.ok){
+    _loginState.attempts++;
+    if(_loginState.attempts>=5){
+      _loginState.lockedUntil=Date.now()+10*60*1000;
+      _loginState.attempts=0;
+      throw new Error('Too many failed attempts. Login locked for 10 minutes.');
+    }
+    const remaining=5-_loginState.attempts;
+    throw new Error(`Invalid email or password. ${remaining} attempt${remaining===1?'':'s'} remaining.`);
+  }
+
+  _loginState.attempts=0;
+  _loginState.lockedUntil=null;
+  return res.json();
 }
 
 async function supabaseSignOut(accessToken){
