@@ -44,7 +44,12 @@ body{font-family:var(--fb);background:#0d0d0d;color:#fff;min-height:100vh;}
 .sp.unpaid{background:#2e1a00;color:var(--gold)}
 .sp.paid{background:#0a2e0a;color:#4caf50}
 .photo-upload{background:#222;border:2px dashed #333;border-radius:10px;padding:20px;text-align:center;cursor:pointer;margin-bottom:12px}
-.photo-preview{width:100%;border-radius:8px;margin-bottom:12px;display:none}
+@media print{
+  body{background:#fff!important;color:#000!important}
+  .hd,.wrap>div:not(#screen-issued),.btn,#issued-summary{display:none!important}
+  #screen-issued{display:block!important}
+  #print-ticket{box-shadow:none!important;border:none!important}
+}
 </style>
 </head>
 <body>
@@ -106,12 +111,14 @@ body{font-family:var(--fb);background:#0d0d0d;color:#fff;min-height:100vh;}
 
   <!-- Violation issued screen -->
   <div id="screen-issued" style="display:none">
-    <div style="text-align:center;padding:32px 0">
+    <div style="text-align:center;padding:24px 0 12px">
       <div style="font-size:48px;margin-bottom:8px">✅</div>
       <div style="font-family:var(--fc);font-size:24px;font-weight:900;text-transform:uppercase;margin-bottom:4px">Violation Issued</div>
-      <div id="issued-summary" style="font-size:13px;color:#888;margin-bottom:24px;line-height:1.7"></div>
-      <button class="btn" onclick="newLookup()">Look Up Another Plate</button>
+      <div id="issued-summary" style="font-size:13px;color:#888;margin-bottom:16px;line-height:1.7"></div>
     </div>
+    <div id="print-ticket" style="background:#fff;border-radius:8px;margin-bottom:12px"></div>
+    <button class="btn" onclick="window.print()" style="background:#2563eb;margin-bottom:8px"><i class="ti ti-printer"></i> Print Ticket</button>
+    <button class="btn" onclick="newLookup()">Look Up Another Plate</button>
   </div>
 </div>
 
@@ -329,11 +336,57 @@ async function issueViolation(){
     status:'unpaid'
   });
 
+  const issuedAt=new Date();
   document.getElementById('issued-summary').innerHTML=`
     Plate: <strong>${currentPlate}</strong><br>
     Violation: <strong>${selectedViolationType.name}</strong><br>
     Fine: <strong>$${selectedViolationType.fine_amount.toFixed(2)}</strong><br>
     Lot: <strong>${currentLot.name}</strong>
+  `;
+
+  // Build print ticket
+  document.getElementById('print-ticket').innerHTML=`
+    <div style="width:80mm;font-family:monospace;font-size:12px;color:#000;background:#fff;padding:4mm;margin:0 auto">
+      <div style="text-align:center;margin-bottom:4mm">
+        <div style="font-size:16px;font-weight:900;letter-spacing:2px">CITY PARK MANAGEMENT</div>
+        <div style="font-size:10px">PARKING VIOLATION NOTICE</div>
+        <div style="border-top:2px solid #000;margin:2mm 0"></div>
+      </div>
+      <div style="margin-bottom:3mm">
+        <div style="font-size:10px;color:#666">VIOLATION ID</div>
+        <div style="font-size:13px;font-weight:900">${violationId}</div>
+      </div>
+      <div style="margin-bottom:3mm">
+        <div style="font-size:10px;color:#666">DATE & TIME</div>
+        <div style="font-size:13px;font-weight:900">${issuedAt.toLocaleDateString()} ${issuedAt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+      <div style="margin-bottom:3mm">
+        <div style="font-size:10px;color:#666">LICENSE PLATE</div>
+        <div style="font-size:22px;font-weight:900;letter-spacing:3px">${currentPlate}</div>
+      </div>
+      <div style="margin-bottom:3mm">
+        <div style="font-size:10px;color:#666">LOCATION</div>
+        <div style="font-size:13px;font-weight:900">${currentLot.name}</div>
+      </div>
+      <div style="margin-bottom:3mm">
+        <div style="font-size:10px;color:#666">VIOLATION</div>
+        <div style="font-size:14px;font-weight:900">${selectedViolationType.name}</div>
+      </div>
+      <div style="border-top:2px solid #000;border-bottom:2px solid #000;padding:2mm 0;margin:3mm 0;text-align:center">
+        <div style="font-size:10px">FINE AMOUNT</div>
+        <div style="font-size:28px;font-weight:900">$${selectedViolationType.fine_amount.toFixed(2)}</div>
+      </div>
+      <div style="margin-bottom:3mm;font-size:10px;line-height:1.5">
+        To pay this violation online visit:<br>
+        <strong>cityparkmanagement.com</strong><br>
+        Reference: ${violationId}
+      </div>
+      <div style="text-align:center;font-size:9px;color:#666;margin-top:3mm;border-top:1px dashed #999;padding-top:2mm">
+        City Park Holdings LLC<br>
+        info@cityparkmanagement.com<br>
+        Issued by: ${localStorage.getItem('enforce_officer')||'Staff'}
+      </div>
+    </div>
   `;
 
   showScreen('issued');
