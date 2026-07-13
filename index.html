@@ -461,7 +461,7 @@ const S={
   inviteTmpl:DEFAULT_INVITE_TMPL,
   inviteSubject:'Your City Park monthly parking pass invitation',
   smsLog:[{time:'10:42 AM',plate:'ABC 1234',lot:'Downtown Lot A',msg:'Auto 20 min warning'}],   receiptTmpl:'City Park Management: Receipt for {PLATE} at {LOT} (Zone {ZONE}). Duration: {DURATION}. Amount paid: {AMOUNT}. Thank you for parking with us!',
-  passFilter:'all',passSearch:'',cancelingPassId:null,showExp:false,valSearch:'',lang:'en',smsConsent:false,
+  passFilter:'all',passSearch:'',cancelingPassId:null,showExp:false,valSearch:'',lang:'en',smsConsent:false,_codeAttempts:0,
 users:[],
   lots:{
     lot1:{id:'lot1',name:'Downtown Lot A',zone:'2987',address:'123 Main St',open:true,
@@ -675,13 +675,27 @@ function renderPay(){
 }
 function updatePayBtn(){const btn=document.querySelector('.paybtn');if(!btn)return;const ready=S.plate.trim()&&S.phone.trim()&&S.smsConsent;btn.disabled=!ready;}
   function applyCode(){
+  if(S._codeAttempts>=5){
+    const el=document.getElementById('vcode-err');
+    if(el){el.textContent='Too many invalid attempts. Please wait 10 minutes.';el.classList.add('show');}
+    return;
+  }
   const code=(document.getElementById('vcode-inp')?.value||'').toUpperCase().trim();
   const l=lot();
   const v=Object.values(S.vals).find(x=>x.code===code&&(x.lotIds||[x.lotId]).includes(l.id)&&x.active);
-  if(v){S.val=v;S.codeErr=false;render();return;}
+  if(v){S.val=v;S.codeErr=false;S._codeAttempts=0;render();return;}
   const comp=S.compCodes.find(x=>x.code===code&&!x.used_at&&new Date(x.expires_at)>new Date());
-  if(comp){S.val={id:comp.id,name:'Comp Code',code:comp.code,type:'free',discountPct:0,discountAmt:0,maxHours:0,active:true,isComp:true};S.codeErr=false;render();return;}
-  S.codeErr=true;const el=document.getElementById('vcode-err');if(el)el.classList.add('show');
+  if(comp){S.val={id:comp.id,name:'Comp Code',code:comp.code,type:'free',discountPct:0,discountAmt:0,maxHours:0,active:true,isComp:true};S.codeErr=false;S._codeAttempts=0;render();return;}
+  S._codeAttempts=(S._codeAttempts||0)+1;
+  if(S._codeAttempts>=5){
+    setTimeout(()=>{S._codeAttempts=0;},10*60*1000);
+  }
+  S.codeErr=true;const el=document.getElementById('vcode-err');
+  if(el){
+    const remaining=5-S._codeAttempts;
+    el.textContent=remaining>0?`Invalid code. ${remaining} attempt${remaining===1?'':'s'} remaining.`:'Too many invalid attempts. Please wait 10 minutes.';
+    el.classList.add('show');
+  }
 }
 async function handlePay(){
   if(!S.plate.trim())return;
