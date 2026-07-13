@@ -386,8 +386,17 @@ async function issueViolation(){
         info@cityparkmanagement.com<br>
         Issued by: ${localStorage.getItem('enforce_officer')||'Staff'}
       </div>
+      <div style="text-align:center;margin-top:3mm" id="ticket-qr"></div>
+      <div style="text-align:center;font-size:9px;margin-top:2mm">Scan to pay or visit cityparkmanagement.app/payfine</div>
     </div>
   `;
+  // Generate QR code
+  setTimeout(()=>{
+    const qrDiv=document.getElementById('ticket-qr');
+    if(qrDiv){
+      new QRCode(qrDiv,{text:`https://cityparkmanagement.app/payfine?id=${violationId}`,width:100,height:100,correctLevel:QRCode.CorrectLevel.H});
+    }
+  },100);
 
   showScreen('issued');
 }

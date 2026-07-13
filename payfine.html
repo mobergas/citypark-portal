@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pay Parking Fine · City Park Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Barlow:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://js.stripe.com/v3/"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--blk:#0d0d0d;--lime:#b5d96e;--lime-dark:#7a9e3b;--red:#d32f2f;--fc:'Barlow Condensed',sans-serif;--fb:'Barlow',sans-serif;}
+body{font-family:var(--fb);background:#f5f5f5;color:var(--blk);min-height:100vh;}
+.hd{background:var(--blk);padding:16px 24px;border-bottom:5px solid var(--lime)}
+.logo{font-family:var(--fc);font-weight:900;font-size:22px;color:#fff;text-decoration:none;display:block}
+.logo span{color:var(--lime);font-size:11px;display:block;letter-spacing:.12em;text-transform:uppercase}
+.wrap{max-width:480px;margin:32px auto;padding:0 16px 60px}
+.card{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.10);margin-bottom:16px}
+.card-hd{background:var(--blk);padding:20px 24px;border-bottom:4px solid var(--red)}
+.card-hd h1{font-family:var(--fc);font-size:26px;font-weight:900;color:#fff;text-transform:uppercase}
+.card-hd p{color:#aaa;font-size:13px;margin-top:4px}
+.card-bd{padding:24px}
+.info-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:14px}
+.info-row:last-child{border-bottom:none}
+.info-label{color:#888}
+.info-val{font-weight:700}
+.fine-amount{text-align:center;padding:20px 0;border-top:2px solid #f0f0f0;border-bottom:2px solid #f0f0f0;margin:16px 0}
+.fine-amount .amount{font-family:var(--fc);font-size:48px;font-weight:900;color:var(--red)}
+.fine-amount .label{font-size:12px;color:#888;text-transform:uppercase;letter-spacing:.06em}
+.fg{margin-bottom:16px}
+.fl{display:block;font-family:var(--fc);font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#666;margin-bottom:6px}
+.fi{width:100%;background:#f8f8f8;border:1.5px solid #e0e0e0;border-radius:8px;padding:11px 13px;font-family:var(--fb);font-size:15px;color:var(--blk);outline:none}
+.fi:focus{border-color:var(--lime-dark);background:#fff}
+.card-el{background:#f8f8f8;border:1.5px solid #e0e0e0;border-radius:8px;padding:13px}
+.err{color:var(--red);font-size:12px;margin-top:6px;min-height:16px}
+.btn{width:100%;background:var(--red);color:#fff;border:none;border-radius:10px;padding:14px;font-family:var(--fc);font-size:17px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;margin-top:8px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.lime{background:var(--lime);color:var(--blk)}
+.note{font-size:12px;color:#888;text-align:center;margin-top:12px;line-height:1.6}
+.loading{text-align:center;padding:60px;color:#888}
+.success{text-align:center;padding:40px 28px}
+.success h2{font-family:var(--fc);font-size:32px;font-weight:900;text-transform:uppercase;margin-bottom:8px}
+.error-page{text-align:center;padding:40px}
+.error-page h2{font-family:var(--fc);font-size:28px;color:var(--red);margin-bottom:8px}
+.id-input{font-family:var(--fc);font-size:22px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;text-align:center}
+</style>
+</head>
+<body>
+<div class="hd"><a class="logo" href="/">city park<span>management</span></a></div>
+<div class="wrap" id="main">
+  <div class="loading"><p>Loading...</p></div>
+</div>
+
+<script>
+const SUPA_URL='https://sldahhdbvcxdlqdhmsjd.supabase.co';
+const SUPA_KEY='sb_publishable_ZGELlV5vw7QFvva8_8NGcA_pQplXd46';
+let violationData=null;
+let stripe=null;
+let cardElement=null;
+
+async function db(table,method,body,query=''){
+  const res=await fetch(`${SUPA_URL}/rest/v1/${table}${query}`,{
+    method,
+    headers:{'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Prefer':'return=representation'},
+    body:body?JSON.stringify(body):undefined
+  });
+  if(!res.ok)return null;
+  return res.json();
+}
+
+async function init(){
+  const params=new URLSearchParams(window.location.search);
+  const id=params.get('id');
+  if(id){
+    await loadViolation(id);
+  } else {
+    showLookup();
+  }
+}
+
+function showLookup(){
+  document.getElementById('main').innerHTML=`
+    <div style="text-align:center;padding:32px 0 20px">
+      <div style="font-size:48px;margin-bottom:8px">🚗</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;text-transform:uppercase;margin-bottom:4px">Pay a Parking Fine</div>
+      <div style="font-size:13px;color:#888;margin-bottom:24px">Enter your violation ID from your ticket</div>
+    </div>
+    <div class="card">
+      <div class="card-bd">
+        <div class="fg">
+          <label class="fl">Violation ID</label>
+          <input class="fi id-input" id="vio-id-input" placeholder="VIO-000000000000" maxlength="20" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')lookupViolation()">
+        </div>
+        <button class="btn" onclick="lookupViolation()">Find My Ticket</button>
+        <div class="err" id="lookup-err"></div>
+      </div>
+    </div>
+    <p class="note">Your violation ID is printed on your parking notice.<br>Contact us at info@cityparkmanagement.com for help.</p>
+  `;
+}
+
+async function lookupViolation(){
+  const id=document.getElementById('vio-id-input')?.value.trim().toUpperCase();
+  if(!id)return;
+  const btn=document.querySelector('.btn');
+  if(btn){btn.textContent='Searching...';btn.disabled=true;}
+  await loadViolation(id);
+}
+
+async function loadViolation(id){
+  const violations=await db('violations','GET',null,`?id=eq.${encodeURIComponent(id)}&select=*`);
+  if(!violations||!violations.length){
+    const err=document.getElementById('lookup-err');
+    if(err){err.textContent='Violation not found. Please check your ID and try again.';}
+    else{showError('Violation not found. Please check your ID and try again.');}
+    const btn=document.querySelector('.btn');
+    if(btn){btn.textContent='Find My Ticket';btn.disabled=false;}
+    return;
+  }
+  violationData=violations[0];
+  if(violationData.status==='paid'){
+    showAlreadyPaid();
+    return;
+  }
+  showPayment();
+}
+
+function showPayment(){
+  const v=violationData;
+  document.getElementById('main').innerHTML=`
+    <div class="card">
+      <div class="card-hd">
+        <h1>Parking Violation</h1>
+        <p>Reference: ${v.id}</p>
+      </div>
+      <div class="card-bd">
+        <div class="info-row"><span class="info-label">Plate</span><span class="info-val" style="font-family:'Barlow Condensed',sans-serif;font-size:18px;letter-spacing:.1em">${v.plate}</span></div>
+        <div class="info-row"><span class="info-label">Location</span><span class="info-val">${v.lot_name||'—'}</span></div>
+        <div class="info-row"><span class="info-label">Violation</span><span class="info-val">${v.violation_name||'—'}</span></div>
+        <div class="info-row"><span class="info-label">Date Issued</span><span class="info-val">${new Date(v.created_at).toLocaleDateString()}</span></div>
+        ${v.notes?`<div class="info-row"><span class="info-label">Notes</span><span class="info-val">${v.notes}</span></div>`:''}
+        <div class="fine-amount">
+          <div class="label">Fine Amount</div>
+          <div class="amount">$${v.fine_amount.toFixed(2)}</div>
+        </div>
+        <div class="fg">
+          <label class="fl">Card details</label>
+          <div class="card-el" id="card-element"></div>
+          <div class="err" id="card-errors"></div>
+        </div>
+        <button class="btn" id="pay-btn" onclick="submitPayment()">Pay $${v.fine_amount.toFixed(2)} Now</button>
+        <p class="note">🔒 Secured payment · City Park Holdings LLC</p>
+      </div>
+    </div>
+  `;
+
+  stripe=Stripe('pk_test_51ToAC1CRGT2uMGb0UnwvpT7KnbgRAzPjoMlnFGt1qWsOOnWQfqc8xOM9gjTQ5GEU360rWLIClQNXKo1v3WhA0zwb00siXv5x5V');
+  const elements=stripe.elements();
+  cardElement=elements.create('card',{
+    style:{base:{fontFamily:'Barlow,sans-serif',fontSize:'16px',color:'#0d0d0d','::placeholder':{color:'#888'}},invalid:{color:'#d32f2f'}}
+  });
+  cardElement.mount('#card-element');
+  cardElement.on('change',e=>{
+    const err=document.getElementById('card-errors');
+    if(err)err.textContent=e.error?e.error.message:'';
+  });
+}
+
+async function submitPayment(){
+  const btn=document.getElementById('pay-btn');
+  if(btn){btn.textContent='Processing...';btn.disabled=true;}
+
+  const {paymentMethod,error}=await stripe.createPaymentMethod({type:'card',card:cardElement});
+  if(error){
+    const el=document.getElementById('card-errors');
+    if(el)el.textContent=error.message;
+    if(btn){btn.textContent=`Pay $${violationData.fine_amount.toFixed(2)} Now`;btn.disabled=false;}
+    return;
+  }
+
+  // Create payment intent
+  const piRes=await fetch(`${SUPA_URL}/functions/v1/stripe-payment`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+    body:JSON.stringify({
+      amount:violationData.fine_amount,
+      description:`Parking Violation Payment - ${violationData.violation_name} - ${violationData.plate}`,
+      sessionId:violationData.id
+    })
+  });
+  const piData=await piRes.json();
+
+  if(piData.error||!piData.clientSecret){
+    const el=document.getElementById('card-errors');
+    if(el)el.textContent='Payment error. Please try again.';
+    if(btn){btn.textContent=`Pay $${violationData.fine_amount.toFixed(2)} Now`;btn.disabled=false;}
+    return;
+  }
+
+  const {error:confirmError}=await stripe.confirmCardPayment(piData.clientSecret,{
+    payment_method:{card:cardElement}
+  });
+
+  if(confirmError){
+    const el=document.getElementById('card-errors');
+    if(el)el.textContent=confirmError.message;
+    if(btn){btn.textContent=`Pay $${violationData.fine_amount.toFixed(2)} Now`;btn.disabled=false;}
+    return;
+  }
+
+  // Mark violation as paid
+  await db('violations','PATCH',{status:'paid',paid_at:new Date().toISOString()},`?id=eq.${violationData.id}`);
+  showSuccess();
+}
+
+function showAlreadyPaid(){
+  document.getElementById('main').innerHTML=`
+    <div class="card">
+      <div class="success">
+        <div style="font-size:48px;margin-bottom:12px">✅</div>
+        <h2>Already Paid</h2>
+        <p style="color:#666;margin-top:8px">Violation ${violationData.id} has already been paid.</p>
+        <p style="margin-top:8px;font-size:13px;color:#888">Paid on ${violationData.paid_at?new Date(violationData.paid_at).toLocaleDateString():'—'}</p>
+      </div>
+    </div>
+  `;
+}
+
+function showSuccess(){
+  document.getElementById('main').innerHTML=`
+    <div class="card">
+      <div class="success">
+        <div style="font-size:48px;margin-bottom:12px">✅</div>
+        <h2>Payment Received</h2>
+        <p style="color:#666;margin-top:8px">Your fine of <strong>$${violationData.fine_amount.toFixed(2)}</strong> has been paid.</p>
+        <p style="margin-top:8px;font-size:13px;color:#888">Reference: ${violationData.id}</p>
+        <p style="margin-top:16px;font-size:12px;color:#aaa">Questions? Contact info@cityparkmanagement.com</p>
+      </div>
+    </div>
+  `;
+}
+
+function showError(msg){
+  document.getElementById('main').innerHTML=`
+    <div class="error-page">
+      <div style="font-size:48px;margin-bottom:12px">⚠️</div>
+      <h2>Not Found</h2>
+      <p style="color:#666">${msg}</p>
+      <button class="btn lime" onclick="showLookup()" style="margin-top:16px">Try Again</button>
+    </div>
+  `;
+}
+
+init();
+</script>
+</body>
+</html>
