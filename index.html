@@ -1463,16 +1463,55 @@ function rViolations(){
       </tbody></table></div>
     </div>
     <div class="pn">
-      <div class="ph"><h3><i class="ti ti-settings"></i>Violation Types & Fines</h3></div>
-      <div style="overflow-x:auto"><table><thead><tr><th>Violation</th><th>Fine Amount</th><th>Status</th></tr></thead><tbody>
+      <div class="ph"><h3><i class="ti ti-settings"></i>Violation Types & Fines</h3><button onclick="openViolationTypeModal(null)" style="background:var(--lime);color:var(--blk);border:none;border-radius:7px;padding:7px 14px;font-family:var(--fc);font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer"><i class="ti ti-plus"></i> Add Type</button></div>
+      <div style="overflow-x:auto"><table><thead><tr><th>Violation</th><th>Fine Amount</th><th>Status</th><th></th></tr></thead><tbody>
       ${S.violationTypes.map(vt=>`<tr>
         <td style="font-weight:600;color:var(--t1)">${vt.name}</td>
         <td style="font-family:var(--fc);font-weight:900;font-size:15px;color:var(--t1)">$${vt.fine_amount.toFixed(2)}</td>
         <td><span class="sp ${vt.active?'active':'expired'}">${vt.active?'Active':'Inactive'}</span></td>
+        <td><button class="ab" onclick="openViolationTypeModal('${vt.id}')"><i class="ti ti-pencil" style="font-size:11px"></i></button><button class="ab danger" onclick="deleteViolationType('${vt.id}','${vt.name}')"><i class="ti ti-trash" style="font-size:11px"></i></button></td>
       </tr>`).join('')}
       </tbody></table></div>
     </div>
   </div>`;
+}
+
+function openViolationTypeModal(id){
+  const vt=id?S.violationTypes.find(v=>v.id===id):null;
+  document.getElementById('ivt').textContent=id?`Edit — ${vt.name}`:'New Violation Type';
+  document.getElementById('ivb').innerHTML=`
+    <div class="fg"><label class="fl">Violation Name</label><input class="fi" id="vt-name" value="${vt?escH(vt.name):''}" placeholder="e.g. No Parking"></div>
+    <div class="fg"><label class="fl">Fine Amount ($)</label><div class="piw" style="max-width:130px"><span>$</span><input type="number" id="vt-fine" min="0" step="0.01" value="${vt?vt.fine_amount:50}"></div></div>
+    <div class="fg" style="display:flex;align-items:center;justify-content:space-between"><div><label class="fl" style="margin:0">Active</label><div style="font-size:11px;color:var(--t3);margin-top:2px">Inactive types won't appear in enforcement app</div></div><label class="tg"><input type="checkbox" id="vt-active"${vt?vt.active?' checked':'':' checked'}><span class="tgs"></span></label></div>
+  `;
+  document.getElementById('inv-modal').classList.add('show');
+  document.getElementById('inv-modal').querySelector('.bsv3').onclick=()=>saveViolationType(id);
+  document.getElementById('inv-modal').querySelector('.bsv3').textContent=id?'✓ Save':'✓ Add';
+}
+
+async function saveViolationType(id){
+  const name=document.getElementById('vt-name')?.value.trim();
+  const fine=parseFloat(document.getElementById('vt-fine')?.value)||0;
+  const active=document.getElementById('vt-active')?.checked;
+  if(!name){alert('Name required.');return;}
+  if(id){
+    const vt=S.violationTypes.find(v=>v.id===id);
+    if(vt){Object.assign(vt,{name,fine_amount:fine,active});}
+    await db('violation_types','PATCH',{name,fine_amount:fine,active},`?id=eq.${id}`);
+  } else {
+    const newVt={id:'vt'+Date.now(),name,fine_amount:fine,active};
+    S.violationTypes.push(newVt);
+    await db('violation_types','POST',newVt);
+  }
+  closeM('inv-modal');
+  render();
+}
+
+async function deleteViolationType(id,name){
+  if(!confirm(`Delete "${name}"? This cannot be undone.`))return;
+  S.violationTypes=S.violationTypes.filter(v=>v.id!==id);
+  await db('violation_types','DELETE',null,`?id=eq.${id}`);
+  render();
 }
 function rInvoices(){
   const sorted=[...S.invoices].sort((a,b)=>new Date(b.created_at).getTime()-new Date(a.created_at).getTime());
