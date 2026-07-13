@@ -133,6 +133,10 @@ async function saveSession(sess){
   });
 }
 
+async function updateSessionDB(id, fields){
+  return db('sessions','PATCH',fields,`?id=eq.${id}`);
+}
+
 async function saveLotDB(lot){
   const exists=await db('lots','GET',null,`?id=eq.${lot.id}&select=id`);
   const body={

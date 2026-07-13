@@ -817,12 +817,51 @@ async function applyPostVal(){
   if(matched.isComp)await useCompCode(matched.id,d.plate);
   render();
 }
+async function handleExtendPay(hrs, total){
+  const s=S.sess.find(x=>x.id===S.extId);
+  if(!s)return;
+  const l=S.lots[s.lotId];
+  S._extPending={hrs,total:+total,s};
+  document.getElementById('card-modal').classList.add('show');
+  document.getElementById('card-element').innerHTML='';
+  const cpb=document.getElementById('card-pay-btn');
+  if(cpb){cpb.textContent=`Pay $${total} & Extend`;cpb.disabled=false;cpb.onclick=submitExtendPayment;}
+  setTimeout(()=>mountStripeCard(+total),100);
+}
+
+async function submitExtendPayment(){
+  const btn=document.getElementById('card-pay-btn');
+  if(btn){btn.textContent='Processing...';btn.disabled=true;}
+  const {hrs,total,s}=S._extPending;
+  const l=S.lots[s.lotId];
+  const desc=`Parking extension - ${l.name} - ${s.plate} +${hrs}hr`;
+  const {clientSecret,error}=await createPaymentIntent(total,desc,s.id+'-ext');
+  if(error||!clientSecret){
+    document.getElementById('card-errors').textContent='Payment error. Please try again.';
+    if(btn){btn.textContent=`Pay $${total} & Extend`;btn.disabled=false;}
+    return;
+  }
+  const {error:confirmError,paymentIntent}=await window._stripe.confirmCardPayment(clientSecret,{
+    payment_method:{card:window._stripeCard}
+  });
+  if(confirmError){
+    document.getElementById('card-errors').textContent=confirmError.message;
+    if(btn){btn.textContent=`Pay $${total} & Extend`;btn.disabled=false;}
+    return;
+  }
+  document.getElementById('card-modal').classList.remove('show');
+  s.duration+=hrs;
+  s.paid=+(s.paid+total).toFixed(2);
+  await updateSessionDB(s.id,{duration:s.duration,paid:s.paid});
+  S.extDone=true;
+  render();
+}
 function renderExtend(){
   const s=S.sess.find(x=>x.id===S.extId);if(!s)return`<p style="text-align:center;padding:40px;color:var(--t3)">Session not found.</p>`;
   const l=S.lots[s.lotId],p=l.pricing,f=l.fees.hourly,fee=f.enabled?f.amount:0;
   const ec=p.hourly*S.extHrs,et=(ec+fee).toFixed(2);
   if(S.extDone){const ne=new Date(s.start+s.duration*3600000);return`<div class="cw"><div class="ext-pnl"><div class="ext-hd"><h2>Session Extended!</h2><p>${l.name} · Zone ${l.zone}</p></div><div class="ext-bd"><div style="background:var(--lime-bg);border:2px solid var(--lime-dark);border-radius:10px;padding:16px;text-align:center;margin-bottom:14px"><div style="font-size:28px;margin-bottom:6px">✓</div><div style="font-family:var(--fc);font-size:18px;font-weight:900;text-transform:uppercase">+${S.extHrs} hour${S.extHrs!==1?'s':''} added</div><div style="font-size:13px;color:var(--t2);margin-top:4px">New expiry: <strong>${ne.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</strong></div></div><div class="tmr"><div class="tmrn">${fmtT(remMs(s))}</div><div class="tmrl">Updated time remaining</div></div><button class="oln" style="margin-top:0" onclick="S.v='pay';S.cstep=S.payData&&S.payData.id===S.extId?2:1;S.extId=null;S.extDone=false;render()">← Back to my ticket</button></div></div></div>`;}
-  return`<div class="cw"><div class="ext-pnl"><div class="ext-hd"><h2>Extend Parking</h2><p>${l.name} · Plate: <strong style="color:var(--lime)">${s.plate}</strong></p></div><div class="ext-bd"><div class="tmr"><div class="tmrn">${fmtT(remMs(s))}</div><div class="tmrl">Time remaining</div></div><div style="margin:16px 0 6px"><label class="fl">Add more time ($${p.hourly.toFixed(2)}/hr)</label></div><div class="ext-opts">${[1,2,3,4].map(h=>`<div class="ext-opt${S.extHrs===h?' on':''}" onclick="S.extHrs=${h};render()"><div class="eh">+${h}hr</div><div class="ep">$${(p.hourly*h).toFixed(2)}${fee>0?' + fee':''}</div></div>`).join('')}</div><div class="psumm"><div class="psr"><span class="pl">+${S.extHrs}hr @ $${p.hourly.toFixed(2)}/hr</span><span class="pv">$${ec.toFixed(2)}</span></div>${fee>0?`<div class="psr"><span class="pl">Service fee</span><span class="pv">$${fee.toFixed(2)}</span></div>`:''}<div class="psr tot"><span class="pl">Total due</span><span class="pv">$${et}</span></div></div><button class="paybtn" onclick="const s2=S.sess.find(x=>x.id===S.extId);s2.duration+=S.extHrs;s2.paid=+(s2.paid+S.lots[s2.lotId].pricing.hourly*S.extHrs+(S.lots[s2.lotId].fees.hourly.enabled?S.lots[s2.lotId].fees.hourly.amount:0)).toFixed(2);S.extDone=true;render()"><i class="ti ti-credit-card"></i> Pay $${et} &amp; Extend</button><button class="oln" style="margin-top:8px" onclick="S.v='pay';S.cstep=S.payData&&S.payData.id===S.extId?2:1;S.extId=null;render()">← Cancel</button></div></div></div>`;
+  return`<div class="cw"><div class="ext-pnl"><div class="ext-hd"><h2>Extend Parking</h2><p>${l.name} · Plate: <strong style="color:var(--lime)">${s.plate}</strong></p></div><div class="ext-bd"><div class="tmr"><div class="tmrn">${fmtT(remMs(s))}</div><div class="tmrl">Time remaining</div></div><div style="margin:16px 0 6px"><label class="fl">Add more time ($${p.hourly.toFixed(2)}/hr)</label></div><div class="ext-opts">${[1,2,3,4].map(h=>`<div class="ext-opt${S.extHrs===h?' on':''}" onclick="S.extHrs=${h};render()"><div class="eh">+${h}hr</div><div class="ep">$${(p.hourly*h).toFixed(2)}${fee>0?' + fee':''}</div></div>`).join('')}</div><div class="psumm"><div class="psr"><span class="pl">+${S.extHrs}hr @ $${p.hourly.toFixed(2)}/hr</span><span class="pv">$${ec.toFixed(2)}</span></div>${fee>0?`<div class="psr"><span class="pl">Service fee</span><span class="pv">$${fee.toFixed(2)}</span></div>`:''}<div class="psr tot"><span class="pl">Total due</span><span class="pv">$${et}</span></div></div><button class=\"paybtn\" onclick=\"handleExtendPay(${S.extHrs},'${et}')\"><i class=\"ti ti-credit-card\"></i> Pay $${et} &amp; Extend</button><button class="oln" style="margin-top:8px" onclick="S.v='pay';S.cstep=S.payData&&S.payData.id===S.extId?2:1;S.extId=null;render()">← Cancel</button></div></div></div>`;
 }
 
 function renderLookup(){
