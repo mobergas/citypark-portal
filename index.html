@@ -1431,44 +1431,47 @@ async function resendInvoice(invId){
 function rViolations(){
   const unpaid=S.violations.filter(v=>v.status==='unpaid');
   const paid=S.violations.filter(v=>v.status==='paid');
-  const totalFines=S.violations.reduce((a,v)=>a+v.fine_amount,0);
   const collectedFines=paid.reduce((a,v)=>a+v.fine_amount,0);
+  const outstandingFines=unpaid.reduce((a,v)=>a+v.fine_amount,0);
   return`<div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
       <div style="font-family:var(--fc);font-size:20px;font-weight:900;text-transform:uppercase">Violations</div>
-      <a href="/enforce" target="_blank" style="background:var(--red);color:#fff;border:none;border-radius:9px;padding:10px 18px;font-family:var(--fc);font-size:13px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:6px"><i class="ti ti-device-mobile" style="font-size:13px"></i>Open Enforcement App</button>
+      <a href="/enforce" target="_blank" style="background:var(--red);color:#fff;border:none;border-radius:9px;padding:10px 18px;font-family:var(--fc);font-size:13px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px"><i class="ti ti-device-mobile" style="font-size:13px"></i>Open Enforcement App</a>
     </div>
     <div class="sg" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
       <div class="sc"><div class="sl">Total</div><div class="sv">${S.violations.length}</div></div>
       <div class="sc"><div class="sl">Unpaid</div><div class="sv am">${unpaid.length}</div></div>
       <div class="sc"><div class="sl">Collected</div><div class="sv gn">$${collectedFines.toFixed(2)}</div></div>
-      <div class="sc"><div class="sl">Outstanding</div><div class="sv am">$${unpaid.reduce((a,v)=>a+v.fine_amount,0).toFixed(2)}</div></div>
+      <div class="sc"><div class="sl">Outstanding</div><div class="sv am">$${outstandingFines.toFixed(2)}</div></div>
     </div>
-    <div class="pn"><div class="ph"><h3><i class="ti ti-alert-triangle"></i>All Violations</h3></div>
-    <div style="overflow-x:auto"><table><thead><tr>
-      <th>ID</th><th>Date</th><th>Plate</th><th>Lot</th><th>Violation</th><th>Fine</th><th>Status</th><th>Photo</th>
-    </tr></thead><tbody>
-    ${S.violations.length===0?`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--t3)">No violations yet</td></tr>`:
-    S.violations.map(v=>`<tr>
-      <td style="font-family:var(--fc);font-size:12px;font-weight:800">${v.id}</td>
-      <td style="font-size:12px;color:var(--t3)">${new Date(v.created_at).toLocaleDateString()}</td>
-      <td style="font-family:var(--fc);font-size:15px;font-weight:900">${v.plate}</td>
-      <td style="font-size:12px;color:var(--t2)">${v.lot_name||'—'}</td>
-      <td style="font-size:13px;font-weight:600">${v.violation_name||'—'}</td>
-      <td style="font-family:var(--fc);font-weight:900;font-size:15px;color:${v.status==='paid'?'var(--grn)':'var(--red)'}">$${v.fine_amount.toFixed(2)}</td>
-      <td><span class="sp ${v.status==='paid'?'active':'pending'}">${v.status==='paid'?'Paid':'Unpaid'}</span></td>
-      <td>${v.photo_url?`<a href="${v.photo_url}" target="_blank" style="color:#2563eb;font-size:12px">View</a>`:'—'}</td>
-    </tr>`).join('')}
-    </tbody></table></div></div>
-
-    <div class="pn" style="margin-top:16px"><div class="ph"><h3><i class="ti ti-settings"></i>Violation Types & Fines</h3></div>
-    <div style="overflow-x:auto"><table><thead><tr><th>Violation</th><th>Fine Amount</th><th>Status</th></tr></thead><tbody>
-    ${S.violationTypes.map(vt=>`<tr>
-      <td style="font-weight:600;color:var(--t1)">${vt.name}</td>
-      <td style="font-family:var(--fc);font-weight:900;font-size:15px;color:var(--t1)">$${vt.fine_amount.toFixed(2)}</td>
-      <td><span class="sp ${vt.active?'active':'expired'}">${vt.active?'Active':'Inactive'}</span></td>
-    </tr>`).join('')}
-    </tbody></table></div></div>
+    <div class="pn" style="margin-bottom:16px">
+      <div class="ph"><h3><i class="ti ti-alert-triangle"></i>All Violations</h3></div>
+      <div style="overflow-x:auto"><table><thead><tr>
+        <th>ID</th><th>Date</th><th>Plate</th><th>Lot</th><th>Violation</th><th>Fine</th><th>Status</th><th>Photo</th>
+      </tr></thead><tbody>
+      ${S.violations.length===0?`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--t3)">No violations yet</td></tr>`:
+      S.violations.map(v=>`<tr>
+        <td style="font-family:var(--fc);font-size:11px;font-weight:800;color:var(--t3)">${v.id}</td>
+        <td style="font-size:12px;color:var(--t3)">${new Date(v.created_at).toLocaleDateString()}</td>
+        <td style="font-family:var(--fc);font-size:15px;font-weight:900;color:var(--t1)">${v.plate}</td>
+        <td style="font-size:12px;color:var(--t2)">${v.lot_name||'—'}</td>
+        <td style="font-size:13px;font-weight:600;color:var(--t1)">${v.violation_name||'—'}</td>
+        <td style="font-family:var(--fc);font-weight:900;font-size:15px;color:${v.status==='paid'?'var(--grn)':'var(--red)'}">$${v.fine_amount.toFixed(2)}</td>
+        <td><span class="sp ${v.status==='paid'?'active':'pending'}">${v.status==='paid'?'Paid':'Unpaid'}</span></td>
+        <td>${v.photo_url?`<a href="${v.photo_url}" target="_blank" style="color:#2563eb;font-size:12px">View</a>`:'—'}</td>
+      </tr>`).join('')}
+      </tbody></table></div>
+    </div>
+    <div class="pn">
+      <div class="ph"><h3><i class="ti ti-settings"></i>Violation Types & Fines</h3></div>
+      <div style="overflow-x:auto"><table><thead><tr><th>Violation</th><th>Fine Amount</th><th>Status</th></tr></thead><tbody>
+      ${S.violationTypes.map(vt=>`<tr>
+        <td style="font-weight:600;color:var(--t1)">${vt.name}</td>
+        <td style="font-family:var(--fc);font-weight:900;font-size:15px;color:var(--t1)">$${vt.fine_amount.toFixed(2)}</td>
+        <td><span class="sp ${vt.active?'active':'expired'}">${vt.active?'Active':'Inactive'}</span></td>
+      </tr>`).join('')}
+      </tbody></table></div>
+    </div>
   </div>`;
 }
 function rInvoices(){
