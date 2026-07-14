@@ -365,6 +365,7 @@ async function lookupPlate(){
   const now=Date.now();
   const activeSess=(sessions||[]).filter(s=>new Date(s.start_time).getTime()+s.duration*3600000>now);
 
+  // Check monthly passes
   const lotData=await db('lots','GET',null,`?id=eq.${currentLot.id}&select=*`);
 
   // Check violation history
