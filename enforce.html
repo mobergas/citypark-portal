@@ -231,6 +231,60 @@ async function enfLogin(){
 
 async function initApp(){
   const lots=await db('lots','GET',null,'?select=*&order=name');
+  // Restore the main screens HTML
+  document.getElementById('main').innerHTML=`
+    <div id="screen-lot">
+      <div style="text-align:center;padding:40px 0 24px">
+        <div style="font-size:48px;margin-bottom:8px">🅿️</div>
+        <div style="font-family:var(--fc);font-size:24px;font-weight:900;text-transform:uppercase;margin-bottom:4px">Enforcement App</div>
+        <div style="font-size:13px;color:#666">Select your assigned lot to begin</div>
+      </div>
+      <div class="card">
+        <label class="fl">Select Lot</label>
+        <select class="fse" id="lot-select" onchange="selectLot(this.value)">
+          <option value="">— Choose a lot —</option>
+        </select>
+      </div>
+    </div>
+    <div id="screen-lookup" style="display:none">
+      <div class="card">
+        <div class="card-title"><i class="ti ti-search"></i> Plate Lookup</div>
+        <label class="fl">License Plate</label>
+        <input class="fi plate-inp" id="plate-input" placeholder="ABC 1234" maxlength="10" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')lookupPlate()">
+        <button class="btn" onclick="lookupPlate()" style="margin-top:10px"><i class="ti ti-search"></i> Look Up</button>
+      </div>
+      <div id="lookup-result"></div>
+    </div>
+    <div id="screen-violation" style="display:none">
+      <div class="card">
+        <div class="card-title"><i class="ti ti-alert-triangle"></i> Issue Violation</div>
+        <div id="violation-plate-display" style="font-family:var(--fc);font-size:28px;font-weight:900;letter-spacing:.15em;color:var(--red);margin-bottom:14px;text-align:center"></div>
+        <label class="fl">Violation Type</label>
+        <div id="vtype-list"></div>
+        <label class="fl" style="margin-top:12px">Notes (optional)</label>
+        <textarea class="fi" id="violation-notes" rows="3" placeholder="Additional details..." style="resize:none"></textarea>
+        <label class="fl" style="margin-top:12px">Photo Evidence</label>
+        <div class="photo-upload" onclick="document.getElementById('photo-input').click()">
+          <i class="ti ti-camera" style="font-size:28px;color:#444;display:block;margin-bottom:6px"></i>
+          <div style="font-size:13px;color:#666">Tap to take photo or upload</div>
+        </div>
+        <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" onchange="previewPhoto(this)">
+        <img id="photo-preview" class="photo-preview">
+        <button class="btn red" id="issue-btn" onclick="issueViolation()" disabled><i class="ti ti-file-invoice"></i> Issue Violation</button>
+        <button class="btn outline" onclick="showScreen('lookup')" style="margin-top:8px">Cancel</button>
+      </div>
+    </div>
+    <div id="screen-issued" style="display:none">
+      <div style="text-align:center;padding:24px 0 12px">
+        <div style="font-size:48px;margin-bottom:8px">✅</div>
+        <div style="font-family:var(--fc);font-size:24px;font-weight:900;text-transform:uppercase;margin-bottom:4px">Violation Issued</div>
+        <div id="issued-summary" style="font-size:13px;color:#888;margin-bottom:16px;line-height:1.7"></div>
+      </div>
+      <div id="print-ticket" style="background:#fff;border-radius:8px;margin-bottom:12px"></div>
+      <button class="btn" onclick="window.print()" style="background:#2563eb;margin-bottom:8px"><i class="ti ti-printer"></i> Print Ticket</button>
+      <button class="btn" onclick="newLookup()">Look Up Another Plate</button>
+    </div>
+  `;
   showScreen('lot');
   const sel=document.getElementById('lot-select');
   if(sel){
