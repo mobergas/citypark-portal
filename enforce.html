@@ -230,6 +230,7 @@ async function enfLogin(){
 }
 
 async function initApp(){
+  const lots=await db('lots','GET',null,'?select=*&order=name');
   const sel=document.getElementById('lot-select');
   (lots||[]).forEach(l=>{
     const opt=document.createElement('option');
