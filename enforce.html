@@ -231,13 +231,16 @@ async function enfLogin(){
 
 async function initApp(){
   const lots=await db('lots','GET',null,'?select=*&order=name');
+  showScreen('lot');
   const sel=document.getElementById('lot-select');
-  (lots||[]).forEach(l=>{
-    const opt=document.createElement('option');
-    opt.value=l.id;
-    opt.textContent=l.name+' · Zone '+l.zone;
-    sel.appendChild(opt);
-  });
+  if(sel){
+    (lots||[]).forEach(l=>{
+      const opt=document.createElement('option');
+      opt.value=l.id;
+      opt.textContent=l.name+' · Zone '+l.zone;
+      sel.appendChild(opt);
+    });
+  }
 
   // Load violation types
   const vts=await db('violation_types','GET',null,'?select=*&active=eq.true&order=name');
