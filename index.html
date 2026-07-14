@@ -461,7 +461,7 @@ const S={
   inviteTmpl:DEFAULT_INVITE_TMPL,
   inviteSubject:'Your City Park monthly parking pass invitation',
   smsLog:[{time:'10:42 AM',plate:'ABC 1234',lot:'Downtown Lot A',msg:'Auto 20 min warning'}],   receiptTmpl:'City Park Management: Receipt for {PLATE} at {LOT} (Zone {ZONE}). Duration: {DURATION}. Amount paid: {AMOUNT}. Thank you for parking with us!',
-  passFilter:'all',passSearch:'',cancelingPassId:null,showExp:false,valSearch:'',lang:'en',smsConsent:false,_codeAttempts:0,loginErrMsg:'',_occLot:'all',violSearch:'',
+  passFilter:'all',passSearch:'',cancelingPassId:null,showExp:false,valSearch:'',lang:'en',smsConsent:false,_codeAttempts:0,loginErrMsg:'',_occLot:'all',violSearch:'',violStatusFilter:'all',
 users:[],
   lots:{
     lot1:{id:'lot1',name:'Downtown Lot A',zone:'2987',address:'123 Main St',open:true,
@@ -1469,8 +1469,11 @@ async function saveViolationEdit(id){
 }
 function filterViolations(){
   S.violSearch=document.getElementById('viol-search-inp')?.value||'';
+  S.violStatusFilter=document.getElementById('viol-status-filter')?.value||'all';
   const q=S.violSearch.toUpperCase().trim();
-  const filtered=q?S.violations.filter(v=>v.plate.toUpperCase().includes(q)||v.id.toUpperCase().includes(q)):S.violations;
+  let filtered=S.violations;
+  if(q)filtered=filtered.filter(v=>v.plate.toUpperCase().includes(q)||v.id.toUpperCase().includes(q));
+  if(S.violStatusFilter&&S.violStatusFilter!=='all')filtered=filtered.filter(v=>v.status===S.violStatusFilter);
   const tbody=document.querySelector('#viol-table tbody');
   if(!tbody)return;
   tbody.innerHTML=filtered.length===0?`<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--t3)">${q?'No violations match your search.':'No violations yet'}</td></tr>`:
@@ -1505,7 +1508,7 @@ function rViolations(){
       <div class="sc"><div class="sl">Outstanding</div><div class="sv am">$${outstandingFines.toFixed(2)}</div></div>
     </div>
     <div class="pn" style="margin-bottom:16px">
-      <div class="ph"><h3><i class="ti ti-alert-triangle"></i>All Violations</h3><div class="sb2"><i class="ti ti-search"></i><input id="viol-search-inp" placeholder="Search plate or ID..." value="${escH(S.violSearch||'')}" oninput="S.violSearch=this.value;filterViolations()" autocomplete="off"></div></div>
+      <div class="ph"><h3><i class="ti ti-alert-triangle"></i>All Violations</h3><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="sb2"><i class="ti ti-search"></i><input id="viol-search-inp" placeholder="Search plate or ID..." value="${escH(S.violSearch||'')}" oninput="S.violSearch=this.value;filterViolations()" autocomplete="off"></div><select id="viol-status-filter" onchange="S.violStatusFilter=this.value;filterViolations()" style="background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:8px 12px;font-family:var(--fc);font-size:13px;font-weight:700;color:var(--t1)"><option value="all">All</option><option value="unpaid"${S.violStatusFilter==='unpaid'?' selected':''}>Unpaid</option><option value="paid"${S.violStatusFilter==='paid'?' selected':''}>Paid</option><option value="waived"${S.violStatusFilter==='waived'?' selected':''}>Waived</option></select></div></div>
       <div style="overflow-x:auto"><table id="viol-table"><thead><tr>
         <th>ID</th><th>Date</th><th>Plate</th><th>Lot</th><th>Violation</th><th>Fine</th><th>Status</th><th>Photo</th><th></th>
       </tr></thead><tbody>
