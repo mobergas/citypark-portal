@@ -380,7 +380,15 @@ async function lookupPlate(){
     html+=`<div class="status-ok"><div class="status-title">✅ Valid Session</div><div class="status-detail">Expires ${exp.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · ${s.type} · Paid $${s.paid.toFixed(2)}</div></div>`;
   } else if(passes&&passes.length>0){
     const p=passes[0];
-    html+=`<div class="status-ok"><div class="status-title">✅ Monthly Pass</div><div class="status-detail">${p.holder_name||p.name} · Valid through ${new Date(p.next_bill_date).toLocaleDateString()}</div></div>`;
+    const lot=lotData?.[0];
+    const restrictions=lot?.pass_restrictions||{type:'none'};
+    const isValidNow=p.override_restrictions||checkPassRestrictions(restrictions);
+    if(isValidNow){
+      html+=`<div class="status-ok"><div class="status-title">✅ Monthly Pass</div><div class="status-detail">${p.holder_name||p.name} · Valid through ${new Date(p.next_bill_date).toLocaleDateString()}${restrictions.type!=='none'?'<br><span style="font-size:11px;color:#4caf50">✓ Within allowed hours/days</span>':''}</div></div>`;
+    } else {
+      html+=`<div class="status-warn"><div class="status-title">⚠️ Pass Restricted</div><div class="status-detail">${p.holder_name||p.name} has a monthly pass but it is not valid at this time.<br>${getRestrictionText(restrictions)}</div></div>`;
+      html+=`<button class="btn red" onclick="startViolation('${plate}')"><i class="ti ti-alert-triangle"></i> Issue Violation</button>`;
+    }
   } else {
     html+=`<div class="status-bad"><div class="status-title">❌ No Valid Parking</div><div class="status-detail">No active session or monthly pass found for this plate at ${currentLot.name}</div></div>`;
     html+=`<button class="btn red" onclick="startViolation('${plate}')"><i class="ti ti-alert-triangle"></i> Issue Violation</button>`;
@@ -601,6 +609,41 @@ async function issueViolation(){
 
 function newLookup(){
   showScreen('lookup');
+}
+
+function checkPassRestrictions(r){
+  if(!r||r.type==='none')return true;
+  const now=new Date();
+  const day=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][now.getDay()];
+  const hour=now.getHours();
+  const minute=now.getMinutes();
+  const timeVal=hour*60+minute;
+
+  if(r.type==='weekdays')return['Mon','Tue','Wed','Thu','Fri'].includes(day);
+  if(r.type==='weekends')return['Sat','Sun'].includes(day);
+  if(r.type==='days')return(r.days||[]).includes(day);
+  if(r.type==='hours'){
+    const [sh,sm]=r.start_time.split(':').map(Number);
+    const [eh,em]=r.end_time.split(':').map(Number);
+    return timeVal>=(sh*60+sm)&&timeVal<=(eh*60+em);
+  }
+  if(r.type==='both'){
+    const dayOk=(r.days||[]).includes(day);
+    const [sh,sm]=r.start_time.split(':').map(Number);
+    const [eh,em]=r.end_time.split(':').map(Number);
+    const timeOk=timeVal>=(sh*60+sm)&&timeVal<=(eh*60+em);
+    return dayOk&&timeOk;
+  }
+  return true;
+}
+
+function getRestrictionText(r){
+  if(r.type==='weekdays')return'Pass is valid Monday-Friday only.';
+  if(r.type==='weekends')return'Pass is valid Saturday-Sunday only.';
+  if(r.type==='days')return`Pass is valid on: ${(r.days||[]).join(', ')} only.`;
+  if(r.type==='hours')return`Pass is valid ${r.start_time} - ${r.end_time} only.`;
+  if(r.type==='both')return`Pass is valid ${(r.days||[]).join(', ')} from ${r.start_time} - ${r.end_time} only.`;
+  return'';
 }
 
 init();

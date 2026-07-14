@@ -82,6 +82,10 @@ async function init(){
   if(!token){showError('Invalid invitation link.');return;}
 
   const passes=await db('passes','GET',null,`?signup_token=eq.${token}&select=*`);
+  if(passes&&passes.length>0){
+    const lotInfo=await db('lots','GET',null,`?id=eq.${passes[0].lot_id}&select=pass_restrictions`);
+    if(lotInfo&&lotInfo.length>0)passes[0].pass_restrictions=lotInfo[0].pass_restrictions;
+  }
   if(!passes||!passes.length){showError('This invitation link is invalid or has expired.');return;}
   
   const pass=passes[0];
@@ -116,7 +120,7 @@ function showSignup(pass){
     <div class="card-bd">
       <div class="info-row"><span class="info-label">Name</span><span class="info-val">${pass.holder_name||''}</span></div>
       <div class="info-row"><span class="info-label">Lot</span><span class="info-val">${pass.lot_name||''}</span></div>
-      <div class="info-row"><span class="info-label">Monthly rate</span><span class="info-val">$${price.toFixed(2)}/mo</span></div>
+      <div class="info-row"><span class="info-label">Monthly rate</span><span class="info-val">$${price.toFixed(2)}/mo</span></div>${(()=>{const r=passData.pass_restrictions||{type:'none'};if(r.type==='none'||passData.override_restrictions)return'';return`<div class="info-row"><span class="info-label">Access hours</span><span class="info-val" style="color:#d32f2f;font-size:13px">${getRestrictionTextSignup(r)}</span></div>`;})()}
       <div class="divider"></div>
       <div class="info-row"><span class="info-label">Due today (${daysLeft} of ${daysInMonth} days)</span><span class="info-val green">$${prorated.toFixed(2)}</span></div>
       <div class="info-row"><span class="info-label">Next billing date</span><span class="info-val">${nextBillStr}</span></div>
@@ -240,6 +244,15 @@ function showError(msg){
       <p style="margin-top:16px;font-size:13px;color:#aaa">Contact us at info@cityparkmanagement.com</p>
     </div>
   `;
+}
+
+function getRestrictionTextSignup(r){
+  if(r.type==='weekdays')return'Mon-Fri only';
+  if(r.type==='weekends')return'Sat-Sun only';
+  if(r.type==='days')return(r.days||[]).join(', ')+' only';
+  if(r.type==='hours')return r.start_time+' - '+r.end_time;
+  if(r.type==='both')return(r.days||[]).join(', ')+' · '+r.start_time+'-'+r.end_time;
+  return'';
 }
 
 init();

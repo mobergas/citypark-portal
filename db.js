@@ -42,7 +42,8 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTyp
         fees:l.fees||{},
         pricing:l.pricing||{},
         monthlyselfsrv:l.monthlyselfsrv,
-        total_spaces:l.total_spaces||0
+        total_spaces:l.total_spaces||0,
+        pass_restrictions:l.pass_restrictions||{type:'none'}
       };
     });
   }
@@ -72,6 +73,7 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTyp
       monthlyAmount:p.monthly_amount,totalBilled:p.total_billed,
       inviteToken:p.invite_token,
       plate:p.plate||null,
+      override_restrictions:p.override_restrictions||false,
       billedAt:p.billed_at||null
     }));
   }
@@ -148,7 +150,8 @@ async function saveLotDB(lot){
     id:lot.id,name:lot.name,zone:lot.zone,address:lot.address,
     open:lot.open,rates:lot.rates,monthlyselfsrv:lot.monthlyselfsrv,
     fees:lot.fees,pricing:lot.pricing,
-    total_spaces:lot.total_spaces||0
+    total_spaces:lot.total_spaces||0,
+    pass_restrictions:lot.pass_restrictions||{type:'none'}
   };
   if(exists&&exists.length>0)return db('lots','PATCH',body,`?id=eq.${lot.id}`);
   return db('lots','POST',body);
@@ -190,7 +193,8 @@ async function savePassDB(pass){
     signup_token:pass.signup_token||null,
     lot_name:pass.lot_name||null,
     holder_name:pass.holder_name||null,
-    plate:pass.plate||null
+    plate:pass.plate||null,
+    override_restrictions:pass.override_restrictions||false
   });
 }
 
