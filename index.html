@@ -1043,7 +1043,6 @@ function openLM(lotId){
 }
 function toggleRestrictFields(){
   const type=document.getElementById('m-restrict-type')?.value;
-  console.log('restrictType:', restrictType, 'element:', document.getElementById('m-restrict-type'));
   const daysField=document.getElementById('restrict-days-field');
   const hoursField=document.getElementById('restrict-hours-field');
   if(daysField)daysField.style.display=['days','both'].includes(type)?'block':'none';
