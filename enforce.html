@@ -310,7 +310,7 @@ async function issueViolation(){
     }
   }
 
-  const violationId='VIO-'+Date.now();
+  const violationId='VIO-'+Date.now().toString().slice(-10);
   const notes=document.getElementById('violation-notes').value.trim();
 
   // Create Stripe payment link for the fine
