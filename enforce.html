@@ -362,11 +362,11 @@ async function lookupPlate(){
 
   // Check active sessions
   const sessions=await db('sessions','GET',null,`?plate=eq.${encodeURIComponent(plate)}&lot_id=eq.${currentLot.id}&select=*&order=start_time.desc&limit=10`);
+  const lotData=await db('lots','GET',null,`?id=eq.${currentLot.id}&select=*`);
+  const passes=await db('passes','GET',null,`?plate=eq.${encodeURIComponent(plate)}&lot_id=eq.${currentLot.id}&status=eq.active&select=*`);
   const now=Date.now();
   const activeSess=(sessions||[]).filter(s=>new Date(s.start_time).getTime()+s.duration*3600000>now);
 
-  // Check monthly passes
-  const lotData=await db('lots','GET',null,`?id=eq.${currentLot.id}&select=*`);
 
   // Check violation history
   const violations=await db('violations','GET',null,`?plate=eq.${encodeURIComponent(plate)}&order=created_at.desc&limit=5`);
@@ -427,7 +427,6 @@ async function startViolation(plate){
   document.getElementById('issue-btn').disabled=true;
 
   // Get lot pricing
-  const lotData=await db('lots','GET',null,`?id=eq.${currentLot.id}&select=*`);
   const lot=lotData?.[0];
   const dailyMax=lot?.pricing?.max_daily||0;
   const eventRate=lot?.pricing?.event||0;
