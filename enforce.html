@@ -56,7 +56,11 @@ body{font-family:var(--fb);background:#0d0d0d;color:#fff;min-height:100vh;}
 <body>
 <div class="hd">
   <div class="logo">city park<span>enforcement</span></div>
-  <div id="lot-badge" class="badge" style="display:none">No Lot Selected</div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div id="lot-badge" class="badge" style="display:none">No Lot Selected</div>
+    <div id="user-badge" style="display:none;font-family:var(--fc);font-size:11px;font-weight:700;color:#888"></div>
+    <button id="signout-btn" onclick="enfSignOut()" style="display:none;background:transparent;border:1px solid #333;border-radius:6px;padding:4px 10px;font-family:var(--fc);font-size:11px;font-weight:700;color:#666;cursor:pointer">Sign Out</button>
+  </div>
 </div>
 
 <div class="wrap" id="main">
@@ -142,9 +146,90 @@ async function db(table,method,body,query=''){
   return res.json();
 }
 
+let currentUser=null;
+
 async function init(){
-  // Load lots
-  const lots=await db('lots','GET',null,'?select=*&order=name');
+  // Check for existing session
+  const token=localStorage.getItem('enforce_token');
+  if(token){
+    const profile=await verifyToken(token);
+    if(profile){
+      currentUser=profile;
+      initApp();
+      return;
+    }
+  }
+  showLoginScreen();
+}
+
+async function verifyToken(token){
+  const res=await fetch(`${SUPA_URL}/auth/v1/user`,{
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+token}
+  });
+  if(!res.ok)return null;
+  const user=await res.json();
+  const profiles=await db('profiles','GET',null,`?id=eq.${user.id}&select=*`);
+  if(!profiles||!profiles.length)return null;
+  const profile=profiles[0];
+  if(!profile.active)return null;
+  localStorage.setItem('enforce_token',token);
+  return profile;
+}
+
+function showLoginScreen(){
+  document.getElementById('main').innerHTML=`
+    <div style="text-align:center;padding:40px 0 24px">
+      <div style="font-size:48px;margin-bottom:8px">🅿️</div>
+      <div style="font-family:var(--fc);font-size:24px;font-weight:900;text-transform:uppercase;margin-bottom:4px">Enforcement Login</div>
+      <div style="font-size:13px;color:#666;margin-bottom:24px">Sign in with your City Park credentials</div>
+    </div>
+    <div class="card">
+      <label class="fl">Email</label>
+      <input class="fi" id="enf-email" type="email" placeholder="your@email.com" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('enf-pass').focus()">
+      <label class="fl" style="margin-top:12px">Password</label>
+      <input class="fi" id="enf-pass" type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')enfLogin()" style="margin-bottom:12px">
+      <div id="enf-err" style="color:var(--red);font-size:12px;margin-bottom:8px;min-height:16px"></div>
+      <button class="btn" onclick="enfLogin()">Sign In</button>
+    </div>
+  `;
+  setTimeout(()=>document.getElementById('enf-email')?.focus(),100);
+}
+
+async function enfLogin(){
+  const email=document.getElementById('enf-email')?.value.trim();
+  const password=document.getElementById('enf-pass')?.value;
+  const btn=document.querySelector('.btn');
+  if(btn){btn.textContent='Signing in...';btn.disabled=true;}
+
+  const res=await fetch(`${SUPA_URL}/auth/v1/token?grant_type=password`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SUPA_KEY},
+    body:JSON.stringify({email,password})
+  });
+
+  if(!res.ok){
+    const err=document.getElementById('enf-err');
+    if(err)err.textContent='Invalid email or password.';
+    if(btn){btn.textContent='Sign In';btn.disabled=false;}
+    return;
+  }
+
+  const data=await res.json();
+  const profile=await verifyToken(data.access_token);
+
+  if(!profile){
+    const err=document.getElementById('enf-err');
+    if(err)err.textContent='Account not authorized for enforcement.';
+    if(btn){btn.textContent='Sign In';btn.disabled=false;}
+    return;
+  }
+
+  currentUser=profile;
+  localStorage.setItem('enforce_token',data.access_token);
+  initApp();
+}
+
+async function initApp(){
   const sel=document.getElementById('lot-select');
   (lots||[]).forEach(l=>{
     const opt=document.createElement('option');
@@ -157,12 +242,21 @@ async function init(){
   const vts=await db('violation_types','GET',null,'?select=*&active=eq.true&order=name');
   violationTypes=vts||[];
 
+  // Show user info
+  const ub=document.getElementById('user-badge');
+  const sb=document.getElementById('signout-btn');
+  if(ub){ub.textContent=currentUser.name;ub.style.display='block';}
+  if(sb)sb.style.display='block';
+  // Update issued_by
+  localStorage.setItem('enforce_officer',currentUser.name);
+
   // Check saved lot
   const savedLot=localStorage.getItem('enforce_lot');
   if(savedLot&&lots){
     const l=lots.find(x=>x.id===savedLot);
     if(l){currentLot=l;showScreen('lookup');updateLotBadge();}
   }
+}
 }
 
 function selectLot(lotId){
@@ -178,6 +272,15 @@ function selectLot(lotId){
 function updateLotBadge(){
   const b=document.getElementById('lot-badge');
   if(currentLot){b.innerHTML=`${currentLot.name} <span onclick="changeLot()" style="cursor:pointer;opacity:.7;font-size:10px;margin-left:4px">✕</span>`;b.style.display='block';}
+}
+
+function enfSignOut(){
+  localStorage.removeItem('enforce_token');
+  localStorage.removeItem('enforce_lot');
+  currentUser=null;
+  currentLot=null;
+  document.getElementById('lot-badge').style.display='none';
+  showLoginScreen();
 }
 
 function changeLot(){
