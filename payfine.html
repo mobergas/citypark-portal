@@ -88,8 +88,8 @@ function showLookup(){
     <div class="card">
       <div class="card-bd">
         <div class="fg">
-          <label class="fl">Violation ID</label>
-          <input class="fi id-input" id="vio-id-input" placeholder="VIO-000000000000" maxlength="20" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')lookupViolation()">
+          <label class="fl">Violation ID or License Plate</label>
+          <input class="fi id-input" id="vio-id-input" placeholder="VIO-0000000000 or ABC 1234" maxlength="20" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')lookupViolation()">
         </div>
         <button class="btn" onclick="lookupViolation()">Find My Ticket</button>
         <div class="err" id="lookup-err"></div>
@@ -100,10 +100,55 @@ function showLookup(){
 }
 
 async function lookupViolation(){
-  const id=document.getElementById('vio-id-input')?.value.trim().toUpperCase();
-  if(!id)return;
+  const input=document.getElementById('vio-id-input')?.value.trim().toUpperCase();
+  if(!input)return;
   const btn=document.querySelector('.btn');
   if(btn){btn.textContent='Searching...';btn.disabled=true;}
+  
+  // Check if it looks like a plate or a violation ID
+  if(input.startsWith('VIO-')){
+    await loadViolation(input);
+  } else {
+    // Search by plate
+    const violations=await db('violations','GET',null,`?plate=eq.${encodeURIComponent(input)}&status=eq.unpaid&order=created_at.desc&select=*`);
+    if(!violations||!violations.length){
+      const err=document.getElementById('lookup-err');
+      if(err)err.textContent='No unpaid violations found for that plate.';
+      if(btn){btn.textContent='Find My Ticket';btn.disabled=false;}
+      return;
+    }
+    if(violations.length===1){
+      violationData=violations[0];
+      showPayment();
+    } else {
+      // Multiple violations — show list
+      showViolationList(violations);
+      if(btn){btn.textContent='Find My Ticket';btn.disabled=false;}
+    }
+  }
+}
+
+function showViolationList(violations){
+  document.getElementById('main').innerHTML=`
+    <div style="text-align:center;padding:24px 0 16px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;text-transform:uppercase;margin-bottom:4px">Select Violation</div>
+      <div style="font-size:13px;color:#888">Multiple unpaid violations found for plate <strong>${violations[0].plate}</strong></div>
+    </div>
+    ${violations.map(v=>`
+      <div onclick="selectViolation('${v.id}')" style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer;border:2px solid transparent" onmouseover="this.style.borderColor='#d32f2f'" onmouseout="this.style.borderColor='transparent'">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900">${v.violation_name}</span>
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;color:#d32f2f">$${v.fine_amount.toFixed(2)}</span>
+        </div>
+        <div style="font-size:12px;color:#888">${v.lot_name||'—'} · ${new Date(v.created_at).toLocaleDateString()}</div>
+        <div style="font-size:11px;color:#aaa;margin-top:2px">${v.id}</div>
+      </div>
+    `).join('')}
+    <button onclick="showLookup()" style="width:100%;background:transparent;border:1.5px solid #e0e0e0;border-radius:10px;padding:12px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;cursor:pointer;margin-top:8px">← Search Again</button>
+  `;
+}
+
+async function selectViolation(id){
   await loadViolation(id);
 }
 
