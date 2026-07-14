@@ -1726,7 +1726,7 @@ async function init(){
     if(profile && profile.active){
       S.cu = { id: sessionRes.user.id, name: profile.name, role: profile.role };
       S.v = 'admin';
-      S.tab = 'sessions';
+      S.tab = localStorage.getItem('cpm_tab')||'sessions';
     }
   }
 
