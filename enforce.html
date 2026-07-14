@@ -409,7 +409,7 @@ async function lookupPlate(){
   result.innerHTML=html;
 }
 
-function startViolation(plate){
+async function startViolation(plate){
   currentPlate=plate;
   selectedViolationType=null;
   photoFile=null;
@@ -418,6 +418,14 @@ function startViolation(plate){
   document.getElementById('photo-preview').style.display='none';
   document.getElementById('issue-btn').disabled=true;
 
+  // Get lot pricing
+  const lotData=await db('lots','GET',null,`?id=eq.${currentLot.id}&select=*`);
+  const lot=lotData?.[0];
+  const dailyMax=lot?.pricing?.max_daily||0;
+  const eventRate=lot?.pricing?.event||0;
+  const parkingFee=Math.max(dailyMax,eventRate);
+  window._lotParkingFee=parkingFee;
+
   // Build violation type list
   const list=document.getElementById('vtype-list');
   list.innerHTML=violationTypes.map(vt=>`
@@ -425,7 +433,16 @@ function startViolation(plate){
       <span class="vtype-name">${vt.name}</span>
       <span class="vtype-fine">$${vt.fine_amount.toFixed(2)}</span>
     </div>
-  `).join('');
+  `).join('')+`
+    <div style="margin-top:12px;background:#1a1a1a;border:1.5px solid #333;border-radius:8px;padding:12px">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+        <input type="checkbox" id="include-parking-fee" style="width:18px;height:18px;cursor:pointer">
+        <div>
+          <div style="font-family:var(--fc);font-size:14px;font-weight:800;color:#fff">Include unpaid parking fee</div>
+          <div style="font-size:12px;color:#888;margin-top:2px">Daily max $${dailyMax.toFixed(2)} · Event $${eventRate.toFixed(2)} · <strong style="color:var(--gold)">+$${parkingFee.toFixed(2)}</strong></div>
+        </div>
+      </label>
+    </div>`;
 
   showScreen('violation');
 }
@@ -472,6 +489,9 @@ async function issueViolation(){
 
   const violationId='VIO-'+Date.now().toString().slice(-10);
   const notes=document.getElementById('violation-notes').value.trim();
+  const includeParkingFee=document.getElementById('include-parking-fee')?.checked;
+  const parkingFee=includeParkingFee?(window._lotParkingFee||0):0;
+  const totalFine=selectedViolationType.fine_amount+parkingFee;
 
   // Create Stripe payment link for the fine
   let paymentLink=null;
@@ -497,7 +517,8 @@ async function issueViolation(){
     lot_name:currentLot.name,
     violation_type_id:selectedViolationType.id,
     violation_name:selectedViolationType.name,
-    fine_amount:selectedViolationType.fine_amount,
+    fine_amount:totalFine,
+    parking_fee:parkingFee,
     notes:notes||null,
     photo_url:photoUrl,
     issued_by:localStorage.getItem('enforce_officer')||'Staff',
@@ -508,7 +529,7 @@ async function issueViolation(){
   document.getElementById('issued-summary').innerHTML=`
     Plate: <strong>${currentPlate}</strong><br>
     Violation: <strong>${selectedViolationType.name}</strong><br>
-    Fine: <strong>$${selectedViolationType.fine_amount.toFixed(2)}</strong><br>
+    Fine: <strong>$${selectedViolationType.fine_amount.toFixed(2)}</strong>${parkingFee>0?`<br>Unpaid Parking Fee: <strong>$${parkingFee.toFixed(2)}</strong><br>Total: <strong>$${totalFine.toFixed(2)}</strong>`:''}<br>
     Lot: <strong>${currentLot.name}</strong>
   `;
 
@@ -541,8 +562,9 @@ async function issueViolation(){
         <div style="font-size:14px;font-weight:900">${selectedViolationType.name}</div>
       </div>
       <div style="border-top:2px solid #000;border-bottom:2px solid #000;padding:2mm 0;margin:3mm 0;text-align:center">
-        <div style="font-size:10px">FINE AMOUNT</div>
-        <div style="font-size:28px;font-weight:900">$${selectedViolationType.fine_amount.toFixed(2)}</div>
+        ${parkingFee>0?`<div style="font-size:9px;margin-bottom:1mm">Violation Fine: $${selectedViolationType.fine_amount.toFixed(2)} + Unpaid Parking: $${parkingFee.toFixed(2)}</div>`:''}
+        <div style="font-size:10px">TOTAL AMOUNT DUE</div>
+        <div style="font-size:28px;font-weight:900">$${totalFine.toFixed(2)}</div>
       </div>
       <div style="margin-bottom:3mm;font-size:10px;line-height:1.5">
         To pay this violation, scan the QR code below or visit:<br>
