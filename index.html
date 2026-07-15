@@ -1255,10 +1255,10 @@ function doExportExcel(lotFilter){
 
   // Sheet 1: Daily Summary
   const dailyData=bDaily(S.rvF,S.rvT,lotFilter);
-  const dailyRows=[['Date','Transactions','Parking Charges','Service Fees','Total Revenue']];
-  dailyData.forEach(d=>dailyRows.push([d.label,d.n,+d.pk.toFixed(2),+d.fe.toFixed(2),+d.tot.toFixed(2)]));
-  dailyRows.push(['TOTAL',dailyData.reduce((a,d)=>a+d.n,0),+dailyData.reduce((a,d)=>a+d.pk,0).toFixed(2),+dailyData.reduce((a,d)=>a+d.fe,0).toFixed(2),+dailyData.reduce((a,d)=>a+d.tot,0).toFixed(2)]);
-  XLSX.utils.book_append_sheet(wb,makeSheet(dailyRows,[12,14,18,14,16]),'Daily Summary');
+  const dailyRows=[['Date','Transactions','Parking Charges','Service Fees','Invoices','Violations','Monthly','Total Revenue']];
+  dailyData.forEach(d=>dailyRows.push([d.label,d.n,+d.pk.toFixed(2),+d.fe.toFixed(2),+(d.inv||0).toFixed(2),+(d.viol||0).toFixed(2),+(d.mo||0).toFixed(2),+d.tot.toFixed(2)]));
+  dailyRows.push(['TOTAL',dailyData.reduce((a,d)=>a+d.n,0),+dailyData.reduce((a,d)=>a+d.pk,0).toFixed(2),+dailyData.reduce((a,d)=>a+d.fe,0).toFixed(2),+dailyData.reduce((a,d)=>a+(d.inv||0),0).toFixed(2),+dailyData.reduce((a,d)=>a+(d.viol||0),0).toFixed(2),+dailyData.reduce((a,d)=>a+(d.mo||0),0).toFixed(2),+dailyData.reduce((a,d)=>a+d.tot,0).toFixed(2)]);
+  XLSX.utils.book_append_sheet(wb,makeSheet(dailyRows,[12,14,18,14,14,14,14,16]),'Daily Summary');
 
   // Sheet 2: All Sessions
   const sessRows=[['Ticket ID','Date','Plate','Vehicle','Type','Lot','Duration (hrs)','Base Charge','Service Fee','Total Paid','Validation','Phone','Email']];
