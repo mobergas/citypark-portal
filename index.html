@@ -419,7 +419,7 @@ tfoot td{padding:10px;font-size:13px;background:var(--lime-bg);font-weight:600}
 
 <div class="tb-out">
   <div class="tb">
-    <div class="logo-a"><div class="logo-box" id="logo-box" onclick="S.v='pay';S.cstep=1;S.payData=null;S.val=null;render()"><div class="lcp">city park</div><div class="lmg">management</div></div></div>
+    <div class="logo-a"><div class="logo-box" id="logo-box" onclick="if(S.cu){S.v='admin';render();}else{S.v='pay';S.cstep=1;S.payData=null;S.val=null;render();}"><div class="lcp">city park</div><div class="lmg">management</div></div></div>
     <div id="tr" style="display:flex;align-items:stretch"></div>
   </div>
   <div class="ls"></div>
