@@ -380,7 +380,8 @@ async function lookupPlate(){
     html+=`<div class="status-ok"><div class="status-title">✅ Valid Session</div><div class="status-detail">Expires ${exp.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · ${s.type} · Paid $${s.paid.toFixed(2)}</div></div>`;
   } else if(passes&&passes.length>0){
     const p=passes[0];
-    const lot=lotData?.[0];
+    const lotInfo=await db('lots','GET',null,`?id=eq.${currentLot.id}&select=*`);
+  const lot=lotInfo?.[0];
     const restrictions=lot?.pass_restrictions||{type:'none'};
     const isValidNow=p.override_restrictions||checkPassRestrictions(restrictions);
     if(isValidNow){
