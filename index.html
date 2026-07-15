@@ -1804,6 +1804,9 @@ await loadFromDB();
       localStorage.removeItem('cpm_active_session');
     }
   }
+  if(window.location.pathname==='/admin'&&!S.cu){
+    S.v='login';
+  }
   const params = new URLSearchParams(window.location.search);
   const lotParam = params.get('lot');
   const codeParam = params.get('code');
@@ -1819,13 +1822,7 @@ await loadFromDB();
   render();
 }
 init();
-let _lt=0,_lc=0;
-document.getElementById('logo-box').addEventListener('click',function(){
-  const now=Date.now();
-  if(now-_lt<600)_lc++;else _lc=1;
-  _lt=now;
-  if(_lc>=3){_lc=0;S.cu?switchToAdmin():switchToLogin();}
-});
+
 </script>
 </body>
 </html>
