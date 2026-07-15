@@ -949,7 +949,7 @@ async function doLogin(){
   S.cu = { id: authData.user.id, name: profile.name, role: profile.role };
   S.loginErr = false;
   S.tab = 'sessions';
-  S.v = 'admin';
+  S.v = window.location.pathname==='/admin' ? 'admin' : 'pay';
   render();
 }
 
