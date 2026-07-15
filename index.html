@@ -1786,7 +1786,7 @@ async function init(){
     const profile = await getProfile(sessionRes.user.id, sessionRes.access_token);
     if(profile && profile.active){
       S.cu = { id: sessionRes.user.id, name: profile.name, role: profile.role };
-      S.v = 'admin';
+      S.v = window.location.pathname==='/admin' ? 'admin' : 'pay';
       S.tab = localStorage.getItem('cpm_tab')||'sessions';
     }
   }
