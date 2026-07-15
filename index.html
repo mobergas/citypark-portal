@@ -1727,7 +1727,7 @@ function resetInactivity(){
   clearTimeout(inactivityTimer);
   inactivityTimer=setTimeout(()=>{
     if(S.cu){signOut();alert('You have been logged out due to inactivity.');}
-  },5*60*1000);
+  },10*60*1000);
 }
 document.addEventListener('mousemove',resetInactivity);
 document.addEventListener('keydown',resetInactivity);
