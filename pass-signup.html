@@ -218,6 +218,16 @@ async function submitSignup(prorated){
     billed_at:new Date().toISOString()
   },`?signup_token=eq.${passData.signup_token}`);
 
+  // Send receipt email
+  await fetch(`${SUPA_URL}/functions/v1/send-email`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+    body:JSON.stringify({
+      to:passData.email,
+      subject:'Welcome to City Park Monthly Parking — Receipt',
+      html:`<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:30px 0;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;"><tr><td style="background:#0d0d0d;padding:24px 32px;border-bottom:5px solid #b5d96e;"><span style="font-weight:900;font-size:22px;color:#ffffff;">city park</span><span style="font-weight:900;font-size:11px;color:#b5d96e;letter-spacing:0.12em;text-transform:uppercase;display:block;margin-top:2px;">management</span></td></tr><tr><td style="padding:32px;font-size:15px;line-height:1.7;color:#444;"><h2 style="margin-bottom:4px;">Welcome, ${passData.holder_name||passData.name}!</h2><p style="color:#888;font-size:13px;margin-bottom:24px;">Your monthly parking pass is now active.</p><table width="100%" cellpadding="8" cellspacing="0" style="background:#f5f5f5;border-radius:8px;margin-bottom:24px;"><tr><td style="color:#888;font-size:13px;">Lot</td><td style="font-weight:700;">${passData.lot_name}</td></tr><tr><td style="color:#888;font-size:13px;">Plate</td><td style="font-weight:700;">${document.getElementById('plate-inp')?.value||'—'}</td></tr><tr><td style="color:#888;font-size:13px;">Amount Charged Today</td><td style="font-weight:700;color:#2e7d32;">$${amount.toFixed(2)}</td></tr><tr><td style="color:#888;font-size:13px;">Monthly Rate</td><td style="font-weight:700;">$${price.toFixed(2)}/mo</td></tr><tr><td style="color:#888;font-size:13px;">Next Bill Date</td><td style="font-weight:700;">${nextBill.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</td></tr></table><p style="font-size:13px;color:#888;">Your card will be charged automatically on the 1st of each month. To cancel or make changes contact us at <a href="mailto:info@cityparkmanagement.com">info@cityparkmanagement.com</a></p></td></tr><tr><td style="background:#f5f5f5;padding:16px 32px;text-align:center;font-size:11px;color:#888;">City Park Holdings LLC · info@cityparkmanagement.com</td></tr></table></td></tr></table></body></html>`
+    })
+  });
   showSuccess(passData,price,nextBill);
 }
 
