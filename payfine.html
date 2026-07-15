@@ -312,7 +312,7 @@ async function sendViolationReceipt(){
   const res=await fetch(`${SUPA_URL}/functions/v1/send-email`,{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
-    body:JSON.stringify({to:email,subject:`Parking Violation Receipt - ${v.id}`,html})
+    body:JSON.stringify({to:email,subject:`Parking Violation Receipt - ${v.id}`,html,from:'City Park Violations <violations@cityparkmanagement.com>'})
   });
   if(res.ok){
     if(msg){msg.style.color='#2e7d32';msg.textContent='Receipt sent! Check your inbox.';}
