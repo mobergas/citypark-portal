@@ -494,9 +494,10 @@ async function issueViolation(){
   // Upload photo if provided
   if(photoFile){
     const fileName=`violations/${Date.now()}_${currentPlate}.jpg`;
+    const authToken=localStorage.getItem('enforce_token')||SUPA_KEY;
     const uploadRes=await fetch(`${SUPA_URL}/storage/v1/object/assets/${fileName}`,{
       method:'POST',
-      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':photoFile.type},
+      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+authToken,'Content-Type':photoFile.type},
       body:photoFile
     });
     if(uploadRes.ok){
