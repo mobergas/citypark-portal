@@ -256,7 +256,11 @@ async function submitPayment(){
   }
 
   // Mark violation as paid
-  await db('violations','PATCH',{status:'paid',paid_at:new Date().toISOString()},`?id=eq.${violationData.id}`);
+  await db('violations','PATCH',{
+    status:'paid',
+    paid_at:new Date().toISOString(),
+    paid_amount:violationData.fine_amount
+  },`?id=eq.${violationData.id}`);
   showSuccess();
 }
 
