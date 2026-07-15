@@ -428,7 +428,8 @@ async function startViolation(plate){
   document.getElementById('issue-btn').disabled=true;
 
   // Get lot pricing
-  const lot=lotData?.[0];
+  const lotInfo=await db('lots','GET',null,`?id=eq.${currentLot.id}&select=*`);
+  const lot=lotInfo?.[0];
   const dailyMax=lot?.pricing?.max_daily||0;
   const eventRate=lot?.pricing?.event||0;
   const parkingFee=Math.max(dailyMax,eventRate);
