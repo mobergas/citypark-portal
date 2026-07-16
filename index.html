@@ -969,7 +969,7 @@ function renderAdmin(){
   const expiring=S.sess.filter(s=>gSt(s)==='expiring');
   const aVals=Object.values(S.vals).filter(v=>v.active).length;
   const activePasses=S.passes.filter(p=>p.status==='active').length;
-  const tabs=[{id:'sessions',ic:'ti-list-check',lb:'Sessions'},...(isMgr()?[{id:'lots',ic:'ti-parking',lb:'Lots & Pricing'},{id:'validations',ic:'ti-discount',lb:'Validations'},{id:'comp',ic:'ti-ticket',lb:'Comp Codes'},{id:'passes',ic:'ti-id-badge',lb:'Monthly Passes'},{id:'revenue',ic:'ti-chart-bar',lb:'Revenue'},{id:'billing',ic:'ti-file-invoice',lb:'Billing Reports'},{id:'invoices',ic:'ti-receipt',lb:'Invoices'},{id:'sms',ic:'ti-message-circle',lb:'SMS & Email'},{id:'users',ic:'ti-users',lb:'Users'},{id:'violations',ic:'ti-alert-triangle',lb:'Violations'}]:[])];
+  const tabs=[{id:'sessions',ic:'ti-list-check',lb:'Sessions'},...(isMgr()?[{id:'lots',ic:'ti-parking',lb:'Lots & Pricing'},{id:'validations',ic:'ti-discount',lb:'Validations'},{id:'invoices',ic:'ti-receipt',lb:'Val Invoices'},{id:'billing',ic:'ti-file-invoice',lb:'Val Usage Reports'},{id:'passes',ic:'ti-id-badge',lb:'Monthly Passes'},{id:'comp',ic:'ti-ticket',lb:'Comp Codes'},{id:'sms',ic:'ti-message-circle',lb:'SMS & Email'},{id:'users',ic:'ti-users',lb:'Users'},{id:'revenue',ic:'ti-chart-bar',lb:'Revenue'},{id:'violations',ic:'ti-alert-triangle',lb:'Violations'}]:[])];
   if(!tabs.find(t=>t.id===S.tab))S.tab=localStorage.getItem('cpm_tab')||'sessions';
   return`<div class="aw">
     <div class="atb"><div class="att"><h2><i class="ti ti-layout-dashboard" style="color:var(--lime);margin-right:8px;font-size:20px"></i>Admin Dashboard</h2><p>City Park Management · ${S.cu?.name} (${isMgr()?'Manager':'Employee'})</p></div></div>
