@@ -416,7 +416,13 @@ tfoot td{padding:10px;font-size:13px;background:var(--lime-bg);font-weight:600}
 <div class="mov" id="usr-modal"><div class="md" style="width:420px"><div class="mdh"><h3 id="umt">Add User</h3></div><div class="mds" id="umb"></div><div class="mdf"><button class="bcl" onclick="closeM('usr-modal')">Cancel</button><button class="bsv3" onclick="saveUser()">✓ Save</button></div></div></div>
 <div class="mov" id="pass-modal"><div class="md" style="width:580px"><div class="mdh ba"><h3 id="pmt">Send Pass Invite</h3></div><div class="mds" id="pmb"></div><div class="mdf"><button class="bcl" onclick="closeM('pass-modal')">Cancel</button><button class="bsv3 bl" onclick="sendPassInvite()"><i class="ti ti-mail" style="font-size:14px;margin-right:5px"></i>Send Invite</button></div></div></div>
 <div class="mov" id="cancel-modal"><div class="md" style="width:440px"><div class="mdh" style="background:#7f1d1d"><h3 id="cmt">Cancel Pass</h3></div><div class="mds" id="cmb"></div><div class="mdf"><button class="bcl" onclick="closeM('cancel-modal')">Keep Active</button><button class="bsv3 rl" onclick="confirmCancel()">Cancel Pass</button></div></div></div>
-<div class="mov" id="card-modal"><div class="md" style="width:420px"><div class="mdh"><h3>Enter Payment Info</h3></div><div class="mds"><p style="font-size:13px;color:var(--t2);margin-bottom:16px;line-height:1.6">Your card is processed securely by Stripe. We never store your card details.</p><div class="fg"><label class="fl">Card details</label><div id="card-element" style="background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:12px 13px;"></div><div id="card-errors" style="color:var(--red);font-size:12px;margin-top:6px;min-height:18px"></div></div></div><div class="mdf"><button class="bcl" onclick="closeM('card-modal')">Cancel</button><button class="bsv3" id="card-pay-btn" onclick="submitCardPayment()">Pay</button></div></div></div>
+<div class="mov" id="card-modal"><div class="md" style="width:420px"><div class="mdh"><h3>Enter Payment Info</h3></div><div class="mds"><p style="font-size:13px;color:var(--t2);margin-bottom:16px;line-height:1.6">Your card is processed securely by Stripe. We never store your card details.</p><div class="fg"><label class="fl">Card Number</label><div id="card-number-element" style="background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:12px 13px;"></div></div>
+<div class="fg" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+  <div><label class="fl">Expiry</label><div id="card-expiry-element" style="background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:12px 13px;"></div></div>
+  <div><label class="fl">CVC</label><div id="card-cvc-element" style="background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:12px 13px;"></div></div>
+  <div><label class="fl">ZIP</label><div id="card-zip-element" style="background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:12px 13px;"></div></div>
+</div>
+<div id="card-errors" style="color:var(--red);font-size:12px;margin-top:4px;min-height:18px"></div></div><div class="mdf"><button class="bcl" onclick="closeM('card-modal')">Cancel</button><button class="bsv3" id="card-pay-btn" onclick="submitCardPayment()">Pay</button></div></div></div>
 
 <div class="tb-out">
   <div class="tb">
@@ -724,7 +730,7 @@ async function handlePay(){
   // Show card modal
   S._payPending={total,base,fee,dur,type,emailVal};
   document.getElementById('card-modal').classList.add('show');
-  document.getElementById('card-element').innerHTML='';
+  ['card-number-element','card-expiry-element','card-cvc-element','card-zip-element'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='';});
   const cpb=document.getElementById('card-pay-btn');if(cpb){cpb.textContent=`Pay $${total}`;cpb.disabled=false;}
   setTimeout(()=>mountStripeCard(total),100);
 }
@@ -732,21 +738,28 @@ async function handlePay(){
 if(window._stripeCard){try{window._stripeCard.destroy();}catch(e){}}
   window._stripeCard=null;window._stripe=null;
 async function mountStripeCard(total){
+  if(window._stripeCard){try{window._stripeCard.destroy();}catch(e){}}
+  if(window._stripeExpiry){try{window._stripeExpiry.destroy();}catch(e){}}
+  if(window._stripeCvc){try{window._stripeCvc.destroy();}catch(e){}}
+  if(window._stripeZip){try{window._stripeZip.destroy();}catch(e){}}
+  window._stripeCard=null;window._stripe=null;
   const stripe=Stripe('pk_test_51ToAC1CRGT2uMGb0UnwvpT7KnbgRAzPjoMlnFGt1qWsOOnWQfqc8xOM9gjTQ5GEU360rWLIClQNXKo1v3WhA0zwb00siXv5x5V');
-  const elements=stripe.elements();
-  const card=elements.create('card',{
-    style:{
-      base:{fontFamily:'Barlow, sans-serif',fontSize:'16px',color:'#0d0d0d','::placeholder':{color:'#888'}},
-      invalid:{color:'#d32f2f'}
-    }
-  });
-  card.mount('#card-element');
-  card.on('change',e=>{
-    const err=document.getElementById('card-errors');
-    if(err)err.textContent=e.error?e.error.message:'';
-  });
-  window._stripeCard=card;
   window._stripe=stripe;
+  const elements=stripe.elements();
+  const style={base:{fontFamily:'Barlow, sans-serif',fontSize:'16px',color:'#0d0d0d','::placeholder':{color:'#888'}},invalid:{color:'#d32f2f'}};
+  const cardNumber=elements.create('cardNumber',{style});
+  const cardExpiry=elements.create('cardExpiry',{style});
+  const cardCvc=elements.create('cardCvc',{style});
+  const postalCode=elements.create('postalCode',{style});
+  cardNumber.mount('#card-number-element');
+  cardExpiry.mount('#card-expiry-element');
+  cardCvc.mount('#card-cvc-element');
+  postalCode.mount('#card-zip-element');
+  cardNumber.on('change',e=>{const err=document.getElementById('card-errors');if(err)err.textContent=e.error?e.error.message:'';});
+  window._stripeCard=cardNumber;
+  window._stripeExpiry=cardExpiry;
+  window._stripeCvc=cardCvc;
+  window._stripeZip=postalCode;
 }
 
 async function submitCardPayment(){
@@ -765,7 +778,10 @@ async function submitCardPayment(){
   }
 
   const {error:confirmError,paymentIntent}=await window._stripe.confirmCardPayment(clientSecret,{
-    payment_method:{card:window._stripeCard}
+    payment_method:{
+      card:window._stripeCard,
+      billing_details:{}
+    }
   });
 
   if(confirmError){
@@ -831,7 +847,7 @@ async function handleExtendPay(hrs, total){
   const l=S.lots[s.lotId];
   S._extPending={hrs,total:+total,s};
   document.getElementById('card-modal').classList.add('show');
-  document.getElementById('card-element').innerHTML='';
+  ['card-number-element','card-expiry-element','card-cvc-element','card-zip-element'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='';});
   const cpb=document.getElementById('card-pay-btn');
   if(cpb){cpb.textContent=`Pay $${total} & Extend`;cpb.disabled=false;cpb.onclick=submitExtendPayment;}
   setTimeout(()=>mountStripeCard(+total),100);
