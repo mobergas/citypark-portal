@@ -461,7 +461,7 @@ const S={
   inviteTmpl:DEFAULT_INVITE_TMPL,
   inviteSubject:'Your City Park monthly parking pass invitation',
   smsLog:[{time:'10:42 AM',plate:'ABC 1234',lot:'Downtown Lot A',msg:'Auto 20 min warning'}],   receiptTmpl:'City Park Management: Receipt for {PLATE} at {LOT} (Zone {ZONE}). Duration: {DURATION}. Amount paid: {AMOUNT}. Thank you for parking with us!',
-  passFilter:'all',passSearch:'',cancelingPassId:null,showExp:false,valSearch:'',lang:'en',smsConsent:false,_codeAttempts:0,loginErrMsg:'',_occLot:'all',violSearch:'',violStatusFilter:'all',lotSearch:'',
+  passFilter:'all',passSearch:'',cancelingPassId:null,showExp:false,valSearch:'',lang:'en',smsConsent:false,_codeAttempts:0,loginErrMsg:'',_occLot:'all',violSearch:'',violStatusFilter:'all',lotSearch:'',invSearch:'',invStatusFilter:'all',
 users:[],
   lots:{
     lot1:{id:'lot1',name:'Downtown Lot A',zone:'2987',address:'123 Main St',open:true,
@@ -1662,37 +1662,85 @@ async function deleteViolationType(id,name){
   render();
 }
 function rInvoices(){
-  const sorted=[...S.invoices].sort((a,b)=>new Date(b.created_at).getTime()-new Date(a.created_at).getTime());
-  const unpaid=sorted.filter(i=>i.status==='unpaid');
-  const paid=sorted.filter(i=>i.status==='paid');
+  const unpaid=S.invoices.filter(i=>i.status==='unpaid');
+  const paid=S.invoices.filter(i=>i.status==='paid');
   return`<div>
-    <div style="font-family:var(--fc);font-size:20px;font-weight:900;text-transform:uppercase;margin-bottom:16px">Validation Invoices</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div style="font-family:var(--fc);font-size:20px;font-weight:900;text-transform:uppercase">Validation Invoices</div>
+    </div>
     <div class="sg" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
-      <div class="sc"><div class="sl">Total Invoices</div><div class="sv">${sorted.length}</div></div>
+      <div class="sc"><div class="sl">Total</div><div class="sv">${S.invoices.length}</div></div>
       <div class="sc"><div class="sl">Unpaid</div><div class="sv am">${unpaid.length}</div></div>
       <div class="sc"><div class="sl">Paid</div><div class="sv gn">${paid.length}</div></div>
     </div>
-    <div class="pn"><div class="ph"><h3><i class="ti ti-receipt"></i>All Invoices</h3></div>
-    <div style="overflow-x:auto"><table><thead><tr>
-      <th>Invoice #</th><th>Validation</th><th>Period</th><th>Sessions</th><th>Amount</th><th>Status</th><th>Paid At</th><th>Payment Link</th>
-    </tr></thead><tbody>
-    ${sorted.length===0?`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--t3)">No invoices yet</td></tr>`:
-    sorted.map(inv=>{
-      const val=Object.values(S.vals).find(v=>v.id===inv.validation_id);
-      const isPaid=inv.status==='paid';
-      return`<tr>
-        <td style="font-family:var(--fc);font-size:13px;font-weight:800">${inv.id}</td>
-        <td style="font-size:13px;font-weight:600">${val?.name||'—'}</td>
-        <td style="font-size:12px;color:var(--t3)">${inv.period_start||'—'} to ${inv.period_end||'—'}</td>
-        <td style="font-size:13px;text-align:center">${inv.sessions_count||0}</td>
-        <td style="font-family:var(--fc);font-weight:800;font-size:15px;color:${isPaid?'var(--grn)':'var(--t1)'}">$${(inv.amount_due||0).toFixed(2)}</td>
-        <td><span class="sp ${isPaid?'active':'pending'}">${isPaid?'Paid':'Unpaid'}</span></td>
-        <td style="font-size:12px;color:var(--t3)">${inv.paid_at?new Date(inv.paid_at).toLocaleDateString():'—'}</td>
-        <td style="display:flex;gap:6px;flex-wrap:wrap">${inv.stripe_payment_link?`<a href="${inv.stripe_payment_link}" target="_blank" style="font-family:var(--fc);font-size:11px;font-weight:700;color:#2563eb;text-decoration:none;white-space:nowrap">Pay Link ↗</a>`:'—'}<button onclick="viewInvoice('${inv.id}')" class="ab" style="font-size:10px">View</button><button onclick="resendInvoice('${inv.id}')" class="ab" style="font-size:10px">Resend</button></td>
-      </tr>`;
-    }).join('')}
+    <div class="pn"><div class="ph"><h3><i class="ti ti-receipt"></i>All Invoices</h3>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <div class="sb2"><i class="ti ti-search"></i><input id="inv-search-inp" placeholder="Search invoice # or validation..." value="${escH(S.invSearch||'')}" oninput="filterInvoices()" autocomplete="off"></div>
+        <select id="inv-status-filter" onchange="S.invStatusFilter=this.value;filterInvoices()" style="background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:8px 12px;font-family:var(--fc);font-size:13px;font-weight:700;color:var(--t1)">
+          <option value="all">All</option>
+          <option value="unpaid"${S.invStatusFilter==='unpaid'?' selected':''}>Unpaid</option>
+          <option value="paid"${S.invStatusFilter==='paid'?' selected':''}>Paid</option>
+          <option value="void"${S.invStatusFilter==='void'?' selected':''}>Void</option>
+        </select>
+      </div>
+    </div>
+    <div style="overflow-x:auto"><table id="inv-table"><thead><tr>
+      <th>Invoice #</th><th>Validation</th><th>Period</th><th>Sessions</th><th>Amount</th><th>Status</th><th>Paid At</th><th>Actions</th>
+    </tr></thead><tbody id="inv-tbody">
+    ${buildInvoiceRows()}
     </tbody></table></div></div>
   </div>`;
+}
+
+function buildInvoiceRows(){
+  const q=(S.invSearch||'').toUpperCase().trim();
+  const statusF=S.invStatusFilter||'all';
+  let filtered=S.invoices;
+  if(q)filtered=filtered.filter(inv=>{
+    const val=Object.values(S.vals).find(v=>v.id===inv.validation_id);
+    return inv.id.toUpperCase().includes(q)||(val?.name||'').toUpperCase().includes(q);
+  });
+  if(statusF!=='all')filtered=filtered.filter(inv=>inv.status===statusF);
+  if(!filtered.length)return`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--t3)">No invoices found.</td></tr>`;
+  return filtered.map(inv=>{
+    const val=Object.values(S.vals).find(v=>v.id===inv.validation_id);
+    const isVoid=inv.status==='void';
+    const isPaid=inv.status==='paid';
+    return`<tr style="${isVoid?'opacity:.5':''}">
+      <td style="font-family:var(--fc);font-size:13px;font-weight:800">${inv.id}</td>
+      <td style="font-size:13px;font-weight:600">${val?.name||'—'}</td>
+      <td style="font-size:12px;color:var(--t3)">${inv.period_start||'—'} to ${inv.period_end||'—'}</td>
+      <td style="font-size:13px;text-align:center">${inv.sessions_count||0}</td>
+      <td style="font-family:var(--fc);font-weight:900;font-size:15px;color:${isPaid?'var(--grn)':isVoid?'var(--t3)':'var(--t1)'}">$${(inv.amount_due||0).toFixed(2)}</td>
+      <td><span class="sp ${isPaid?'active':isVoid?'expired':'pending'}">${isPaid?'Paid':isVoid?'Void':'Unpaid'}</span></td>
+      <td style="font-size:12px;color:var(--t3)">${inv.paid_at?new Date(inv.paid_at).toLocaleDateString():'—'}</td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap">
+        <button onclick="viewInvoice('${inv.id}')" class="ab" style="font-size:10px">View</button>
+        <button onclick="resendInvoice('${inv.id}')" class="ab" style="font-size:10px">Resend</button>
+        ${!isVoid&&!isPaid?`<button onclick="voidInvoice('${inv.id}')" class="ab danger" style="font-size:10px">Void</button>`:''}
+        ${inv.stripe_payment_link&&!isPaid&&!isVoid?`<a href="${inv.stripe_payment_link}" target="_blank" style="font-family:var(--fc);font-size:11px;font-weight:700;color:#2563eb;text-decoration:none;padding:4px 8px;border:1px solid #2563eb;border-radius:4px">Pay Link ↗</a>`:''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterInvoices(){
+  S.invSearch=document.getElementById('inv-search-inp')?.value||'';
+  S.invStatusFilter=document.getElementById('inv-status-filter')?.value||'all';
+  const tbody=document.getElementById('inv-tbody');
+  if(tbody)tbody.innerHTML=buildInvoiceRows();
+}
+
+async function voidInvoice(id){
+  if(!confirm('Void this invoice? The payment link will no longer work.'))return;
+  const inv=S.invoices.find(i=>i.id===id);
+  if(!inv)return;
+  inv.status='void';
+  await db('invoices','PATCH',{status:'void'},`?id=eq.${id}`);
+  filterInvoices();
+  document.getElementById('sab').innerHTML=`Invoice <strong>${id}</strong> has been voided`;
+  document.getElementById('smsalert').classList.add('show');
+  setTimeout(()=>document.getElementById('smsalert').classList.remove('show'),4000);
 }
 function rUsers(){const mgrs=S.users.filter(u=>u.role==='manager');const emps=S.users.filter(u=>u.role==='employee');return`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div class="pn"><div class="ph"><h3><i class="ti ti-shield-check"></i>Managers</h3><button class="ab" style="border-color:#888;color:#aaa" onclick="openUM(null,'manager')"><i class="ti ti-plus" style="font-size:11px;margin-right:3px"></i>Add</button></div><div class="pb">${mgrs.map(u=>rUC(u)).join('')}</div></div><div class="pn"><div class="ph"><h3><i class="ti ti-user"></i>Employees</h3><button class="ab" style="border-color:#888;color:#aaa" onclick="openUM(null,'employee')"><i class="ti ti-plus" style="font-size:11px;margin-right:3px"></i>Add</button></div><div class="pb">${emps.length===0?`<div style="text-align:center;padding:20px;color:var(--t3);font-size:13px">No employees yet</div>`:''}${emps.map(u=>rUC(u)).join('')}<div style="margin-top:10px;padding:10px 12px;background:var(--lime-bg);border:1px solid var(--lime);border-radius:8px;font-size:12px;color:var(--t2)"><i class="ti ti-info-circle" style="font-size:13px;margin-right:4px;color:var(--lime-dark)"></i>Employees can view sessions and search plates only.</div></div></div></div>`;}
 function rComp(){
