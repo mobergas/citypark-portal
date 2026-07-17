@@ -8,6 +8,7 @@
     { "source": "/enforce", "destination": "/enforce.html" },
     { "source": "/payfine", "destination": "/payfine.html" },
     { "source": "/admin", "destination": "/index.html" },
+    { "source": "/v", "destination": "/index.html" },
     { "source": "/sms-terms", "destination": "/sms-terms.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
