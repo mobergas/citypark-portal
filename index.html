@@ -1637,7 +1637,7 @@ function rViolations(){
         <td style="font-size:13px;font-weight:600;color:var(--t1)">${v.violation_name||'—'}</td>
         <td style="font-family:var(--fc);font-weight:900;font-size:15px;color:${v.status==='paid'?'var(--grn)':'var(--red)'}">$${v.fine_amount.toFixed(2)}</td>
         <td><span class="sp ${v.status==='paid'?'active':v.status==='waived'?'expired':'pending'}">${v.status==='paid'?'Paid':v.status==='waived'?'Waived':'Unpaid'}</span></td>
-        <td>${v.photo_url?`<a href="${v.photo_url}" target="_blank" style="color:#2563eb;font-size:12px">View</a>`:'—'}</td>
+        <td>${(v.photo_urls&&v.photo_urls.length)?v.photo_urls.map((url,i)=>`<a href="${url}" target="_blank" style="color:#2563eb;font-size:12px;margin-right:6px">Photo ${i+1}</a>`).join(''):v.photo_url?`<a href="${v.photo_url}" target="_blank" style="color:#2563eb;font-size:12px">View</a>`:'—'}</td>
         <td><button class="ab" onclick="editViolation('${v.id}')"><i class="ti ti-pencil" style="font-size:11px"></i></button>${v.status!=='waived'?`<button class="ab" onclick="waiveViolation('${v.id}')" style="border-color:var(--gold);color:var(--gold)"><i class="ti ti-x" style="font-size:11px"></i> Waive</button>`:'<span style="font-size:11px;color:var(--gold)">Waived</span>'}</td>
       </tr>`).join('')}
       </tbody></table></div>
