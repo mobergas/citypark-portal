@@ -1833,7 +1833,15 @@ async function saveUser(){
   }
 }
 function attachEv(){
-  const ls=document.getElementById('lot-sel');if(ls)ls.addEventListener('change',e=>{S.lotId=e.target.value;S.val=null;render();});
+  const ls=document.getElementById('lot-sel');if(ls)ls.addEventListener('change',e=>{
+  const newLotId=e.target.value;
+  const newLot=S.lots[newLotId];
+  if(newLotId!==S.lotId&&newLot){
+    const confirmed=confirm(`Are you sure you want to switch to ${newLot.name}? Make sure you are actually parked at this lot before continuing.`);
+    if(!confirmed){e.target.value=S.lotId;return;}
+  }
+  S.lotId=newLotId;S.val=null;render();
+});
   const vs=document.getElementById('veh-sel');if(vs)vs.addEventListener('change',e=>S.vehicle=e.target.value);
   const pi=document.getElementById('phone-inp');if(pi)pi.addEventListener('input',e=>S.phone=e.target.value);
   const ti=document.getElementById('sms-tmpl');if(ti){ti.addEventListener('input',()=>{S.smsTmpl=ti.value;const prev=document.getElementById('smsprev'),cnt=document.getElementById('smscnt');if(prev)prev.textContent=bSms('ABC 1234',Object.values(S.lots)[0],'CPM-4921');if(cnt)cnt.textContent=ti.value.length+' characters';});} const ri=document.getElementById('receipt-tmpl');if(ri){ri.addEventListener('input',()=>{S.receiptTmpl=ri.value;const prev=document.getElementById('receiptprev'),cnt=document.getElementById('receiptcnt');const mockSess={plate:'ABC 1234',rate:'hourly',duration:2,paid:7.25};const mockLot=Object.values(S.lots)[0];if(prev)prev.textContent=bReceipt(mockSess,mockLot);if(cnt)cnt.textContent=ri.value.length+' characters';});}
