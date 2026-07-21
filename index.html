@@ -799,7 +799,7 @@ async function submitCardPayment(){
 }
 
 function renderSuccess(){
-  const d=S.payData,l=S.lots[d.lotId],rem=remMs(d);
+  const d=S.payData,l=S.lots[d.lotId]||Object.values(S.lots)[0],rem=remMs(d);
   const exp=new Date(d.start+d.duration*3600000);
   const val=d.valId?S.vals[d.valId]:null;
   const valWindowMs=15*60*1000;const valWindowRem=Math.max(0,d.start+valWindowMs-Date.now());const inValWindow=valWindowRem>0&&d.paymentIntentId&&!d.captured&&d.paid>0;
