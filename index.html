@@ -1888,6 +1888,10 @@ async function init(){
 
 loadTemplatesFromLocal();  
 await loadFromDB();
+if(!S.lots[S.lotId]){
+  const firstLot=Object.keys(S.lots)[0];
+  if(firstLot)S.lotId=firstLot;
+}
   
   // Restore active session if user refreshed
   const savedSessId = localStorage.getItem('cpm_active_session');
