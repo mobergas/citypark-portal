@@ -687,7 +687,7 @@ function renderPay(){
     <div style="text-align:center;font-size:11px;color:var(--t3);padding-bottom:16px;margin-top:8px"><i class="ti ti-lock" style="font-size:11px;margin-right:4px"></i>${t('secured')}<br>${t('contact')}: info@cityparkmanagement.com<br><a href="/privacy" target="_blank" style="color:var(--t3);font-size:11px">Privacy Policy</a> · <a href="/terms" target="_blank" style="color:var(--t3);font-size:11px">Terms of Service</a></div>
   </div>`;
 }
-function updatePayBtn(){const btn=document.querySelector('.paybtn');if(!btn)return;const ready=S.plate.trim()&&S.phone.trim()&&S.smsConsent;btn.disabled=!ready;}
+function updatePayBtn(){const btn=document.querySelector('.paybtn');if(!btn)return;const ready=S.plate.trim()&&S.phone.trim();btn.disabled=!ready;}
   function applyCode(){
   if(S._codeAttempts>=5){
     const el=document.getElementById('vcode-err');
