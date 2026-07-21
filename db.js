@@ -95,7 +95,7 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTyp
     S.sess=sess.map(s=>({
       id:s.id,plate:s.plate,type:s.type,rate:s.rate,
       start:s.start_time,duration:s.duration,paid:s.paid,
-      pkch:s.pkch,sfee:s.sfee,vehicle:s.vehicle,phone:s.phone,
+      pkch:s.pkch,sfee:s.sfee,disc:s.disc||0,vehicle:s.vehicle,phone:s.phone,
       smsSent:s.sms_sent,receiptSent:s.receipt_sent,
       lotId:s.lot_id,valId:s.val_id,
       paymentIntentId:s.payment_intent_id||null,
@@ -111,7 +111,7 @@ async function loadMoreSessions(){
     const mapped=more.map(s=>({
       id:s.id,plate:s.plate,type:s.type,rate:s.rate,
       start:s.start_time,duration:s.duration,paid:s.paid,
-      pkch:s.pkch,sfee:s.sfee,vehicle:s.vehicle,phone:s.phone,
+      pkch:s.pkch,sfee:s.sfee,disc:s.disc||0,vehicle:s.vehicle,phone:s.phone,
       smsSent:s.sms_sent,receiptSent:s.receipt_sent,
       lotId:s.lot_id,valId:s.val_id,
       paymentIntentId:s.payment_intent_id||null,
@@ -133,7 +133,7 @@ async function saveSession(sess){
   return db('sessions','POST',{
     id:sess.id,plate:sess.plate,type:sess.type,rate:sess.rate,
     start_time:sess.start,duration:sess.duration,paid:sess.paid,
-    pkch:sess.pkch,sfee:sess.sfee,vehicle:sess.vehicle,phone:sess.phone,
+    pkch:sess.pkch,sfee:sess.sfee,disc:sess.disc||0,vehicle:sess.vehicle,phone:sess.phone,
     sms_sent:sess.smsSent,receipt_sent:sess.receiptSent||false,
     email:sess.email||'',lot_id:sess.lotId,val_id:sess.valId||null,
     payment_intent_id:sess.paymentIntentId||null,captured:sess.captured||false

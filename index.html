@@ -559,7 +559,7 @@ function bSms(p,l,sid){return S.smsTmpl.replace('{PLATE}',p).replace('{LOT}',l.n
 function feeL(lot){const p=[];if(lot.rates.hourly&&lot.fees.hourly.enabled)p.push('H:$'+lot.fees.hourly.amount.toFixed(2));if(lot.rates.event&&lot.fees.event.enabled)p.push('E:$'+lot.fees.event.amount.toFixed(2));return p.length?p.join(' · '):'None'}
 function codeTaken(code,excl){return Object.values(S.vals).some(v=>v.code.toUpperCase()===code.toUpperCase()&&v.id!==excl)}
 function fmtRL(a,b){const o={month:'short',day:'numeric'};return`${fromDS(a).toLocaleDateString([],o)} – ${fromDS(b).toLocaleDateString([],o)}`}
-function vsessInR(from,to,lotId){const a=fromDS(from),b=new Date(fromDS(to));b.setDate(b.getDate()+1);return S.vsess.filter(s=>s.date>=a&&s.date<b&&(lotId==='all'||s.lotId===lotId));}
+function vsessInR(from,to,lotId){const a=fromDS(from),b=new Date(fromDS(to));b.setDate(b.getDate()+1);return S.sess.filter(s=>s.valId&&new Date(s.start)>=a&&new Date(s.start)<b&&(lotId==='all'||s.lotId===lotId));}
 function bDaily(from,to,lotId){const start=fromDS(from),end=fromDS(to),days=[];let cur=new Date(start);while(cur<=end){days.push(new Date(cur));cur.setDate(cur.getDate()+1);}return days.map(d=>{const next=new Date(d);next.setDate(next.getDate()+1);const ss=S.sess.filter(s=>{const sd=new Date(s.start);return sd>=d&&sd<next&&(lotId==='all'||s.lotId===lotId);});const invs=(S.invoices||[]).filter(inv=>inv.status==='paid'&&inv.paid_at&&(lotId==='all'||Object.values(S.vals).find(v=>v.id===inv.validation_id)?.lotId===lotId)&&new Date(inv.paid_at)>=d&&new Date(inv.paid_at)<next);const invTot=invs.reduce((a,i)=>a+(i.amount_due||0),0);const viols=(S.violations||[]).filter(v=>v.status==='paid'&&v.paid_at&&(lotId==='all'||v.lot_id===lotId)&&new Date(v.paid_at)>=d&&new Date(v.paid_at)<next);
 const violFines=viols.reduce((a,v)=>a+(v.fine_amount-(v.parking_fee||0)),0);
 const violParking=viols.reduce((a,v)=>a+(v.parking_fee||0),0);
@@ -713,14 +713,14 @@ function updatePayBtn(){const btn=document.querySelector('.paybtn');if(!btn)retu
 }
 async function handlePay(){
   if(!S.plate.trim())return;
-  const l=lot(),{total,base,fee}=getTotal();
+  const l=lot(),{total,base,fee,disc}=getTotal();
   const dur=S.rate==='hourly'?S.hours:S.rate==='event'?12:720;
   const type=S.rate==='hourly'?'Hourly':S.rate==='event'?'Event Parking':'Monthly';
   const emailVal=document.getElementById('email-inp')?.value||S.email||'';
   const isFree=parseFloat(total)===0;
 
   if(isFree){
-    const sess={id:'CPM-'+S.tic++,plate:S.plate.trim(),type,start:Date.now(),duration:dur,rate:S.rate,paid:0,pkch:+base,sfee:+fee,vehicle:S.vehicle,phone:S.phone,email:emailVal,smsSent:false,lotId:S.lotId,valId:S.val?S.val.id:null};
+    const sess={id:'CPM-'+S.tic++,plate:S.plate.trim(),type,start:Date.now(),duration:dur,rate:S.rate,paid:0,pkch:+base,sfee:+fee,disc:+disc,vehicle:S.vehicle,phone:S.phone,email:emailVal,smsSent:false,lotId:S.lotId,valId:S.val?S.val.id:null};
     S.sess.unshift(sess);S.payData=sess;S.cstep=2;S.val=null;render();
     await saveSession(sess);
     if(S.val?.isComp) await useCompCode(S.val.id, sess.plate);
@@ -728,7 +728,7 @@ async function handlePay(){
   }
 
   // Show card modal
-  S._payPending={total,base,fee,dur,type,emailVal};
+  S._payPending={total,base,fee,disc,dur,type,emailVal};
   document.getElementById('card-modal').classList.add('show');
   ['card-number-element','card-expiry-element','card-cvc-element','card-zip-element'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='';});
   const cpb=document.getElementById('card-pay-btn');if(cpb){cpb.textContent=`Pay $${total}`;cpb.disabled=false;}
@@ -765,7 +765,7 @@ async function mountStripeCard(total){
 async function submitCardPayment(){
   const btn=document.getElementById('card-pay-btn');
   if(btn){btn.textContent='Processing...';btn.disabled=true;}
-  const {total,base,fee,dur,type,emailVal}=S._payPending;
+  const {total,base,fee,disc,dur,type,emailVal}=S._payPending;
   const l=lot();
   const sessId='CPM-'+S.tic++;
   const desc=`${type} parking - ${l.name} - ${S.plate.trim()}`;
@@ -791,7 +791,7 @@ async function submitCardPayment(){
   }
 
   document.getElementById('card-modal').classList.remove('show');
-  const sess={id:sessId,plate:S.plate.trim(),type,start:Date.now(),duration:dur,rate:S.rate,paid:+total,pkch:+base,sfee:+fee,vehicle:S.vehicle,phone:S.phone,email:emailVal,smsSent:false,lotId:S.lotId,valId:S.val?S.val.id:null,paymentIntentId:paymentIntent.id,captured:false};
+  const sess={id:sessId,plate:S.plate.trim(),type,start:Date.now(),duration:dur,rate:S.rate,paid:+total,pkch:+base,sfee:+fee,disc:+disc,vehicle:S.vehicle,phone:S.phone,email:emailVal,smsSent:false,lotId:S.lotId,valId:S.val?S.val.id:null,paymentIntentId:paymentIntent.id,captured:false};
   S.sess.unshift(sess);S.payData=sess;S.cstep=2;S.val=null;render();
   localStorage.setItem('cpm_active_session', sess.id);
   await saveSession(sess);
@@ -1274,7 +1274,7 @@ function rCC(val,sess,rl){const l=S.lots[val.lotId];const td=sess.reduce((a,s)=>
 function openInv(valId){const val=S.vals[valId],l=S.lots[val.lotId];const sess=vsessInR(S.biF,S.biT,'all').filter(s=>s.valId===valId);const td=sess.reduce((a,s)=>a+s.disc,0),tp=sess.reduce((a,s)=>a+s.paid,0),tb=sess.reduce((a,s)=>a+s.base,0);const rl=fmtRL(S.biF,S.biT);const invNum=`CPM-${S.biF.replace(/-/g,'').slice(0,6)}-${val.id.toUpperCase()}`;document.getElementById('ivt').textContent=`Invoice — ${val.name}`;document.getElementById('ivb').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;padding-bottom:16px;border-bottom:2px solid var(--g2)"><div><div style="font-family:var(--fc);font-size:22px;font-weight:900;text-transform:uppercase">City Park Management</div><div style="font-size:13px;color:var(--t3);margin-top:3px">Parking Validation Services · ${l?.name||''}</div></div><div style="text-align:right"><div style="font-family:var(--fc);font-size:11px;font-weight:700;text-transform:uppercase;color:var(--t3);margin-bottom:4px">Bill To</div><div style="font-size:14px;font-weight:600">${val.name}</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">${[['Invoice #',invNum],['Period',rl],['Discount',vtLabel(val)],['Lot',l?.name||'']].map(([lb,v])=>`<div style="background:var(--g1);border-radius:6px;padding:8px 12px"><div style="font-family:var(--fc);font-size:10px;font-weight:700;text-transform:uppercase;color:var(--t3);margin-bottom:2px">${lb}</div><div style="font-family:var(--fc);font-size:14px;font-weight:800">${v}</div></div>`).join('')}</div>${sess.length===0?`<div style="text-align:center;padding:20px;color:var(--t3);background:var(--g1);border-radius:8px;margin-bottom:16px">No usage. $0.00 due.</div>`:`<div style="border:1px solid var(--g2);border-radius:8px;overflow:hidden;margin-bottom:16px"><table><thead><tr style="background:var(--g1)"><th>Date</th><th>Plate</th><th>Type</th><th>Base</th><th>Discount</th><th>Cust. Paid</th></tr></thead><tbody>${sess.sort((a,b)=>a.date-b.date).map(s=>`<tr><td style="font-family:var(--fc);font-size:12px;font-weight:700">${s.date.toLocaleDateString([],{month:'short',day:'numeric'})}</td><td class="pc" style="font-size:14px">${s.plate}</td><td style="font-size:12px;color:var(--t2)">${s.type}${s.hours?` · ${s.hours}hr`:''}</td><td style="font-family:var(--fc);font-weight:700;font-size:13px">$${s.base.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:700;font-size:13px;color:#2563eb">−$${s.disc.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:700;font-size:13px;color:${s.paid===0?'#10b981':'var(--t1)'}">$${s.paid.toFixed(2)}</td></tr>`).join('')}</tbody><tfoot><tr style="background:var(--lime-bg)"><td colspan="3" style="font-family:var(--fc);font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.06em">Totals</td><td style="font-family:var(--fc);font-weight:800">$${tb.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:800;color:#2563eb">−$${td.toFixed(2)}</td><td style="font-family:var(--fc);font-weight:800">$${tp.toFixed(2)}</td></tr></tfoot></table></div>`}<div style="background:var(--blk);border-radius:10px;padding:16px"><div style="font-family:var(--fc);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-bottom:10px"><i class="ti ti-receipt" style="font-size:13px;margin-right:5px"></i>Invoice Summary</div>${[['Sessions',sess.length],['Parking value','$'+tb.toFixed(2)],['Customers paid','$'+tp.toFixed(2)]].map(([lb,v])=>`<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:13px;border-bottom:1px solid #1e1e1e"><span style="color:#aaa">${lb}</span><span style="color:#fff;font-family:var(--fc);font-weight:700">${v}</span></div>`).join('')}<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0 0;border-top:1px solid #333;margin-top:6px"><span style="color:#fff;font-family:var(--fc);font-weight:900;font-size:14px;text-transform:uppercase">Amount Due from ${val.name}</span><span style="color:var(--gold);font-family:var(--fc);font-weight:900;font-size:26px">$${td.toFixed(2)}</span></div></div>`;document.getElementById('inv-modal').classList.add('show');}
 
 function applyRvP(p){if(p==='7d'){S.rvF=toDS(new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()-6));S.rvT=toDS(NOW);}else if(p==='14d'){S.rvF=toDS(new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()-13));S.rvT=toDS(NOW);}else if(p==='30d'){S.rvF=toDS(new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()-29));S.rvT=toDS(NOW);}else if(p==='month'){S.rvF=toDS(new Date(NOW.getFullYear(),NOW.getMonth(),1));S.rvT=toDS(NOW);}S.rvP=p;render();}
-function exportBillingCSV(){const ms=vsessInR(S.biF,S.biT,S.biL);const rows=[['Invoice #','Client','Lot','Code','Date','Plate','Type','Base','Discount','Customer Paid']];ms.forEach(s=>{const val=S.vals[s.valId]||{name:'',code:'',id:''};const l=S.lots[s.lotId]||{name:''};const invNum='CPM-'+S.biF.replace(/-/g,'').slice(0,6)+'-'+val.id.toUpperCase();rows.push([invNum,val.name,l.name,val.code,s.date.toLocaleDateString(),s.plate,s.type,s.base.toFixed(2),s.disc.toFixed(2),s.paid.toFixed(2)]);});const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='CityPark_Billing_'+S.biF+'_'+S.biT+'.csv';a.click();}
+function exportBillingCSV(){const ms=vsessInR(S.biF,S.biT,S.biL);const rows=[['Invoice #','Client','Lot','Code','Date','Plate','Type','Base','Discount','Customer Paid']];ms.forEach(s=>{const val=S.vals[s.valId]||{name:'',code:'',id:''};const l=S.lots[s.lotId]||{name:''};const invNum='CPM-'+S.biF.replace(/-/g,'').slice(0,6)+'-'+val.id.toUpperCase();rows.push([invNum,val.name,l.name,val.code,new Date(s.start).toLocaleDateString(),s.plate,s.type,s.pkch.toFixed(2),(s.disc||0).toFixed(2),s.paid.toFixed(2)]);});const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='CityPark_Billing_'+S.biF+'_'+S.biT+'.csv';a.click();}
 function applyRvP(p){if(p==='7d'){S.rvF=toDS(new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()-6));S.rvT=toDS(NOW);}else if(p==='14d'){S.rvF=toDS(new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()-13));S.rvT=toDS(NOW);}else if(p==='30d'){S.rvF=toDS(new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()-29));S.rvT=toDS(NOW);}else if(p==='month'){S.rvF=toDS(new Date(NOW.getFullYear(),NOW.getMonth(),1));S.rvT=toDS(NOW);}S.rvP=p;render();}
 
 function exportExcel(){
