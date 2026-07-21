@@ -105,10 +105,10 @@ body{font-family:var(--fb);background:#0d0d0d;color:#fff;min-height:100vh;}
       <label class="fl" style="margin-top:12px">Photo Evidence</label>
       <div class="photo-upload" onclick="document.getElementById('photo-input').click()">
         <i class="ti ti-camera" style="font-size:28px;color:#444;display:block;margin-bottom:6px"></i>
-        <div style="font-size:13px;color:#666">Tap to take photo or upload</div>
+        <div style="font-size:13px;color:#666">Tap to add photos (multiple allowed)</div>
       </div>
-      <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" onchange="previewPhoto(this)">
-      <img id="photo-preview" class="photo-preview">
+      <input type="file" id="photo-input" accept="image/*" capture="environment" multiple style="display:none" onchange="previewPhoto(this)">
+      <div id="photo-preview-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
       <button class="btn red" id="issue-btn" onclick="issueViolation()" disabled><i class="ti ti-file-invoice"></i> Issue Violation</button>
       <button class="btn outline" onclick="showScreen('lookup')" style="margin-top:8px">Cancel</button>
     </div>
@@ -134,7 +134,7 @@ let currentLot=null;
 let currentPlate='';
 let selectedViolationType=null;
 let violationTypes=[];
-let photoFile=null;
+let photoFiles=[];
 
 async function db(table,method,body,query=''){
   const res=await fetch(`${SUPA_URL}/rest/v1/${table}${query}`,{
@@ -266,10 +266,10 @@ async function initApp(){
         <label class="fl" style="margin-top:12px">Photo Evidence</label>
         <div class="photo-upload" onclick="document.getElementById('photo-input').click()">
           <i class="ti ti-camera" style="font-size:28px;color:#444;display:block;margin-bottom:6px"></i>
-          <div style="font-size:13px;color:#666">Tap to take photo or upload</div>
+          <div style="font-size:13px;color:#666">Tap to add photos (multiple allowed)</div>
         </div>
-        <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" onchange="previewPhoto(this)">
-        <img id="photo-preview" class="photo-preview">
+        <input type="file" id="photo-input" accept="image/*" capture="environment" multiple style="display:none" onchange="previewPhoto(this)">
+        <div id="photo-preview-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
         <button class="btn red" id="issue-btn" onclick="issueViolation()" disabled><i class="ti ti-file-invoice"></i> Issue Violation</button>
         <button class="btn outline" onclick="showScreen('lookup')" style="margin-top:8px">Cancel</button>
       </div>
@@ -421,10 +421,10 @@ async function lookupPlate(){
 async function startViolation(plate){
   currentPlate=plate;
   selectedViolationType=null;
-  photoFile=null;
+  photoFiles=[];
   document.getElementById('violation-plate-display').textContent=plate;
   document.getElementById('violation-notes').value='';
-  document.getElementById('photo-preview').style.display='none';
+  const pl=document.getElementById('photo-preview-list');if(pl)pl.innerHTML='';
   document.getElementById('issue-btn').disabled=true;
 
   // Get lot pricing
@@ -479,16 +479,32 @@ function selectVType(id){
 }
 
 function previewPhoto(input){
-  const file=input.files[0];
-  if(!file)return;
-  photoFile=file;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const img=document.getElementById('photo-preview');
-    img.src=e.target.result;
-    img.style.display='block';
-  };
-  reader.readAsDataURL(file);
+  const files=Array.from(input.files||[]);
+  if(!files.length)return;
+  files.forEach(file=>photoFiles.push(file));
+  input.value='';
+  renderPhotoPreviews();
+}
+
+function renderPhotoPreviews(){
+  const list=document.getElementById('photo-preview-list');
+  if(!list)return;
+  list.innerHTML='';
+  photoFiles.forEach((file,i)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const wrap=document.createElement('div');
+      wrap.style.cssText='position:relative;width:80px;height:80px';
+      wrap.innerHTML=`<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"><button onclick="removePhoto(${i})" style="position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:14px;cursor:pointer;line-height:1">×</button>`;
+      list.appendChild(wrap);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function removePhoto(index){
+  photoFiles.splice(index,1);
+  renderPhotoPreviews();
 }
 
 async function issueViolation(){
@@ -497,19 +513,24 @@ async function issueViolation(){
   btn.textContent='Issuing...';btn.disabled=true;
 
   let photoUrl=null;
+  let photoUrls=[];
 
-  // Upload photo if provided
-  if(photoFile){
-    const fileName=`violations/${Date.now()}_${currentPlate}.jpg`;
+  // Upload all photos if provided
+  if(photoFiles.length){
     const authToken=localStorage.getItem('enforce_token')||SUPA_KEY;
-    const uploadRes=await fetch(`${SUPA_URL}/storage/v1/object/assets/${fileName}`,{
-      method:'POST',
-      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+authToken,'Content-Type':photoFile.type},
-      body:photoFile
-    });
-    if(uploadRes.ok){
-      photoUrl=`${SUPA_URL}/storage/v1/object/public/assets/${fileName}`;
+    for(let i=0;i<photoFiles.length;i++){
+      const file=photoFiles[i];
+      const fileName=`violations/${Date.now()}_${i}_${currentPlate}.jpg`;
+      const uploadRes=await fetch(`${SUPA_URL}/storage/v1/object/assets/${fileName}`,{
+        method:'POST',
+        headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+authToken,'Content-Type':file.type},
+        body:file
+      });
+      if(uploadRes.ok){
+        photoUrls.push(`${SUPA_URL}/storage/v1/object/public/assets/${fileName}`);
+      }
     }
+    photoUrl=photoUrls[0]||null;
   }
 
   const violationId='VIO-'+Date.now().toString().slice(-10);
@@ -546,6 +567,7 @@ async function issueViolation(){
     parking_fee:parkingFee,
     notes:notes||null,
     photo_url:photoUrl,
+    photo_urls:photoUrls,
     issued_by:localStorage.getItem('enforce_officer')||'Staff',
     status:'unpaid'
   });
