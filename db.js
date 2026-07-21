@@ -140,7 +140,7 @@ async function saveSession(sess){
   });
 }
 
-async function updateSessionDB(sess){
+async function updateSessionValDB(sess){
   return db('sessions','PATCH',{
     paid:sess.paid,disc:sess.disc||0,val_id:sess.valId||null,captured:sess.captured||false
   },`?id=eq.${sess.id}`);
