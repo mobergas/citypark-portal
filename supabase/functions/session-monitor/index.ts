@@ -89,7 +89,7 @@ function buildMonthlyReceiptEmail(pass: any, amount: number, nextBillDate: Date)
 
 Deno.serve(async () => {
   const now = Date.now();
-  const tenMinMs = 10 * 60 * 1000;
+  const tenMinMs = 15 * 60 * 1000;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const isFirstOfMonth = today.getDate() === 1;
