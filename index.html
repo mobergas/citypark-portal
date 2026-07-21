@@ -840,7 +840,7 @@ async function applyPostVal(){
   const discAmt=Math.max(0,+(d.pkch+d.sfee-newAmount).toFixed(2));
   d.paid=newAmount;d.captured=true;d.valId=matched.id;d.disc=discAmt;S.val=matched;
   if(matched.isComp)await useCompCode(matched.id,d.plate);
-  await saveSession(d);
+  await updateSessionDB(d);
   render();
 }
 async function handleExtendPay(hrs, total){
