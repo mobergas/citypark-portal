@@ -551,7 +551,7 @@ const T={
 function t(k){return T[S.lang][k]||T.en[k]||k;}
 
 function isMgr(){return S.cu?.role==='manager'}
-function lot(){return S.lots[S.lotId]}
+function lot(){return S.lots[S.lotId]||Object.values(S.lots)[0]}
 function remMs(s){return Math.max(0,s.start+s.duration*3600000-Date.now())}
 function fmtT(ms){if(ms<=0)return'Expired';const h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000);return h>0?h+'h '+m+'m':m+'m'}
 function gSt(s){const r=remMs(s);if(r<=0)return'expired';if(r<=20*60000)return'expiring';return'active'}
