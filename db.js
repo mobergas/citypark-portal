@@ -219,14 +219,14 @@ async function deleteUserDB(id){
   return db('profiles','DELETE',null,`?id=eq.${id}`);
 }
 
-async function createPaymentIntent(amount, description, sessionId){
+async function createPaymentIntent(payload, description, sessionId){
   const res = await fetch(`${SUPA_URL}/functions/v1/stripe-payment`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ' + (getAuthToken() || SUPA_KEY),
     },
-    body: JSON.stringify({ amount, description, sessionId })
+    body: JSON.stringify({ ...payload, description, sessionId })
   });
 return res.json();
 }

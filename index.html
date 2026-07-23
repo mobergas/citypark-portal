@@ -780,11 +780,11 @@ async function mountStripeCard(total){
 async function submitCardPayment(){
   const btn=document.getElementById('card-pay-btn');
   if(btn){btn.textContent='Processing...';btn.disabled=true;}
-  const {total,base,fee,disc,dur,type,emailVal}=S._payPending;
+  const {total,dur,type,emailVal}=S._payPending;
   const l=lot();
   const sessId='CPM-'+S.tic++;
   const desc=`${type} parking - ${l.name} - ${S.plate.trim()}`;
-  const {clientSecret,error}=await createPaymentIntent(+total,desc,sessId);
+  const {clientSecret,error,amount,base,fee,disc}=await createPaymentIntent({lotId:S.lotId,rate:S.rate,hours:S.hours,valCode:S.val?S.val.code:null},desc,sessId);
 
   if(error||!clientSecret){
     document.getElementById('card-errors').textContent='Payment error. Please try again.';
@@ -806,7 +806,7 @@ async function submitCardPayment(){
   }
 
   document.getElementById('card-modal').classList.remove('show');
-  const sess={id:sessId,plate:S.plate.trim(),type,start:Date.now(),duration:dur,rate:S.rate,paid:+total,pkch:+base,sfee:+fee,disc:+disc,vehicle:S.vehicle,phone:S.phone,email:emailVal,smsSent:false,lotId:S.lotId,valId:S.val?S.val.id:null,paymentIntentId:paymentIntent.id,captured:false};
+  const sess={id:sessId,plate:S.plate.trim(),type,start:Date.now(),duration:dur,rate:S.rate,paid:+amount,pkch:+base,sfee:+fee,disc:+disc,vehicle:S.vehicle,phone:S.phone,email:emailVal,smsSent:false,lotId:S.lotId,valId:S.val?S.val.id:null,paymentIntentId:paymentIntent.id,captured:false};
   S.sess.unshift(sess);S.payData=sess;S.cstep=2;S.val=null;render();
   localStorage.setItem('cpm_active_session', sess.id);
   await saveSession(sess);
@@ -876,7 +876,7 @@ async function submitExtendPayment(){
   const {hrs,total,s}=S._extPending;
   const l=S.lots[s.lotId];
   const desc=`Parking extension - ${l.name} - ${s.plate} +${hrs}hr`;
-  const {clientSecret,error}=await createPaymentIntent(total,desc,s.id+'-ext');
+  const {clientSecret,error,amount}=await createPaymentIntent({mode:'extend',existingSessionId:s.id,hours:hrs},desc,s.id+'-ext');
   if(error||!clientSecret){
     document.getElementById('card-errors').textContent='Payment error. Please try again.';
     if(btn){btn.textContent=`Pay $${total} & Extend`;btn.disabled=false;}
@@ -892,7 +892,7 @@ async function submitExtendPayment(){
   }
   document.getElementById('card-modal').classList.remove('show');
   s.duration+=hrs;
-  s.paid=+(s.paid+total).toFixed(2);
+  s.paid=+(s.paid+amount).toFixed(2);
   await updateSessionDB(s.id,{duration:s.duration,paid:s.paid});
   S.extDone=true;
   render();
