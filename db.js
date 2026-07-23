@@ -11,7 +11,7 @@ async function db(table,method='GET',body=null,filters=''){
     headers:{
       'Content-Type':'application/json',
       'apikey':SUPA_KEY,
-      'Authorization':'Bearer '+SUPA_KEY,
+      'Authorization':'Bearer '+(getAuthToken()||SUPA_KEY),
       'Prefer':method==='POST'?'return=representation':''
     },
     body:body?JSON.stringify(body):null
