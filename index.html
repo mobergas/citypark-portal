@@ -488,7 +488,7 @@ users:[],
     val4:{id:'val4',name:'Metro Bank',code:'METROBANK',lotId:'lot2',type:'free',discountPct:0,discountAmt:0,maxHours:1,active:false,notes:'Free 1 hr for customers'},
     val5:{id:'val5',name:'Rooftop Bar & Grill',code:'ROOFTOP25',lotId:'lot1',type:'percent',discountPct:25,discountAmt:0,maxHours:4,active:true,notes:'25% off for guests'},
   },
-  sess:[],vsess:[],passes:[],compCodes:[],invoices:[],violations:[],violationTypes:[],
+  sess:[],vsess:[],passes:[],compCodes:[],invoices:[],violations:[],violationTypes:[],auditLog:[],auditSearch:'',
 };
 
 const T={
@@ -1024,6 +1024,7 @@ function renderAdmin(){
     ${S.tab==='invoices'&&isMgr()?rInvoices():''}
     ${S.tab==='violations'&&isMgr()?rViolations():''}
     ${S.tab==='comp'&&isMgr()?rComp():''}
+    ${S.tab==='auditlog'&&isMgr()?rAuditLog():''}
   </div>`;
 }
 
@@ -1785,6 +1786,30 @@ async function voidInvoice(id){
   setTimeout(()=>document.getElementById('smsalert').classList.remove('show'),4000);
 }
 function rUsers(){const mgrs=S.users.filter(u=>u.role==='manager');const emps=S.users.filter(u=>u.role==='employee');return`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div class="pn"><div class="ph"><h3><i class="ti ti-shield-check"></i>Managers</h3><button class="ab" style="border-color:#888;color:#aaa" onclick="openUM(null,'manager')"><i class="ti ti-plus" style="font-size:11px;margin-right:3px"></i>Add</button></div><div class="pb">${mgrs.map(u=>rUC(u)).join('')}</div></div><div class="pn"><div class="ph"><h3><i class="ti ti-user"></i>Employees</h3><button class="ab" style="border-color:#888;color:#aaa" onclick="openUM(null,'employee')"><i class="ti ti-plus" style="font-size:11px;margin-right:3px"></i>Add</button></div><div class="pb">${emps.length===0?`<div style="text-align:center;padding:20px;color:var(--t3);font-size:13px">No employees yet</div>`:''}${emps.map(u=>rUC(u)).join('')}<div style="margin-top:10px;padding:10px 12px;background:var(--lime-bg);border:1px solid var(--lime);border-radius:8px;font-size:12px;color:var(--t2)"><i class="ti ti-info-circle" style="font-size:13px;margin-right:4px;color:var(--lime-dark)"></i>Employees can view sessions and search plates only.</div></div></div></div>`;}
+function rAuditLog(){
+  const q=(S.auditSearch||'').toUpperCase().trim();
+  const filtered=q?S.auditLog.filter(a=>(a.actor_name||'').toUpperCase().includes(q)||(a.action||'').toUpperCase().includes(q)||(a.details||'').toUpperCase().includes(q)):S.auditLog;
+  return`<div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div style="font-family:var(--fc);font-size:20px;font-weight:900;text-transform:uppercase">Audit Log</div>
+      <div class="sb2"><i class="ti ti-search"></i><input placeholder="Search staff, action, or details..." value="${escH(S.auditSearch||'')}" oninput="S.auditSearch=this.value;render()" autocomplete="off"></div>
+    </div>
+    <div class="pn">
+      <div style="overflow-x:auto"><table><thead><tr>
+        <th>Date/Time</th><th>Staff</th><th>Action</th><th>Details</th>
+      </tr></thead><tbody>
+      ${filtered.length===0?`<tr><td colspan="4" style="text-align:center;padding:28px;color:var(--t3)">${q?'No matching entries.':'No audit log entries yet.'}</td></tr>`:
+      filtered.map(a=>`<tr>
+        <td style="font-size:12px;color:var(--t3);white-space:nowrap">${new Date(a.created_at).toLocaleString()}</td>
+        <td style="font-weight:600;color:var(--t1)">${a.actor_name||'Unknown'}</td>
+        <td style="font-size:13px;color:var(--t2)">${a.action||''}</td>
+        <td style="font-size:12px;color:var(--t3)">${a.details||''}</td>
+      </tr>`).join('')}
+      </tbody></table></div>
+    </div>
+  </div>`;
+}
+
 function rComp(){
   const active=S.compCodes.filter(c=>!c.used_at&&new Date(c.expires_at)>new Date());
   const used=S.compCodes.filter(c=>c.used_at);

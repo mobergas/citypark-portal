@@ -22,7 +22,7 @@ async function db(table,method='GET',body=null,filters=''){
 }
 
 async function loadFromDB(){
-const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTypes]=await Promise.all([
+const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTypes,auditLog]=await Promise.all([
     db('lots','GET',null,'?select=*'),
     db('validations','GET',null,'?select=*'),
     db('passes','GET',null,'?select=*&order=created_at.desc'),
@@ -32,6 +32,7 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTyp
     db('invoices','GET',null,'?select=*&order=created_at.desc'),
     db('violations','GET',null,'?select=*&order=created_at.desc&limit=200'),
     db('violation_types','GET',null,'?select=*&order=name'),
+    db('audit_log','GET',null,'?select=*&order=created_at.desc&limit=300'),
   ]);
   if(lots){
     S.lots={};
@@ -91,6 +92,7 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTyp
   }
   if(violations){S.violations=violations;}
   if(violationTypes){S.violationTypes=violationTypes;}
+  if(auditLog){S.auditLog=auditLog;}
   if(sess){
     S.sess=sess.map(s=>({
       id:s.id,plate:s.plate,type:s.type,rate:s.rate,
@@ -393,4 +395,10 @@ async function deleteCompCode(id){
 
 async function useCompCode(id, plate){
   return db('comp_codes','PATCH',{used_at:new Date().toISOString(),used_by_plate:plate},`?id=eq.${id}`);
+}
+
+async function logAudit(action, details){
+  const name = S.cu ? S.cu.name : 'Unknown';
+  const id = S.cu ? S.cu.id : null;
+  return db('audit_log','POST',{ actor_name:name, actor_id:id, action, details });
 }
