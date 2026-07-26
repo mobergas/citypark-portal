@@ -94,8 +94,14 @@ Deno.serve(async () => {
   today.setHours(0, 0, 0, 0);
   const isFirstOfMonth = today.getDate() === 1;
 
-  // Load sessions
-  const { data: sessions } = await supabase.from('sessions').select('*');
+  // Load sessions — only ones that could still need action (capture or receipt),
+  // bounded to the last 24 hours so this doesn't rescan the whole table as it grows
+  const cutoff = new Date(now - 24 * 3600 * 1000).toISOString();
+  const { data: sessions } = await supabase
+    .from('sessions')
+    .select('*')
+    .gte('start_time', cutoff)
+    .or('captured.eq.false,captured.is.null,receipt_sent.eq.false,receipt_sent.is.null');
 
   for (const s of sessions || []) {
     const start = new Date(s.start_time).getTime();
