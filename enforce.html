@@ -137,9 +137,10 @@ let violationTypes=[];
 let photoFiles=[];
 
 async function db(table,method,body,query=''){
+  const token=localStorage.getItem('enforce_token')||SUPA_KEY;
   const res=await fetch(`${SUPA_URL}/rest/v1/${table}${query}`,{
     method,
-    headers:{'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Prefer':'return=representation'},
+    headers:{'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+token,'Prefer':'return=representation'},
     body:body?JSON.stringify(body):undefined
   });
   if(!res.ok)return null;
