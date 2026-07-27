@@ -996,7 +996,7 @@ async function signOut(){
   if(token) await supabaseSignOut(token);
   setAuthToken(null);
   S.cu = null;
-  S.v = 'pay';
+  S.v = 'login';
   render();
 }
 
