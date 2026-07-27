@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manage Your Pass · City Park Holdings</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Barlow:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--blk:#0d0d0d;--lime:#b5d96e;--lime-dark:#7a9e3b;--red:#d32f2f;--blue:#2563eb;--fc:'Barlow Condensed',sans-serif;--fb:'Barlow',sans-serif;}
+body{font-family:var(--fb);background:#f5f5f5;color:var(--blk);min-height:100vh;}
+.hd{background:var(--blk);padding:16px 24px;border-bottom:5px solid var(--lime)}
+.logo{font-family:var(--fc);font-weight:900;font-size:22px;color:#fff;text-decoration:none;display:block}
+.logo span{color:var(--lime);font-size:11px;display:block;letter-spacing:.12em;text-transform:uppercase}
+.wrap{max-width:520px;margin:32px auto;padding:0 16px 60px}
+.card{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.10);margin-bottom:20px}
+.card-hd{background:var(--blk);padding:20px 24px;border-bottom:4px solid var(--lime)}
+.card-hd h1{font-family:var(--fc);font-size:24px;font-weight:900;color:#fff;text-transform:uppercase}
+.card-hd p{color:#aaa;font-size:13px;margin-top:4px}
+.card-bd{padding:24px}
+.fg{margin-bottom:16px}
+.fl{display:block;font-family:var(--fc);font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#666;margin-bottom:6px}
+.fi{width:100%;padding:12px 14px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:15px;font-family:var(--fb)}
+.card-el{background:#f8f8f8;border:1.5px solid #e0e0e0;border-radius:8px;padding:13px}
+.err{color:var(--red);font-size:12px;margin-top:6px;min-height:16px}
+.msg{color:var(--lime-dark);font-size:12px;margin-top:6px;min-height:16px}
+.btn{width:100%;background:var(--lime);color:var(--blk);border:none;border-radius:10px;padding:14px;font-family:var(--fc);font-size:16px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;margin-top:8px}
+.btn.secondary{background:var(--blk);color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.note{font-size:12px;color:#888;text-align:center;margin-top:12px;line-height:1.6}
+.success{text-align:center;padding:40px 28px}
+.success h2{font-family:var(--fc);font-size:32px;font-weight:900;text-transform:uppercase;margin-bottom:8px}
+.loading{text-align:center;padding:60px;color:#888}
+.error-page{text-align:center;padding:40px}
+.error-page h2{font-family:var(--fc);font-size:28px;color:var(--red);margin-bottom:8px}
+.info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:14px}
+.info-row:last-child{border-bottom:none}
+.badge{display:inline-block;font-family:var(--fc);font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;padding:4px 10px;border-radius:20px}
+.badge.active{background:#e8f5e9;color:#2e7d32}
+.badge.past_due{background:#fdecea;color:var(--red)}
+.badge.pending{background:#fff8e1;color:#b8860b}
+</style>
+</head>
+<body>
+<div class="hd"><a class="logo" href="/">city park<span>management</span></a></div>
+<div class="wrap" id="wrap">
+  <div class="loading"><p>Loading...</p></div>
+</div>
+
+<script>
+const SUPA_URL='https://sldahhdbvcxdlqdhmsjd.supabase.co';
+const SUPA_KEY='sb_publishable_ZGELlV5vw7QFvva8_8NGcA_pQplXd46';
+let stripe=null;
+let cardElement=null;
+let passList=[];
+let token=null;
+
+async function db(table,method,body,query=''){
+  const res=await fetch(`${SUPA_URL}/rest/v1/${table}${query}`,{
+    method,
+    headers:{'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Prefer':'return=representation'},
+    body:body?JSON.stringify(body):undefined
+  });
+  if(!res.ok)return null;
+  return res.json();
+}
+
+function wrap(){return document.getElementById('wrap');}
+
+async function init(){
+  const params=new URLSearchParams(window.location.search);
+  token=params.get('token');
+  if(!token){showEmailForm();return;}
+
+  const passes=await db('passes','GET',null,`?login_token=eq.${token}&select=*`);
+  if(!passes||!passes.length){showEmailForm('That link is invalid. Enter your email below to get a new one.');return;}
+
+  const valid=passes.filter(p=>p.login_token_expires && new Date(p.login_token_expires)>new Date());
+  if(!valid.length){showEmailForm('That link has expired. Enter your email below to get a new one.');return;}
+
+  passList=valid;
+  showPassList();
+}
+
+function showEmailForm(notice){
+  wrap().innerHTML=`
+    <div class="card">
+      <div class="card-hd"><h1>Manage Your Pass</h1><p>Enter your email to get a secure link</p></div>
+      <div class="card-bd">
+        ${notice?`<p style="color:#888;font-size:13px;margin-bottom:16px">${notice}</p>`:''}
+        <div class="fg">
+          <label class="fl">Email address</label>
+          <input class="fi" id="email-inp" type="email" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <button class="btn" id="req-btn" onclick="requestLink()">Send Me a Link</button>
+        <p class="note">If that email has an active pass on file, we'll send a link to manage it. The link expires after 30 minutes.</p>
+      </div>
+    </div>
+  `;
+}
+
+async function requestLink(){
+  const btn=document.getElementById('req-btn');
+  const email=(document.getElementById('email-inp')?.value||'').trim();
+  if(!email){return;}
+  if(btn){btn.textContent='Sending...';btn.disabled=true;}
+  await fetch(`${SUPA_URL}/functions/v1/request-pass-login`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+    body:JSON.stringify({email})
+  });
+  wrap().innerHTML=`
+    <div class="card">
+      <div class="success">
+        <div style="font-size:48px;margin-bottom:12px">📧</div>
+        <h2>Check Your Email</h2>
+        <p style="color:#666;margin-top:8px">If ${email} has an active pass on file, we've sent a link to manage it.</p>
+      </div>
+    </div>
+  `;
+}
+
+function statusBadge(status){
+  if(status==='active')return `<span class="badge active">Active</span>`;
+  if(status==='past_due')return `<span class="badge past_due">Past Due</span>`;
+  return `<span class="badge pending">${status}</span>`;
+}
+
+function showPassList(){
+  wrap().innerHTML = passList.map(p=>passCard(p)).join('');
+}
+
+function passCard(p){
+  const rate=(p.custom_price||p.monthly_amount||0).toFixed(2);
+  return `
+    <div class="card">
+      <div class="card-hd"><h1>${p.lot_name||'Monthly Pass'}</h1><p>Pass ID ${p.id}</p></div>
+      <div class="card-bd">
+        <div style="background:#f5f5f5;border-radius:10px;padding:14px;margin-bottom:20px">
+          <div class="info-row"><span style="color:#888">Status</span>${statusBadge(p.status)}</div>
+          <div class="info-row"><span style="color:#888">Monthly rate</span><span style="font-weight:600">$${rate}/mo</span></div>
+        </div>
+        ${p.status==='past_due'?`<p style="color:var(--red);font-size:13px;margin-bottom:16px">Your last payment failed. Update your card below to reactivate this pass — we'll retry the charge automatically.</p>`:''}
+
+        <div class="fg">
+          <label class="fl">Email</label>
+          <input class="fi" id="email-${p.id}" value="${p.email||''}">
+        </div>
+        <div class="fg">
+          <label class="fl">License Plate</label>
+          <input class="fi" id="plate-${p.id}" value="${p.plate||''}">
+        </div>
+        <button class="btn secondary" onclick="saveInfo('${p.id}')" id="info-btn-${p.id}">Save Email & Plate</button>
+        <div class="msg" id="info-msg-${p.id}"></div>
+
+        <div style="height:1px;background:#eee;margin:24px 0"></div>
+
+        <div class="fg">
+          <label class="fl">Update Payment Method</label>
+          <div class="card-el" id="card-element-${p.id}"></div>
+          <div class="err" id="card-err-${p.id}"></div>
+        </div>
+        <button class="btn" onclick="saveCard('${p.id}')" id="card-btn-${p.id}">${p.status==='past_due'?'Update Card & Retry Payment':'Update Card'}</button>
+        <p class="note">🔒 Secured by Stripe · We never store your card details</p>
+      </div>
+    </div>
+  `;
+}
+
+// Mount a Stripe card element for every pass once the DOM is in place
+function mountCardElements(){
+  if(!stripe)stripe=Stripe('pk_test_51ToAC1CRGT2uMGb0UnwvpT7KnbgRAzPjoMlnFGt1qWsOOnWQfqc8xOM9gjTQ5GEU360rWLIClQNXKo1v3WhA0zwb00siXv5x5V');
+  const elements=stripe.elements();
+  passList.forEach(p=>{
+    const mountPoint=document.getElementById(`card-element-${p.id}`);
+    if(!mountPoint)return;
+    const el=elements.create('card',{
+      style:{ base:{fontFamily:'Barlow,sans-serif',fontSize:'16px',color:'#0d0d0d','::placeholder':{color:'#888'}}, invalid:{color:'#d32f2f'} }
+    });
+    el.mount(`#card-element-${p.id}`);
+    el.on('change',e=>{
+      const err=document.getElementById(`card-err-${p.id}`);
+      if(err)err.textContent=e.error?e.error.message:'';
+    });
+    p._cardElement=el;
+  });
+}
+
+async function saveInfo(passId){
+  const btn=document.getElementById(`info-btn-${passId}`);
+  const msg=document.getElementById(`info-msg-${passId}`);
+  const email=document.getElementById(`email-${passId}`)?.value;
+  const plate=document.getElementById(`plate-${passId}`)?.value;
+  if(btn){btn.textContent='Saving...';btn.disabled=true;}
+  const res=await fetch(`${SUPA_URL}/functions/v1/manage-pass`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+    body:JSON.stringify({action:'update_info',passId,token,email,plate})
+  });
+  const data=await res.json();
+  if(btn){btn.textContent='Save Email & Plate';btn.disabled=false;}
+  if(data.error){if(msg){msg.style.color='var(--red)';msg.textContent=data.error;}return;}
+  if(msg){msg.style.color='var(--lime-dark)';msg.textContent='Saved!';}
+}
+
+async function saveCard(passId){
+  const pass=passList.find(p=>p.id===passId);
+  const btn=document.getElementById(`card-btn-${passId}`);
+  const errEl=document.getElementById(`card-err-${passId}`);
+  if(!pass||!pass._cardElement)return;
+  if(btn){btn.textContent='Processing...';btn.disabled=true;}
+
+  const {paymentMethod,error}=await stripe.createPaymentMethod({type:'card',card:pass._cardElement});
+  if(error){
+    if(errEl)errEl.textContent=error.message;
+    if(btn){btn.textContent=pass.status==='past_due'?'Update Card & Retry Payment':'Update Card';btn.disabled=false;}
+    return;
+  }
+
+  const res=await fetch(`${SUPA_URL}/functions/v1/manage-pass`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+    body:JSON.stringify({action:'update_card',passId,token,paymentMethodId:paymentMethod.id})
+  });
+  const data=await res.json();
+  if(data.error){
+    if(errEl)errEl.textContent=data.error;
+    if(btn){btn.textContent=pass.status==='past_due'?'Update Card & Retry Payment':'Update Card';btn.disabled=false;}
+    return;
+  }
+
+  if(btn){btn.textContent='Done!';}
+  if(data.retried){
+    pass.status='active';
+    wrap().innerHTML = passList.map(p=>passCard(p)).join('');
+    mountCardElements();
+  }
+}
+
+init().then(()=>{ if(passList.length) mountCardElements(); });
+</script>
+</body>
+</html>
