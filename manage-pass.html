@@ -95,6 +95,7 @@ function showEmailForm(notice){
         </div>
         <button class="btn" id="req-btn" onclick="requestLink()">Send Me a Link</button>
         <p class="note">If that email has an active pass on file, we'll send a link to manage it. The link expires after 30 minutes.</p>
+        <p class="note">Questions? Contact us at <a href="mailto:info@cityparkmanagement.com" style="color:#888">info@cityparkmanagement.com</a></p>
       </div>
     </div>
   `;
@@ -116,6 +117,9 @@ async function requestLink(){
         <div style="font-size:48px;margin-bottom:12px">📧</div>
         <h2>Check Your Email</h2>
         <p style="color:#666;margin-top:8px">If ${email} has an active pass on file, we've sent a link to manage it.</p>
+      </div>
+      <div class="card-bd" style="padding-top:0">
+        <p class="note">Questions? Contact us at <a href="mailto:info@cityparkmanagement.com" style="color:#888">info@cityparkmanagement.com</a></p>
       </div>
     </div>
   `;
@@ -163,6 +167,14 @@ function passCard(p){
         </div>
         <button class="btn" onclick="saveCard('${p.id}')" id="card-btn-${p.id}">${p.status==='past_due'?'Update Card & Retry Payment':'Update Card'}</button>
         <p class="note">🔒 Secured by Stripe · We never store your card details</p>
+
+        ${p.status!=='canceled'?`
+        <div style="height:1px;background:#eee;margin:24px 0"></div>
+        <button class="btn" onclick="cancelPass('${p.id}')" id="cancel-btn-${p.id}" style="background:#fff;color:var(--red);border:1.5px solid var(--red)">Cancel My Pass</button>
+        <div class="msg" id="cancel-msg-${p.id}" style="color:var(--red)"></div>
+        `:''}
+
+        <p class="note">Questions? Contact us at <a href="mailto:info@cityparkmanagement.com" style="color:#888">info@cityparkmanagement.com</a></p>
       </div>
     </div>
   `;
@@ -202,6 +214,28 @@ async function saveInfo(passId){
   if(btn){btn.textContent='Save Email & Plate';btn.disabled=false;}
   if(data.error){if(msg){msg.style.color='var(--red)';msg.textContent=data.error;}return;}
   if(msg){msg.style.color='var(--lime-dark)';msg.textContent='Saved!';}
+}
+
+async function cancelPass(passId){
+  if(!confirm('Cancel this monthly pass? Billing stops immediately, and you\'ll keep access through the end of your current billing period.'))return;
+  const btn=document.getElementById(`cancel-btn-${passId}`);
+  const msg=document.getElementById(`cancel-msg-${passId}`);
+  if(btn){btn.textContent='Canceling...';btn.disabled=true;}
+  const res=await fetch(`${SUPA_URL}/functions/v1/manage-pass`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+    body:JSON.stringify({action:'cancel',passId,token})
+  });
+  const data=await res.json();
+  if(data.error){
+    if(msg)msg.textContent=data.error;
+    if(btn){btn.textContent='Cancel My Pass';btn.disabled=false;}
+    return;
+  }
+  const pass=passList.find(p=>p.id===passId);
+  if(pass)pass.status='canceled';
+  wrap().innerHTML = passList.map(p=>passCard(p)).join('');
+  mountCardElements();
 }
 
 async function saveCard(passId){

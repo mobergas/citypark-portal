@@ -106,6 +106,18 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === 'cancel') {
+      const pass = await getValidPass(passId, token);
+      await supabase.from('passes').update({
+        status: 'canceled',
+        canceled_on: new Date().toISOString(),
+        next_bill_date: null,
+      }).eq('id', pass.id);
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
     throw new Error('Unknown action');
 
   } catch (err) {
