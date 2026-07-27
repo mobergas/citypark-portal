@@ -168,7 +168,11 @@ async function verifyToken(token){
   });
   if(!res.ok)return null;
   const user=await res.json();
-  const profiles=await db('profiles','GET',null,`?id=eq.${user.id}&select=*`);
+  const profRes=await fetch(`${SUPA_URL}/rest/v1/profiles?id=eq.${user.id}&select=*`,{
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+token}
+  });
+  if(!profRes.ok)return null;
+  const profiles=await profRes.json();
   if(!profiles||!profiles.length)return null;
   const profile=profiles[0];
   if(!profile.active)return null;
