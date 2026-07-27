@@ -5,6 +5,7 @@
     { "source": "/privacy", "destination": "/privacy.html" },
     { "source": "/terms", "destination": "/terms.html" },
     { "source": "/update-card", "destination": "/update-card.html" },
+    { "source": "/manage-pass", "destination": "/manage-pass.html" },
     { "source": "/enforce", "destination": "/enforce.html" },
     { "source": "/payfine", "destination": "/payfine.html" },
     { "source": "/admin", "destination": "/index.html" },
