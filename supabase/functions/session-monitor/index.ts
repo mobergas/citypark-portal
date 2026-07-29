@@ -13,6 +13,19 @@ async function sendEmail(to: string, subject: string, html: string, attachments?
   });
 }
 
+async function sendSMS(to: string, message: string) {
+  const res = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-sms`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}` },
+    body: JSON.stringify({ to: '+1' + to.replace(/\D/g, ''), message })
+  });
+  const data = await res.json();
+  if (!res.ok || data.error) {
+    console.error('sendSMS failed:', data.error || data);
+  }
+  return data;
+}
+
 async function capturePaymentIntent(paymentIntentId: string, amount: number) {
   const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
   const body = new URLSearchParams();
@@ -96,12 +109,14 @@ Deno.serve(async () => {
 
   // Load sessions — only ones that could still need action (capture or receipt),
   // bounded to the last 24 hours so this doesn't rescan the whole table as it grows
-  const cutoff = new Date(now - 24 * 3600 * 1000).toISOString();
-  const { data: sessions } = await supabase
+  const cutoff = now - 24 * 3600 * 1000;
+  const { data: sessions, error: sessionsErr } = await supabase
     .from('sessions')
     .select('*')
     .gte('start_time', cutoff)
-    .or('captured.eq.false,captured.is.null,receipt_sent.eq.false,receipt_sent.is.null');
+    .or('captured.eq.false,captured.is.null,receipt_sent.eq.false,receipt_sent.is.null,sms_sent.eq.false,sms_sent.is.null,receipt_sms_sent.eq.false,receipt_sms_sent.is.null');
+  if (sessionsErr) console.error('Failed to load sessions:', sessionsErr);
+  console.log('Sessions loaded:', sessions?.length ?? 0);
 
   for (const s of sessions || []) {
     const start = new Date(s.start_time).getTime();
@@ -120,6 +135,27 @@ Deno.serve(async () => {
       } catch(e) {
         console.error('Capture failed for', s.id, e);
       }
+    }
+
+    // Send 20-minute expiration warning SMS
+    if (!s.sms_sent && s.phone && remaining > 0 && remaining <= 20 * 60 * 1000) {
+      const l2 = await supabase.from('lots').select('*').eq('id', s.lot_id).single();
+      const lotName = l2.data?.name || 'the lot';
+      const lotZone = l2.data?.zone || '';
+      await sendSMS(s.phone, `City Park Management: Your parking for plate ${s.plate} at ${lotName} (Zone ${lotZone}) expires in 20 min. Tap to extend: cityparkmanagement.app/extend?session=${s.id}`);
+      const { error: smsErr } = await supabase.from('sessions').update({ sms_sent: true }).eq('id', s.id);
+      if (smsErr) console.error('Failed to mark sms_sent for', s.id, smsErr);
+    }
+
+    // Send receipt SMS when session expires
+    if (remaining <= 0 && !s.receipt_sms_sent && s.phone) {
+      const l3 = await supabase.from('lots').select('*').eq('id', s.lot_id).single();
+      const lotName = l3.data?.name || 'the lot';
+      const lotZone = l3.data?.zone || '';
+      const dur = s.rate === 'hourly' ? s.duration + 'hr' : s.rate === 'event' ? 'Event' : 'Monthly';
+      await sendSMS(s.phone, `City Park Management: Receipt for ${s.plate} at ${lotName} (Zone ${lotZone}). Duration: ${dur}. Amount paid: $${s.paid.toFixed(2)}. Thank you for parking with us!`);
+      const { error: receiptSmsErr } = await supabase.from('sessions').update({ receipt_sms_sent: true }).eq('id', s.id);
+      if (receiptSmsErr) console.error('Failed to mark receipt_sms_sent for', s.id, receiptSmsErr);
     }
 
     // Send receipt email when session expires
