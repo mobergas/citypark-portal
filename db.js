@@ -93,6 +93,7 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTyp
   if(violations){S.violations=violations;}
   if(violationTypes){S.violationTypes=violationTypes;}
   if(auditLog){S.auditLog=auditLog;}
+  if(masterAccounts){S.masterAccounts=masterAccounts.map(a=>({...a,lot_ids:a.lot_ids||[]}));}
   if(sess){
     S.sess=sess.map(s=>({
       id:s.id,plate:s.plate,type:s.type,rate:s.rate,

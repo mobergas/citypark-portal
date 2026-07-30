@@ -421,6 +421,7 @@ tfoot td{padding:10px;font-size:13px;background:var(--lime-bg);font-weight:600}
 <div class="mov" id="lot-modal"><div class="md"><div class="mdh"><h3 id="lmt">Edit Lot</h3></div><div class="mds" id="lmb"></div><div class="mdf"><button class="bcl" onclick="closeM('lot-modal')">Cancel</button><button class="bsv3" onclick="saveLot()">✓ Save</button></div></div></div>
 <div class="mov" id="qr-modal"><div class="md" style="width:380px"><div class="mdh"><h3 id="qrt">QR Code</h3></div><div class="qmb" id="qrb"></div><div class="mdf"><button class="bcl" onclick="closeM('qr-modal')">Close</button><button class="bsv3" onclick="const c=document.getElementById('qr-main');if(c){const a=document.createElement('a');a.href=c.toDataURL('image/png');a.download='CityPark_QR_'+document.getElementById('qrt').textContent.replace(/\s+/g,'_')+'.png';a.click();}">⬇ Download</button></div></div></div>
 <div class="mov" id="val-modal"><div class="md" style="width:500px"><div class="mdh ga"><h3 id="vmt">New Validation</h3></div><div class="mds" id="vmb"></div><div class="mdf"><button class="bcl" onclick="closeM('val-modal')">Cancel</button><button class="bsv3 go" onclick="saveVal()">✓ Save</button></div></div></div>
+<div class="mov" id="master-modal"><div class="md" style="width:500px"><div class="mdh ga"><h3 id="mamt">New Master Account</h3></div><div class="mds" id="mamb"></div><div class="mdf"><button class="bcl" onclick="closeM('master-modal')">Cancel</button><button class="bsv3 go" onclick="saveMasterAcct()">✓ Save</button></div></div></div>
 <div class="mov" id="vqr-modal"><div class="md" style="width:400px"><div class="mdh ga"><h3 id="vqrt">Validation QR</h3></div><div class="qmb" id="vqrb"></div><div class="mdf"><button class="bcl" onclick="closeM('vqr-modal')">Close</button><button class="bsv3 go" onclick="alert('QR downloaded')">⬇ Download</button></div></div></div>
 <div class="mov" id="inv-modal"><div class="md" style="width:600px"><div class="mdh ga"><h3 id="ivt">Invoice</h3></div><div class="mds" id="ivb"></div><div class="mdf"><button class="bcl" onclick="closeM('inv-modal')">Close</button><button class="bsv3 go" onclick="exportInvoicePDF()">⬇ Export PDF</button></div></div></div>
 <div class="mov" id="usr-modal"><div class="md" style="width:420px"><div class="mdh"><h3 id="umt">Add User</h3></div><div class="mds" id="umb"></div><div class="mdf"><button class="bcl" onclick="closeM('usr-modal')">Cancel</button><button class="bsv3" onclick="saveUser()">✓ Save</button></div></div></div>
@@ -497,7 +498,7 @@ users:[],
     val4:{id:'val4',name:'Metro Bank',code:'METROBANK',lotId:'lot2',type:'free',discountPct:0,discountAmt:0,maxHours:1,active:false,notes:'Free 1 hr for customers'},
     val5:{id:'val5',name:'Rooftop Bar & Grill',code:'ROOFTOP25',lotId:'lot1',type:'percent',discountPct:25,discountAmt:0,maxHours:4,active:true,notes:'25% off for guests'},
   },
-  sess:[],vsess:[],passes:[],compCodes:[],invoices:[],violations:[],violationTypes:[],auditLog:[],auditSearch:'',
+  sess:[],vsess:[],passes:[],compCodes:[],invoices:[],violations:[],violationTypes:[],auditLog:[],auditSearch:'',masterAccounts:[],eMasterAcct:null,
 };
 
 const T={
@@ -1016,7 +1017,7 @@ function renderAdmin(){
   const expiring=S.sess.filter(s=>gSt(s)==='expiring');
   const aVals=Object.values(S.vals).filter(v=>v.active).length;
   const activePasses=S.passes.filter(p=>p.status==='active').length;
-  const tabs=[{id:'sessions',ic:'ti-home',lb:'Home'},...(isMgr()?[{id:'lots',ic:'ti-parking',lb:'Lots & Pricing'},{id:'validations',ic:'ti-discount',lb:'Validations'},{id:'invoices',ic:'ti-receipt',lb:'Val Invoices'},{id:'billing',ic:'ti-file-invoice',lb:'Val Usage Reports'},{id:'passes',ic:'ti-id-badge',lb:'Monthly Passes'},{id:'comp',ic:'ti-ticket',lb:'Comp Codes'},{id:'sms',ic:'ti-message-circle',lb:'SMS & Email'},{id:'users',ic:'ti-users',lb:'Users'},{id:'revenue',ic:'ti-chart-bar',lb:'Revenue'},{id:'violations',ic:'ti-alert-triangle',lb:'Violations'},{id:'auditlog',ic:'ti-history',lb:'Audit Log'}]:[])];
+  const tabs=[{id:'sessions',ic:'ti-home',lb:'Home'},...(isMgr()?[{id:'lots',ic:'ti-parking',lb:'Lots & Pricing'},{id:'validations',ic:'ti-discount',lb:'Validations'},{id:'invoices',ic:'ti-receipt',lb:'Val Invoices'},{id:'billing',ic:'ti-file-invoice',lb:'Val Usage Reports'},{id:'passes',ic:'ti-id-badge',lb:'Monthly Passes'},{id:'comp',ic:'ti-ticket',lb:'Comp Codes'},{id:'sms',ic:'ti-message-circle',lb:'SMS & Email'},{id:'users',ic:'ti-users',lb:'Users'},{id:'revenue',ic:'ti-chart-bar',lb:'Revenue'},{id:'violations',ic:'ti-alert-triangle',lb:'Violations'},{id:'auditlog',ic:'ti-history',lb:'Audit Log'},{id:'masteraccts',ic:'ti-building-bank',lb:'Master Accounts'}]:[])];
   if(!tabs.find(t=>t.id===S.tab))S.tab=localStorage.getItem('cpm_tab')||'sessions';
   return`<div class="aw">
     <div class="atb"><div class="att"><h2><i class="ti ti-layout-dashboard" style="color:var(--lime);margin-right:8px;font-size:20px"></i>Admin Dashboard</h2><p>City Park Management · ${S.cu?.name} (${isMgr()?'Manager':'Employee'})</p></div></div>
@@ -1036,6 +1037,7 @@ function renderAdmin(){
         ${S.tab==='violations'&&isMgr()?rViolations():''}
         ${S.tab==='comp'&&isMgr()?rComp():''}
         ${S.tab==='auditlog'&&isMgr()?rAuditLog():''}
+        ${S.tab==='masteraccts'&&isMgr()?rMasterAccounts():''}
       </div>
     </div>
   </div>`;
@@ -1825,6 +1827,116 @@ function rAuditLog(){
       </tbody></table></div>
     </div>
   </div>`;
+}
+
+function rMasterAccounts(){
+  const accts=S.masterAccounts||[];
+  return`<div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div style="font-family:var(--fc);font-size:20px;font-weight:900;text-transform:uppercase">Master Accounts</div>
+      <button onclick="openMasterAcctModal(null)" style="background:var(--gold);color:var(--blk);border:none;border-radius:9px;padding:10px 18px;font-family:var(--fc);font-size:13px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-plus"></i>New Master Account</button>
+    </div>
+    <div class="vg">${accts.map(a=>{
+      const lotNames=(a.lot_ids||[]).map(id=>S.lots[id]?.name||'?').join(', ');
+      const used=S.passes.filter(p=>p.master_account_id===a.id&&p.status!=='canceled').length;
+      const pct=a.pass_cap>0?Math.min(100,Math.round(used/a.pass_cap*100)):0;
+      return`<div class="vc${a.active?' ac':''}">
+        <div class="vch"><div><div class="vcn">${a.business_name}</div><div class="vcl2"><i class="ti ti-parking" style="font-size:10px;margin-right:3px"></i>${lotNames||'No lots assigned'}</div></div><div class="vsd${a.active?' on':' off'}"></div></div>
+        <div class="vcb">
+          <div class="vdr"><span class="vdl">Contact</span><span style="font-weight:600;font-family:var(--f);font-size:13px">${a.contact_name||'—'}</span></div>
+          <div class="vdr"><span class="vdl">Passes used</span><span style="font-weight:700;font-family:var(--fc);font-size:14px;color:${pct>=100?'var(--red)':'var(--t1)'}">${used} / ${a.pass_cap}</span></div>
+          <div class="tb2" style="width:100%;margin-top:2px"><div class="tb2f" style="width:${pct}%;background:${pct>=100?'var(--red)':'var(--lime-dark)'}"></div></div>
+        </div>
+        <div class="vac">
+          <button class="ab" onclick="copyMasterLink('${a.id}')" style="border-color:#7a9e3b;color:#7a9e3b"><i class="ti ti-link" style="font-size:11px;margin-right:3px"></i>Portal Link</button>
+          <button class="ab" onclick="refreshMasterToken('${a.id}')" title="Refresh portal link"><i class="ti ti-refresh" style="font-size:11px"></i></button>
+          <button class="ab" onclick="openMasterAcctModal('${a.id}')"><i class="ti ti-settings" style="font-size:11px;margin-right:3px"></i>Edit</button>
+          <button class="ab${a.active?' danger':''}" onclick="toggleMasterAcct('${a.id}')">${a.active?'Deactivate':'Activate'}</button>
+        </div>
+      </div>`;
+    }).join('')}
+    <div class="addc" onclick="openMasterAcctModal(null)"><i class="ti ti-plus"></i><span>New Master Account</span></div>
+    </div>
+  </div>`;
+}
+
+async function saveMasterAcct(){
+  const name=document.getElementById('ma-name')?.value.trim();
+  const contact=document.getElementById('ma-contact')?.value.trim()||'';
+  const email=document.getElementById('ma-email')?.value.trim()||'';
+  const cap=parseInt(document.getElementById('ma-cap')?.value)||10;
+  const active=document.getElementById('ma-active')?.checked||false;
+  const lotIds=Object.keys(S.lots).filter(id=>document.getElementById('ma-lot-'+id)?.checked);
+  if(!name){alert('Business name required.');return;}
+  if(!lotIds.length){alert('Select at least one lot.');return;}
+  if(!S.masterAccounts)S.masterAccounts=[];
+  if(S.eMasterAcct){
+    const a=S.masterAccounts.find(x=>x.id===S.eMasterAcct);
+    Object.assign(a,{business_name:name,contact_name:contact,contact_email:email,lot_ids:lotIds,pass_cap:cap,active});
+    await db('master_accounts','PATCH',{business_name:name,contact_name:contact,contact_email:email,lot_ids:lotIds,pass_cap:cap,active},`?id=eq.${a.id}`);
+    logAudit('Edited master account',name);
+  }else{
+    const id='ma'+Date.now();
+    const tok='biz_'+Math.random().toString(36).slice(2,18);
+    const na={id,business_name:name,contact_name:contact,contact_email:email,lot_ids:lotIds,pass_cap:cap,active,business_token:tok};
+    S.masterAccounts.push(na);
+    await db('master_accounts','POST',na);
+    logAudit('Created master account',name);
+  }
+  closeM('master-modal');
+  render();
+}
+
+function copyMasterLink(id){
+  const a=(S.masterAccounts||[]).find(x=>x.id===id);
+  if(!a?.business_token){alert('No portal token found.');return;}
+  const link=`https://cityparkmanagement.app/master?token=${a.business_token}`;
+  navigator.clipboard.writeText(link).then(()=>{
+    document.getElementById('sab').innerHTML=`Portal link copied for <strong>${a.business_name}</strong> · ⚠️ Only share with authorized contacts`;
+    document.getElementById('smsalert').classList.add('show');
+    setTimeout(()=>document.getElementById('smsalert').classList.remove('show'),5000);
+  }).catch(()=>prompt('Copy this link:',link));
+}
+
+async function refreshMasterToken(id){
+  const a=(S.masterAccounts||[]).find(x=>x.id===id);
+  if(!a)return;
+  if(!confirm(`Refresh portal link for ${a.business_name}? The old link will stop working immediately.`))return;
+  const newToken='biz_'+Math.random().toString(36).slice(2,18);
+  await db('master_accounts','PATCH',{business_token:newToken},`?id=eq.${id}`);
+  a.business_token=newToken;
+  const link=`https://cityparkmanagement.app/master?token=${newToken}`;
+  navigator.clipboard.writeText(link).then(()=>{
+    document.getElementById('sab').innerHTML=`New portal link generated and copied for <strong>${a.business_name}</strong>`;
+    document.getElementById('smsalert').classList.add('show');
+    setTimeout(()=>document.getElementById('smsalert').classList.remove('show'),5000);
+  }).catch(()=>prompt('Copy this new link (old link is now void):',link));
+}
+
+async function toggleMasterAcct(id){
+  const a=(S.masterAccounts||[]).find(x=>x.id===id);
+  if(!a)return;
+  const nv=!a.active;
+  a.active=nv;
+  await db('master_accounts','PATCH',{active:nv},`?id=eq.${id}`);
+  logAudit(nv?'Activated master account':'Deactivated master account',a.business_name);
+  render();
+}
+
+function openMasterAcctModal(acctId){
+  S.eMasterAcct=acctId;
+  const a=acctId?(S.masterAccounts||[]).find(x=>x.id===acctId):null;
+  document.getElementById('mamt').textContent=acctId?`Edit — ${a.business_name}`:'New Master Account';
+  const lotChecks=Object.values(S.lots).map(l=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer"><input type="checkbox" id="ma-lot-${l.id}"${(a?.lot_ids||[]).includes(l.id)?' checked':''}><span style="font-size:14px">${l.name}</span></label>`).join('');
+  document.getElementById('mamb').innerHTML=`
+    <div class="fg"><label class="fl">Business Name</label><input class="fi" id="ma-name" value="${a?escH(a.business_name):''}" placeholder="e.g. The Grand Hotel"></div>
+    <div class="fg"><label class="fl">Contact Name</label><input class="fi" id="ma-contact" value="${a?escH(a.contact_name||''):''}" placeholder="e.g. Jane Smith"></div>
+    <div class="fg"><label class="fl">Contact Email</label><input class="fi" id="ma-email" type="email" value="${a?escH(a.contact_email||''):''}" placeholder="e.g. jane@grandhotel.com"></div>
+    <div class="fg"><label class="fl">Lots</label><div style="background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:10px 14px">${lotChecks}</div></div>
+    <div class="fg"><label class="fl">Free pass cap <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--t3)">(max passes this business can hand out)</span></label><div class="piw" style="max-width:130px"><span style="font-size:12px;padding:0 6px">#</span><input type="number" id="ma-cap" min="1" step="1" value="${a?.pass_cap||10}"></div></div>
+    <div class="fg" style="display:flex;align-items:center;justify-content:space-between"><div><label class="fl" style="margin:0">Active</label><div style="font-size:11px;color:var(--t3);margin-top:2px">Inactive accounts can't send new invites</div></div><label class="tg"><input type="checkbox" id="ma-active"${a?a.active?' checked':'':' checked'}><span class="tgs"></span></label></div>
+  `;
+  document.getElementById('master-modal').classList.add('show');
 }
 
 function rComp(){
