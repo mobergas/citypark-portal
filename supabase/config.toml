@@ -106,3 +106,14 @@ entrypoint = "./functions/receive-sms/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/receive-sms/*.html" ]
+
+[functions.send-master-invite]
+enabled = true
+verify_jwt = false
+import_map = "./functions/send-master-invite/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/send-master-invite/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/send-master-invite/*.html" ]
