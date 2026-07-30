@@ -122,7 +122,10 @@ function render(){
         ${passesData.map(p=>`
           <div class="history-row">
             <div><div style="font-weight:600">${p.name}</div><div style="font-size:12px;color:#888">${p.email}</div></div>
-            <span class="badge ${p.status}">${p.status}</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="badge ${p.status}">${p.status}</span>
+              ${p.status!=='canceled'?`<button onclick="cancelInvite('${p.id}','${p.name.replace(/'/g,"\\'")}')" style="background:none;border:1.5px solid #e0e0e0;border-radius:6px;padding:5px 10px;font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#d32f2f;cursor:pointer">Cancel</button>`:''}
+            </div>
           </div>`).join('')}
       </div>
     </div>`:''}
@@ -166,6 +169,13 @@ async function sendInvite(){
 
   passesData=await db('passes','GET',null,`?master_account_id=eq.${acctData.id}&order=created_at.desc&select=*`)||[];
   setTimeout(()=>render(),1200);
+}
+
+async function cancelInvite(passId,name){
+  if(!confirm(`Cancel the pass for ${name}? This can't be undone from here — contact City Park Management to reinstate.`))return;
+  await db('passes','PATCH',{status:'canceled',next_bill_date:null},`?id=eq.${passId}`);
+  passesData=await db('passes','GET',null,`?master_account_id=eq.${acctData.id}&order=created_at.desc&select=*`)||[];
+  render();
 }
 
 function showError(msg){
