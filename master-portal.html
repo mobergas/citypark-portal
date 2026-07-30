@@ -119,19 +119,14 @@ function render(){
     ${passesData.length>0?`<div class="card">
       <div class="card-hd"><h1>Sent Invites</h1><p>${passesData.length} total</p></div>
       <div class="card-bd">
-        ${passesData.map(p=>`
-          <div class="history-row">
-            <div><div style="font-weight:600">${p.name}</div><div style="font-size:12px;color:#888">${p.email}</div></div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <span class="badge ${p.status}">${p.status}</span>
-              ${p.status!=='canceled'?`<button onclick="cancelInvite('${p.id}','${p.name.replace(/'/g,"\\'")}')" style="background:none;border:1.5px solid #e0e0e0;border-radius:6px;padding:5px 10px;font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#d32f2f;cursor:pointer">Cancel</button>`:''}
-            </div>
-          </div>`).join('')}
+        <div class="fg"><input class="fi" id="pass-search" placeholder="Search by name or email..." oninput="renderPassList()"></div>
+        <div id="pass-list"></div>
       </div>
     </div>`:''}
 
     <p style="font-size:12px;color:#aaa;text-align:center;margin-top:20px">Questions? Contact us at info@cityparkmanagement.com</p>
   `;
+  renderPassList();
 }
 
 async function sendInvite(){
