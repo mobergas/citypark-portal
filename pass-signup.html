@@ -109,9 +109,35 @@ function calcProrate(monthlyPrice){
 
 function showSignup(pass){
   const price=pass.custom_price||pass.monthly_price||0;
+  const isFree=price===0;
   const {prorated,daysLeft,daysInMonth,nextBill,monthlyPrice}=calcProrate(price);
   const nextBillStr=nextBill.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
-  
+
+  if(isFree){
+    document.getElementById('main-card').innerHTML=`
+      <div class="card-hd">
+        <h1>Free Pass Signup</h1>
+        <p>Complete your registration below</p>
+      </div>
+      <div class="card-bd">
+        <div class="info-row"><span class="info-label">Name</span><span class="info-val">${pass.holder_name||''}</span></div>
+        <div class="info-row"><span class="info-label">Lot</span><span class="info-val">${pass.lot_name||''}</span></div>
+        ${pass.lot_address?`<div class="info-row"><span class="info-label">Address</span><span class="info-val">${pass.lot_address}</span></div>`:''}
+        <div class="info-row"><span class="info-label">Rate</span><span class="info-val green">FREE</span></div>${(()=>{const r=passData.pass_restrictions||{type:'none'};if(r.type==='none'||passData.override_restrictions)return'';return`<div class="info-row"><span class="info-label">Access hours</span><span class="info-val" style="color:#d32f2f;font-size:13px">${getRestrictionTextSignup(r)}</span></div>`;})()}
+        <div class="divider"></div>
+        <div class="fg">
+          <label class="fl">License Plate</label>
+          <input class="fi" id="plate-inp" placeholder="e.g. ABC 1234" maxlength="10" oninput="this.value=this.value.toUpperCase()" style="font-family:Barlow Condensed,sans-serif;font-size:22px;font-weight:800;letter-spacing:.12em;text-align:center;text-transform:uppercase">
+        </div>
+        <button class="btn" id="signup-btn" onclick="submitFreeSignup()">
+          <i class="ti ti-check"></i> Confirm & Activate Pass
+        </button>
+        <p class="note"><i class="ti ti-info-circle" style="font-size:11px"></i> No payment required · This pass is provided free of charge</p>
+      </div>
+    `;
+    return;
+  }
+
   document.getElementById('main-card').innerHTML=`
     <div class="card-hd">
       <h1>Monthly Pass Signup</h1>
@@ -165,6 +191,34 @@ function showSignup(pass){
     const el=document.getElementById('card-element');
     if(el)el.classList.remove('focused');
   });
+}
+
+async function submitFreeSignup(){
+  const btn=document.getElementById('signup-btn');
+  if(btn){btn.textContent='Activating...';btn.disabled=true;}
+
+  const plate=(document.getElementById('plate-inp')?.value||'').toUpperCase().trim();
+
+  await db('passes','PATCH',{
+    status:'active',
+    token_used:true,
+    next_bill_date:null,
+    start_date:new Date().toISOString(),
+    plate:plate||null,
+    billed_at:new Date().toISOString()
+  },`?signup_token=eq.${passData.signup_token}`);
+
+  await fetch(`${SUPA_URL}/functions/v1/send-email`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+    body:JSON.stringify({
+      to:passData.email,
+      subject:'Your City Park Free Parking Pass is Active',
+      html:`<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:30px 0;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;"><tr><td style="background:#0d0d0d;padding:24px 32px;border-bottom:5px solid #b5d96e;"><span style="font-weight:900;font-size:22px;color:#ffffff;">city park</span></td></tr><tr><td style="padding:32px;font-size:15px;line-height:1.7;color:#444;"><h2 style="margin-bottom:4px;">Welcome, ${passData.holder_name||passData.name}!</h2><p style="color:#888;font-size:13px;margin-bottom:24px;">Your free parking pass is now active.</p><table width="100%" cellpadding="8" cellspacing="0" style="background:#f5f5f5;border-radius:8px;margin-bottom:24px;"><tr><td style="color:#888;font-size:13px;">Lot</td><td style="font-weight:700;">${passData.lot_name}</td></tr><tr><td style="color:#888;font-size:13px;">Address</td><td style="font-weight:700;">${passData.lot_address||'—'}</td></tr><tr><td style="color:#888;font-size:13px;">Plate</td><td style="font-weight:700;">${plate||'—'}</td></tr><tr><td style="color:#888;font-size:13px;">Rate</td><td style="font-weight:700;color:#2e7d32;">FREE</td></tr></table><p style="font-size:13px;color:#888;">Questions? Contact us at <a href="mailto:info@cityparkmanagement.com">info@cityparkmanagement.com</a></p></td></tr><tr><td style="background:#f5f5f5;padding:16px 32px;text-align:center;font-size:11px;color:#888;">City Park Holdings LLC · info@cityparkmanagement.com</td></tr></table></td></tr></table></body></html>`
+    })
+  });
+
+  showSuccess(passData,0,null);
 }
 
 async function submitSignup(prorated){
@@ -233,14 +287,15 @@ async function submitSignup(prorated){
 }
 
 function showSuccess(pass,price,nextBill){
-  const nextBillStr=nextBill.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const isFree=price===0;
+  const nextBillStr=nextBill?nextBill.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}):'';
   document.getElementById('main-card').innerHTML=`
     <div class="success">
       <div style="font-size:48px;margin-bottom:12px">✓</div>
       <div class="badge">Pass Activated</div>
       <h2>Welcome, ${pass.holder_name||''}!</h2>
-      <p style="margin-top:12px">Your monthly parking pass for <strong>${pass.lot_name}</strong> is now active.</p>
-      <p style="margin-top:8px">Your card will be charged <strong>$${price.toFixed(2)}</strong> on <strong>${nextBillStr}</strong> and on the 1st of each month after that.</p>
+      <p style="margin-top:12px">Your ${isFree?'free ':''}parking pass for <strong>${pass.lot_name}</strong> is now active.</p>
+      ${isFree?'':`<p style="margin-top:8px">Your card will be charged <strong>$${price.toFixed(2)}</strong> on <strong>${nextBillStr}</strong> and on the 1st of each month after that.</p>`}
       <p style="margin-top:24px;font-size:12px;color:#aaa">Questions? Contact us at info@cityparkmanagement.com</p>
     </div>
   `;
