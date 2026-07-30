@@ -647,7 +647,7 @@ function switchToLogin(){S.v='login';render();}
 function render(){
   renderTopbar();
   const mc=document.getElementById('mc');
-  mc.style.maxWidth=S.v==='admin'?'1200px':'600px';
+  mc.style.maxWidth=S.v==='admin'?'1700px':'600px';
   mc.style.margin='0 auto';
   if(S.v==='pay')mc.innerHTML=S.cstep===2?renderSuccess():renderPay();
   else if(S.v==='extend')mc.innerHTML=renderExtend();
