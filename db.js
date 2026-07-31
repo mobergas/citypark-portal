@@ -395,6 +395,10 @@ async function deleteCompCode(id){
   return db('comp_codes','DELETE',null,`?id=eq.${id}`);
 }
 
+async function deleteSessionDB(id){
+  return db('sessions','DELETE',null,`?id=eq.${id}`);
+}
+
 async function useCompCode(id, plate){
   return db('comp_codes','PATCH',{used_at:new Date().toISOString(),used_by_plate:plate},`?id=eq.${id}`);
 }
