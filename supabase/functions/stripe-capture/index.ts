@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { paymentIntentId, amount, cancel } = await req.json();
+    const { paymentIntentId, amount, cancel, originalAmount } = await req.json();
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
 
     let url = `https://api.stripe.com/v1/payment_intents/${paymentIntentId}/capture`;
@@ -33,6 +33,40 @@ Deno.serve(async (req) => {
     const data = await res.json();
 
     if (!res.ok) {
+      // If it was already captured (auto-captured before the validation code was applied),
+      // fall back to a refund for the difference instead of failing outright.
+      const alreadyCaptured = data.error?.message?.includes('already been captured');
+      if (alreadyCaptured && !cancel && amount !== undefined && originalAmount !== undefined) {
+        const targetAmount = Math.round(amount * 100);
+        const originalAmountCents = Math.round(originalAmount * 100);
+        const refundAmount = originalAmountCents - targetAmount;
+
+        if (refundAmount > 0) {
+          const refundBody = new URLSearchParams({
+            payment_intent: paymentIntentId,
+            amount: refundAmount.toString(),
+          });
+          const refundRes = await fetch('https://api.stripe.com/v1/refunds', {
+            method: 'POST',
+            headers: {
+              'Authorization': 'Basic ' + btoa(stripeKey + ':'),
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: refundBody.toString(),
+          });
+          const refundData = await refundRes.json();
+          if (!refundRes.ok) {
+            return new Response(JSON.stringify({ error: refundData.error?.message || 'Refund failed' }), {
+              status: 400,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          }
+          return new Response(JSON.stringify({ success: true, refunded: true }), {
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+      }
+
       return new Response(JSON.stringify({ error: data.error?.message || 'Stripe error' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }

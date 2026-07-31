@@ -235,14 +235,14 @@ async function createPaymentIntent(payload, description, sessionId){
 return res.json();
 }
 
-async function capturePayment(paymentIntentId, amount){
+async function capturePayment(paymentIntentId, amount, originalAmount){
   const res = await fetch(`${SUPA_URL}/functions/v1/stripe-capture`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ' + (getAuthToken() || SUPA_KEY),
     },
-    body: JSON.stringify({ paymentIntentId, amount })
+    body: JSON.stringify({ paymentIntentId, amount, originalAmount })
   });
   return res.json();
 }
