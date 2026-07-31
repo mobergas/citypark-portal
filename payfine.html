@@ -229,7 +229,8 @@ async function submitPayment(){
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
     body:JSON.stringify({
-      amount:violationData.fine_amount,
+      mode:'violation',
+      violationId:violationData.id,
       description:`Parking Violation Payment - ${violationData.violation_name} - ${violationData.plate}`,
       sessionId:violationData.id,
       immediate:true

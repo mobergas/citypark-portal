@@ -50,6 +50,11 @@ Deno.serve(async (req) => {
       base = +(lot.pricing.hourly * hours).toFixed(2);
       fee = f.enabled ? f.amount : 0;
       amount = +(base + fee).toFixed(2);
+    } else if (mode === 'violation') {
+      const { data: violation } = await supabase.from('violations').select('*').eq('id', body.violationId).single();
+      if (!violation) throw new Error('Violation not found');
+      if (violation.status === 'paid') throw new Error('This violation has already been paid');
+      amount = +violation.fine_amount.toFixed(2);
     } else {
       const { data: lot } = await supabase.from('lots').select('*').eq('id', body.lotId).single();
       if (!lot) throw new Error('Lot not found');
