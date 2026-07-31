@@ -544,22 +544,6 @@ async function issueViolation(){
   const parkingFee=selectedPF?parseFloat(selectedPF.value)||0:0;
   const totalFine=selectedViolationType.fine_amount+parkingFee;
 
-  // Create Stripe payment link for the fine
-  let paymentLink=null;
-  let paymentLinkId=null;
-  try {
-    const stripeRes=await fetch(`${SUPA_URL}/functions/v1/stripe-payment`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
-      body:JSON.stringify({
-        amount:selectedViolationType.fine_amount,
-        description:`Parking Violation - ${selectedViolationType.name} - ${currentPlate} - ${currentLot.name}`,
-        sessionId:violationId,
-        isPaymentLink:true
-      })
-    });
-  } catch(e){}
-
   // Save violation
   await db('violations','POST',{
     id:violationId,
