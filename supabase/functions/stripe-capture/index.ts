@@ -36,10 +36,12 @@ Deno.serve(async (req) => {
       // If it was already captured (auto-captured before the validation code was applied),
       // fall back to a refund for the difference instead of failing outright.
       const alreadyCaptured = data.error?.message?.includes('already been captured');
+      console.log('DEBUG: alreadyCaptured=', alreadyCaptured, 'amount=', amount, 'originalAmount=', originalAmount, 'cancel=', cancel);
       if (alreadyCaptured && !cancel && amount !== undefined && originalAmount !== undefined) {
         const targetAmount = Math.round(amount * 100);
         const originalAmountCents = Math.round(originalAmount * 100);
         const refundAmount = originalAmountCents - targetAmount;
+        console.log('DEBUG: targetAmount=', targetAmount, 'originalAmountCents=', originalAmountCents, 'refundAmount=', refundAmount);
 
         if (refundAmount > 0) {
           const refundBody = new URLSearchParams({

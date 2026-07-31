@@ -864,7 +864,8 @@ async function applyPostVal(){
   if(newAmount===0){
     await fetch(`${SUPA_URL}/functions/v1/stripe-capture`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(getAuthToken()||SUPA_KEY)},body:JSON.stringify({paymentIntentId:d.paymentIntentId,cancel:true})});
   } else {
-    await capturePayment(d.paymentIntentId,newAmount);
+    const originalAmount=d.pkch+d.sfee;
+    await capturePayment(d.paymentIntentId,newAmount,originalAmount);
   }
   const discAmt=Math.max(0,+(d.pkch+d.sfee-newAmount).toFixed(2));
   d.paid=newAmount;d.captured=true;d.valId=matched.id;d.disc=discAmt;S.val=matched;
