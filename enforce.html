@@ -525,19 +525,20 @@ async function issueViolation(){
     const authToken=localStorage.getItem('enforce_token')||SUPA_KEY;
     for(let i=0;i<photoFiles.length;i++){
       const file=photoFiles[i];
-      const fileName=`violations/${Date.now()}_${i}_${currentPlate}.jpg`;
-      const uploadRes=await fetch(`${SUPA_URL}/storage/v1/object/assets/${fileName}`,{
+      const fileName=`${Date.now()}_${i}_${currentPlate}.jpg`;
+      const uploadRes=await fetch(`${SUPA_URL}/storage/v1/object/violation-photos/${fileName}`,{
         method:'POST',
         headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+authToken,'Content-Type':file.type},
         body:file
       });
       if(uploadRes.ok){
-        photoUrls.push(`${SUPA_URL}/storage/v1/object/public/assets/${fileName}`);
+        photoUrls.push(fileName);
       }
     }
     photoUrl=photoUrls[0]||null;
   }
 
+  
   const violationId='VIO-'+Date.now().toString().slice(-10);
   const notes=document.getElementById('violation-notes').value.trim();
   const selectedPF=document.querySelector('input[name="parking-fee"]:checked');
