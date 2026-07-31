@@ -13,6 +13,35 @@ async function sendEmail(to: string, subject: string, html: string) {
   });
 }
 
+async function verifyStripeSignature(payload: string, sigHeader: string | null, secret: string): Promise<boolean> {
+  if (!sigHeader) return false;
+  const parts = sigHeader.split(',').reduce((acc: Record<string, string>, part) => {
+    const [k, v] = part.split('=');
+    acc[k] = v;
+    return acc;
+  }, {});
+  const timestamp = parts['t'];
+  const signature = parts['v1'];
+  if (!timestamp || !signature) return false;
+
+  // Reject events older than 5 minutes to prevent replay attacks
+  const age = Math.abs(Date.now() / 1000 - Number(timestamp));
+  if (age > 300) return false;
+
+  const signedPayload = `${timestamp}.${payload}`;
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const sigBytes = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(signedPayload));
+  const expectedSig = Array.from(new Uint8Array(sigBytes)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+  return expectedSig === signature;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
