@@ -2057,13 +2057,7 @@ function startTimer(){
     const vc=document.getElementById('val-countdown');
     if(vc&&S.payData){
       const rem=Math.max(0,S.payData.start+15*60*1000-Date.now());
-      if(rem===0&&S.payData.paymentIntentId&&!S.payData.captured&&S.payData.paid>0){
-        S.payData.captured=true;
-        capturePayment(S.payData.paymentIntentId,S.payData.paid);
-        render();
-      } else {
-        vc.textContent=Math.floor(rem/60000)+':'+String(Math.floor((rem%60000)/1000)).padStart(2,'0');
-      }
+      vc.textContent=Math.floor(rem/60000)+':'+String(Math.floor((rem%60000)/1000)).padStart(2,'0');
     }
   },1000);
 }
