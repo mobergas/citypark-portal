@@ -102,7 +102,6 @@ function buildMonthlyReceiptEmail(pass: any, amount: number, nextBillDate: Date)
 
 Deno.serve(async () => {
   const now = Date.now();
-  const tenMinMs = 15 * 60 * 1000;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const isFirstOfMonth = today.getDate() === 1;
@@ -123,8 +122,9 @@ Deno.serve(async () => {
     const expiry = start + s.duration * 3600000;
     const remaining = expiry - now;
 
-    // Auto-capture uncaptured payments older than 10 minutes
-    if(s.payment_intent_id && !s.captured && (now - start) > tenMinMs && s.paid > 0){
+    // Auto-capture uncaptured payments once their validation window has passed
+    const valWindowMs = (s.val_window_min ?? 15) * 60 * 1000;
+    if(s.payment_intent_id && !s.captured && (now - start) > valWindowMs && s.paid > 0){
       try {
         const result = await capturePaymentIntent(s.payment_intent_id, s.paid);
         if(!result.error){

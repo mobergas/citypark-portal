@@ -45,7 +45,8 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTyp
         pricing:l.pricing||{},
         monthlyselfsrv:l.monthlyselfsrv,
         total_spaces:l.total_spaces||0,
-        pass_restrictions:l.pass_restrictions||{type:'none'}
+        pass_restrictions:l.pass_restrictions||{type:'none'},
+        val_window_minutes:l.val_window_minutes??15
       };
     });
   }
@@ -103,7 +104,8 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTyp
       smsSent:s.sms_sent,receiptSent:s.receipt_sent,
       lotId:s.lot_id,valId:s.val_id,
       paymentIntentId:s.payment_intent_id||null,
-      captured:s.captured||false
+      captured:s.captured||false,
+      valWindowMin:s.val_window_min??15
     }));
   }
 }
@@ -119,7 +121,8 @@ async function loadMoreSessions(){
       smsSent:s.sms_sent,receiptSent:s.receipt_sent,
       lotId:s.lot_id,valId:s.val_id,
       paymentIntentId:s.payment_intent_id||null,
-      captured:s.captured||false
+      captured:s.captured||false,
+      valWindowMin:s.val_window_min??15
     }));
     S.sess=[...S.sess,...mapped];
     render();
@@ -140,7 +143,8 @@ async function saveSession(sess){
     pkch:sess.pkch,sfee:sess.sfee,disc:sess.disc||0,vehicle:sess.vehicle,phone:sess.phone,
     sms_sent:sess.smsSent,receipt_sent:sess.receiptSent||false,
     email:sess.email||'',lot_id:sess.lotId,val_id:sess.valId||null,
-    payment_intent_id:sess.paymentIntentId||null,captured:sess.captured||false
+    payment_intent_id:sess.paymentIntentId||null,captured:sess.captured||false,
+    val_window_min:sess.valWindowMin??15
   });
 }
 
@@ -161,7 +165,8 @@ async function saveLotDB(lot){
     open:lot.open,rates:lot.rates,monthlyselfsrv:lot.monthlyselfsrv,
     fees:lot.fees,pricing:lot.pricing,
     total_spaces:lot.total_spaces||0,
-    pass_restrictions:lot.pass_restrictions||{type:'none'}
+    pass_restrictions:lot.pass_restrictions||{type:'none'},
+    val_window_minutes:lot.val_window_minutes??15
   };
   if(exists&&exists.length>0)return db('lots','PATCH',body,`?id=eq.${lot.id}`);
   return db('lots','POST',body);
