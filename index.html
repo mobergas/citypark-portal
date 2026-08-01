@@ -986,6 +986,8 @@ async function doLogin(){
   }
 
   setAuthToken(authData.access_token);
+  setRefreshToken(authData.refresh_token);
+  localStorage.setItem('cpm_last_active', Date.now().toString());
 
   const profile = await getProfile(authData.user.id, authData.access_token);
 
@@ -2051,13 +2053,31 @@ function attachEv(){
 }
 let timerInt=null,adminInt=null;
 let inactivityTimer=null;
+let refreshInFlight=false;
 function resetInactivity(){
   if(!S.cu)return;
+  localStorage.setItem('cpm_last_active', Date.now().toString());
   clearTimeout(inactivityTimer);
   inactivityTimer=setTimeout(()=>{
     if(S.cu){signOut();alert('You have been logged out due to inactivity.');}
-  },10*60*1000);
+  },30*60*1000);
+  if(!refreshInFlight){
+    refreshInFlight=true;
+    refreshAuthToken().finally(()=>{refreshInFlight=false;});
+  }
 }
+
+function handleExpiredSession(){
+  if(!S.cu)return;
+  setAuthToken(null);
+  setRefreshToken(null);
+  S.cu=null;
+  S.v='login';
+  clearTimeout(inactivityTimer);
+  render();
+  alert('Your session has expired. Please log in again.');
+}
+
 document.addEventListener('mousemove',resetInactivity);
 document.addEventListener('keydown',resetInactivity);
 document.addEventListener('click',resetInactivity);

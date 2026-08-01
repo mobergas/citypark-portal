@@ -1,5 +1,8 @@
 let AUTH_TOKEN = localStorage.getItem('cpm_token') || null;
+let REFRESH_TOKEN = null;
 function setAuthToken(token){ AUTH_TOKEN = token; if(token) localStorage.setItem('cpm_token', token); else localStorage.removeItem('cpm_token'); }
+function setRefreshToken(token){ REFRESH_TOKEN = token; if(token) localStorage.setItem('cpm_refresh_token', token); else localStorage.removeItem('cpm_refresh_token'); }
+function getRefreshToken(){ return REFRESH_TOKEN || localStorage.getItem('cpm_refresh_token'); }
 function getAuthToken(){ return AUTH_TOKEN; }
 
 const SUPA_URL='https://sldahhdbvcxdlqdhmsjd.supabase.co';
@@ -16,6 +19,9 @@ async function db(table,method='GET',body=null,filters=''){
     },
     body:body?JSON.stringify(body):null
   });
+  if(res.status===401&&getAuthToken()){
+    if(typeof handleExpiredSession==='function')handleExpiredSession();
+  }
   if(!res.ok){const e=await res.text();console.error('DB error:',e);return null;}
   const text=await res.text();
   return text?JSON.parse(text):null;
@@ -307,6 +313,22 @@ async function supabaseLogin(email, password){
   _loginState.attempts=0;
   _loginState.lockedUntil=null;
   return res.json();
+}
+
+async function refreshAuthToken(){
+  const refreshToken = getRefreshToken();
+  if(!refreshToken) return false;
+  const res = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=refresh_token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY },
+    body: JSON.stringify({ refresh_token: refreshToken })
+  });
+  if(!res.ok) return false;
+  const data = await res.json();
+  setAuthToken(data.access_token);
+  setRefreshToken(data.refresh_token);
+  localStorage.setItem('cpm_last_active', Date.now().toString());
+  return true;
 }
 
 async function supabaseSignOut(accessToken){
