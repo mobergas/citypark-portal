@@ -2061,8 +2061,10 @@ function resetInactivity(){
   inactivityTimer=setTimeout(()=>{
     if(S.cu){signOut();alert('You have been logged out due to inactivity.');}
   },30*60*1000);
-  if(!refreshInFlight){
+  const lastRefresh=Number(localStorage.getItem('cpm_last_refresh')||0);
+  if(!refreshInFlight&&Date.now()-lastRefresh>60000){
     refreshInFlight=true;
+    localStorage.setItem('cpm_last_refresh',Date.now().toString());
     refreshAuthToken().finally(()=>{refreshInFlight=false;});
   }
 }
