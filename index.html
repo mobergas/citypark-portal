@@ -1215,8 +1215,8 @@ function sendValInvoice(valId){
 
 function updateInvPreview(valId){
   const val=S.vals[valId];
-  const start=new Date(document.getElementById('inv-start')?.value);
-  const end=new Date(document.getElementById('inv-end')?.value);
+  const start=new Date(document.getElementById('inv-start')?.value+'T00:00:00');
+  const end=new Date(document.getElementById('inv-end')?.value+'T00:00:00');
   end.setHours(23,59,59,999);
   const sessions=S.sess.filter(s=>s.valId===valId&&new Date(s.start)>=start&&new Date(s.start)<=end);
   const totalDiscount=sessions.reduce((a,s)=>a+(s.pkch-s.paid+s.sfee),0);
@@ -1229,8 +1229,8 @@ function updateInvPreview(valId){
 
 async function confirmSendInvoice(valId){
   const val=S.vals[valId];
-  const start=new Date(document.getElementById('inv-start')?.value);
-  const end=new Date(document.getElementById('inv-end')?.value);
+  const start=new Date(document.getElementById('inv-start')?.value+'T00:00:00');
+  const end=new Date(document.getElementById('inv-end')?.value+'T00:00:00');
   end.setHours(23,59,59,999);
   const sessions=S.sess.filter(s=>s.valId===valId&&new Date(s.start)>=start&&new Date(s.start)<=end);
   const totalDiscount=sessions.reduce((a,s)=>a+(s.pkch-s.paid+s.sfee),0);
