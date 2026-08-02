@@ -1219,7 +1219,7 @@ function updateInvPreview(valId){
   const end=new Date(document.getElementById('inv-end')?.value+'T00:00:00');
   end.setHours(23,59,59,999);
   const sessions=S.sess.filter(s=>s.valId===valId&&new Date(s.start)>=start&&new Date(s.start)<=end);
-  const totalDiscount=sessions.reduce((a,s)=>a+(s.pkch-s.paid+s.sfee),0);
+  const totalDiscount=sessions.reduce((a,s)=>a+(s.disc||0),0);
   const amount=val.billingMethod==='actual'?+totalDiscount.toFixed(2):val.monthlyRate||0;
   const countEl=document.getElementById('inv-sess-count');
   const amountEl=document.getElementById('inv-amount');
@@ -1233,7 +1233,7 @@ async function confirmSendInvoice(valId){
   const end=new Date(document.getElementById('inv-end')?.value+'T00:00:00');
   end.setHours(23,59,59,999);
   const sessions=S.sess.filter(s=>s.valId===valId&&new Date(s.start)>=start&&new Date(s.start)<=end);
-  const totalDiscount=sessions.reduce((a,s)=>a+(s.pkch-s.paid+s.sfee),0);
+  const totalDiscount=sessions.reduce((a,s)=>a+(s.disc||0),0);
   const amount=val.billingMethod==='actual'?+totalDiscount.toFixed(2):val.monthlyRate||0;
   if(amount<=0){alert('Amount due is $0. Nothing to invoice.');return;}
   const btn=document.getElementById('inv-send-btn');
