@@ -751,10 +751,11 @@ async function handlePay(){
   const valWindowMin=l.val_window_minutes??15;
 
   if(isFree){
+    const wasComp=S.val?.isComp,compId=S.val?.id;
     const sess={id:'CPM-'+S.tic++,plate:S.plate.trim(),type,start:Date.now(),duration:dur,rate:S.rate,paid:0,pkch:+base,sfee:+fee,disc:+disc,vehicle:S.vehicle,phone:S.phone,email:emailVal,smsSent:false,lotId:S.lotId,valId:S.val?S.val.id:null,valWindowMin};
     S.sess.unshift(sess);S.payData=sess;S.cstep=2;S.val=null;render();
     await saveSession(sess);
-    if(S.val?.isComp) await useCompCode(S.val.id, sess.plate);
+    if(wasComp) await useCompCode(compId, sess.plate);
     return;
   }
 
@@ -822,11 +823,12 @@ async function submitCardPayment(){
   }
 
   document.getElementById('card-modal').classList.remove('show');
+  const wasComp=S.val?.isComp,compId=S.val?.id;
   const sess={id:sessId,plate:S.plate.trim(),type,start:Date.now(),duration:dur,rate:S.rate,paid:+amount,pkch:+base,sfee:+fee,disc:+disc,vehicle:S.vehicle,phone:S.phone,email:emailVal,smsSent:false,lotId:S.lotId,valId:S.val?S.val.id:null,paymentIntentId:paymentIntent.id,captured:false,valWindowMin};
   S.sess.unshift(sess);S.payData=sess;S.cstep=2;S.val=null;render();
   localStorage.setItem('cpm_active_session', sess.id);
   await saveSession(sess);
-  if(S.val?.isComp) await useCompCode(S.val.id, sess.plate);
+  if(wasComp) await useCompCode(compId, sess.plate);
 }
 
 function renderSuccess(){
