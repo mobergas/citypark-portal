@@ -191,9 +191,53 @@ async function issueWarning(){
     issued_by:localStorage.getItem('enforce_officer')||'Staff'
   });
 
+  const issuedAt=new Date();
+  document.getElementById('issued-summary').innerHTML=`
+    Plate: <strong>${currentPlate}</strong><br>
+    Warning issued${reason?`: <strong>${reason}</strong>`:''}<br>
+    Lot: <strong>${currentLot.name}</strong>
+  `;
+
+  // Build print ticket
+  document.getElementById('print-ticket').innerHTML=`
+    <div style="width:1.89in;font-family:monospace;font-size:9px;color:#000;background:#fff;padding:1.5mm;margin:0 auto;border:1px solid #000;box-sizing:border-box">
+      <div style="text-align:center;margin-bottom:4mm">
+        <div style="font-size:14px;font-weight:900;letter-spacing:1px">PARKING WARNING NOTICE</div>
+        <div style="border-top:2px solid #000;margin:2mm 0"></div>
+      </div>
+      <div style="margin-bottom:3mm">
+        <div style="font-size:10px;color:#666">WARNING ID</div>
+        <div style="font-size:13px;font-weight:900">${warningId}</div>
+      </div>
+      <div style="margin-bottom:3mm">
+        <div style="font-size:10px;color:#666">DATE & TIME</div>
+        <div style="font-size:13px;font-weight:900">${issuedAt.toLocaleDateString()} ${issuedAt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+      <div style="margin-bottom:3mm">
+        <div style="font-size:10px;color:#666">LICENSE PLATE</div>
+        <div style="font-size:16px;font-weight:900;letter-spacing:1px">${currentPlate}</div>
+      </div>
+      <div style="margin-bottom:3mm">
+        <div style="font-size:10px;color:#666">LOCATION</div>
+        <div style="font-size:13px;font-weight:900">${currentLot.name}</div>
+      </div>
+      ${reason?`<div style="margin-bottom:3mm">
+        <div style="font-size:10px;color:#666">REASON</div>
+        <div style="font-size:13px;font-weight:900">${reason}</div>
+      </div>`:''}
+      <div style="border-top:2px solid #000;border-bottom:2px solid #000;padding:2mm 0;margin:3mm 0;text-align:center">
+        <div style="font-size:12px;font-weight:900">NO FEE — THIS IS A WARNING ONLY</div>
+      </div>
+      <div style="text-align:center;font-size:9px;color:#666;margin-top:3mm;border-top:1px dashed #999;padding-top:2mm">
+        City Park Management<br>
+        Issued by: ${localStorage.getItem('enforce_officer')||'Staff'}
+      </div>
+      <div style="text-align:center;font-size:9px;font-weight:700;line-height:1.5;margin-top:3mm;border-top:1px dashed #999;padding-top:2mm">FUTURE VIOLATIONS OF THIS TYPE MAY RESULT IN A FINE.</div>
+    </div>
+  `;
+
   if(btn){btn.textContent='Issue Warning';btn.disabled=false;}
-  alert('Warning issued for '+currentPlate);
-  showScreen('lookup');
+  showScreen('issued');
 }
 
 async function db(table,method,body,query=''){
