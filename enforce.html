@@ -114,48 +114,6 @@ body{font-family:var(--fb);background:#0d0d0d;color:#fff;min-height:100vh;}
     </div>
   </div>
 
-  <!-- Issue warning screen -->
-  <div id="screen-warning" style="display:none">
-    <div class="card">
-      <div class="card-title"><i class="ti ti-flag"></i> Issue Warning</div>
-      <div id="warning-plate-display" style="font-family:var(--fc);font-size:28px;font-weight:900;letter-spacing:.15em;color:var(--gold);margin-bottom:14px;text-align:center"></div>
-      <label class="fl">Reason</label>
-      <input class="fi" id="warning-reason" placeholder="e.g. Slightly over the line, expired by a few minutes...">
-      <label class="fl" style="margin-top:12px">Notes (optional)</label>
-      <textarea class="fi" id="warning-notes" rows="3" placeholder="Additional details..." style="resize:none"></textarea>
-      <label class="fl" style="margin-top:12px">Photo Evidence</label>
-      <div class="photo-upload" onclick="document.getElementById('warning-photo-input').click()">
-        <i class="ti ti-camera" style="font-size:28px;color:#444;display:block;margin-bottom:6px"></i>
-        <div style="font-size:13px;color:#666">Tap to add photos (multiple allowed)</div>
-      </div>
-      <input type="file" id="warning-photo-input" accept="image/*" capture="environment" multiple style="display:none" onchange="previewWarningPhoto(this)">
-      <div id="warning-photo-preview-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
-      <button class="btn" id="warning-btn" onclick="issueWarning()" style="background:var(--gold);color:#000"><i class="ti ti-flag"></i> Issue Warning</button>
-      <button class="btn outline" onclick="showScreen('lookup')" style="margin-top:8px">Cancel</button>
-    </div>
-  </div>
-
-  <!-- Issue warning screen -->
-  <div id="screen-warning" style="display:none">
-    <div class="card">
-      <div class="card-title"><i class="ti ti-flag"></i> Issue Warning</div>
-      <div id="warning-plate-display" style="font-family:var(--fc);font-size:28px;font-weight:900;letter-spacing:.15em;color:var(--gold);margin-bottom:14px;text-align:center"></div>
-      <label class="fl">Reason</label>
-      <input class="fi" id="warning-reason" placeholder="e.g. Slightly over the line, expired by a few minutes...">
-      <label class="fl" style="margin-top:12px">Notes (optional)</label>
-      <textarea class="fi" id="warning-notes" rows="3" placeholder="Additional details..." style="resize:none"></textarea>
-      <label class="fl" style="margin-top:12px">Photo Evidence</label>
-      <div class="photo-upload" onclick="document.getElementById('warning-photo-input').click()">
-        <i class="ti ti-camera" style="font-size:28px;color:#444;display:block;margin-bottom:6px"></i>
-        <div style="font-size:13px;color:#666">Tap to add photos (multiple allowed)</div>
-      </div>
-      <input type="file" id="warning-photo-input" accept="image/*" capture="environment" multiple style="display:none" onchange="previewWarningPhoto(this)">
-      <div id="warning-photo-preview-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
-      <button class="btn" id="warning-btn" onclick="issueWarning()" style="background:var(--gold);color:#000"><i class="ti ti-flag"></i> Issue Warning</button>
-      <button class="btn outline" onclick="showScreen('lookup')" style="margin-top:8px">Cancel</button>
-    </div>
-  </div>
-
   <!-- Violation issued screen -->
   <div id="screen-issued" style="display:none">
     <div style="text-align:center;padding:12px 0">
@@ -166,6 +124,16 @@ body{font-family:var(--fb);background:#0d0d0d;color:#fff;min-height:100vh;}
     <button class="btn" onclick="newLookup()">Look Up Another Plate</button>
   </div>
 </div>
+
+<script>
+const SUPA_URL='https://sldahhdbvcxdlqdhmsjd.supabase.co';
+const SUPA_KEY='sb_publishable_ZGELlV5vw7QFvva8_8NGcA_pQplXd46';
+let currentLot=null;
+let currentPlate='';
+let selectedViolationType=null;
+let violationTypes=[];
+let photoFiles=[];
+let warningPhotoFiles=[];
 
 async function issueWarning(){
   const reason=document.getElementById('warning-reason')?.value.trim();
@@ -206,16 +174,6 @@ async function issueWarning(){
   alert('Warning issued for '+currentPlate);
   showScreen('lookup');
 }
-
-<script>
-const SUPA_URL='https://sldahhdbvcxdlqdhmsjd.supabase.co';
-const SUPA_KEY='sb_publishable_ZGELlV5vw7QFvva8_8NGcA_pQplXd46';
-let currentLot=null;
-let currentPlate='';
-let selectedViolationType=null;
-let violationTypes=[];
-let photoFiles=[];
-let warningPhotoFiles=[];
 
 async function db(table,method,body,query=''){
   const token=localStorage.getItem('enforce_token')||SUPA_KEY;
@@ -432,7 +390,7 @@ function changeLot(){
 }
 
 function showScreen(name){
-  ['lot','lookup','violation','issued'].forEach(s=>document.getElementById('screen-'+s).style.display='none');
+  ['lot','lookup','violation','warning','issued'].forEach(s=>document.getElementById('screen-'+s).style.display='none');
   document.getElementById('screen-'+name).style.display='block';
   if(name==='lookup'){document.getElementById('lookup-result').innerHTML='';document.getElementById('plate-input').value='';document.getElementById('plate-input').focus();}
 }
