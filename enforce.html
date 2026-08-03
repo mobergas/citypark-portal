@@ -455,6 +455,9 @@ async function lookupPlate(){
   // Check violation history
   const violations=await db('violations','GET',null,`?plate=eq.${encodeURIComponent(plate)}&order=created_at.desc&limit=5`);
 
+  // Check warning history
+  const warnings=await db('warnings','GET',null,`?plate=eq.${encodeURIComponent(plate)}&order=created_at.desc&limit=5`);
+
   let html='';
 
   // Status
@@ -499,6 +502,15 @@ async function lookupPlate(){
     html+=`<div class="card" style="margin-top:14px"><div class="card-title" style="color:var(--red)"><i class="ti ti-alert-triangle"></i> Violation History</div>`;
     violations.forEach(v=>{
       html+=`<div class="hist-row"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:var(--fc);font-size:14px;font-weight:800">${v.violation_name}</span><span class="sp ${v.status==='paid'?'paid':'unpaid'}">${v.status}</span></div><div style="color:#666;margin-top:2px">${new Date(v.created_at).toLocaleDateString()} · $${v.fine_amount.toFixed(2)} · ${v.lot_name||'—'}</div></div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // Warning history
+  if(warnings&&warnings.length>0){
+    html+=`<div class="card" style="margin-top:14px"><div class="card-title" style="color:var(--gold)"><i class="ti ti-flag"></i> Warning History</div>`;
+    warnings.forEach(w=>{
+      html+=`<div class="hist-row"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:var(--fc);font-size:14px;font-weight:800">${w.reason||'Warning'}</span></div><div style="color:#666;margin-top:2px">${new Date(w.created_at).toLocaleDateString()} · ${w.lot_name||'—'}</div></div>`;
     });
     html+=`</div>`;
   }
