@@ -116,9 +116,7 @@ body{font-family:var(--fb);background:#0d0d0d;color:#fff;min-height:100vh;}
 
   <!-- Violation issued screen -->
   <div id="screen-issued" style="display:none">
-    <div style="text-align:center;padding:24px 0 12px">
-      <div style="font-size:48px;margin-bottom:8px">✅</div>
-      <div style="font-family:var(--fc);font-size:24px;font-weight:900;text-transform:uppercase;margin-bottom:4px">Violation Issued</div>
+    <div style="text-align:center;padding:12px 0">
       <div id="issued-summary" style="font-size:13px;color:#888;margin-bottom:16px;line-height:1.7"></div>
     </div>
     <div id="print-ticket" style="background:#fff;border-radius:8px;margin-bottom:12px"></div>
@@ -574,8 +572,7 @@ async function issueViolation(){
   document.getElementById('print-ticket').innerHTML=`
     <div style="width:1.89in;font-family:monospace;font-size:9px;color:#000;background:#fff;padding:1.5mm;margin:0 auto;border:1px solid #000;box-sizing:border-box">
       <div style="text-align:center;margin-bottom:4mm">
-        <div style="font-size:12px;font-weight:900;letter-spacing:1px">CITY PARK MANAGEMENT</div>
-        <div style="font-size:10px">PARKING VIOLATION NOTICE</div>
+        <div style="font-size:14px;font-weight:900;letter-spacing:1px">PARKING VIOLATION NOTICE</div>
         <div style="border-top:2px solid #000;margin:2mm 0"></div>
       </div>
       <div style="margin-bottom:3mm">
