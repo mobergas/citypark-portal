@@ -114,6 +114,48 @@ body{font-family:var(--fb);background:#0d0d0d;color:#fff;min-height:100vh;}
     </div>
   </div>
 
+  <!-- Issue warning screen -->
+  <div id="screen-warning" style="display:none">
+    <div class="card">
+      <div class="card-title"><i class="ti ti-flag"></i> Issue Warning</div>
+      <div id="warning-plate-display" style="font-family:var(--fc);font-size:28px;font-weight:900;letter-spacing:.15em;color:var(--gold);margin-bottom:14px;text-align:center"></div>
+      <label class="fl">Reason</label>
+      <input class="fi" id="warning-reason" placeholder="e.g. Slightly over the line, expired by a few minutes...">
+      <label class="fl" style="margin-top:12px">Notes (optional)</label>
+      <textarea class="fi" id="warning-notes" rows="3" placeholder="Additional details..." style="resize:none"></textarea>
+      <label class="fl" style="margin-top:12px">Photo Evidence</label>
+      <div class="photo-upload" onclick="document.getElementById('warning-photo-input').click()">
+        <i class="ti ti-camera" style="font-size:28px;color:#444;display:block;margin-bottom:6px"></i>
+        <div style="font-size:13px;color:#666">Tap to add photos (multiple allowed)</div>
+      </div>
+      <input type="file" id="warning-photo-input" accept="image/*" capture="environment" multiple style="display:none" onchange="previewWarningPhoto(this)">
+      <div id="warning-photo-preview-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
+      <button class="btn" id="warning-btn" onclick="issueWarning()" style="background:var(--gold);color:#000"><i class="ti ti-flag"></i> Issue Warning</button>
+      <button class="btn outline" onclick="showScreen('lookup')" style="margin-top:8px">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Issue warning screen -->
+  <div id="screen-warning" style="display:none">
+    <div class="card">
+      <div class="card-title"><i class="ti ti-flag"></i> Issue Warning</div>
+      <div id="warning-plate-display" style="font-family:var(--fc);font-size:28px;font-weight:900;letter-spacing:.15em;color:var(--gold);margin-bottom:14px;text-align:center"></div>
+      <label class="fl">Reason</label>
+      <input class="fi" id="warning-reason" placeholder="e.g. Slightly over the line, expired by a few minutes...">
+      <label class="fl" style="margin-top:12px">Notes (optional)</label>
+      <textarea class="fi" id="warning-notes" rows="3" placeholder="Additional details..." style="resize:none"></textarea>
+      <label class="fl" style="margin-top:12px">Photo Evidence</label>
+      <div class="photo-upload" onclick="document.getElementById('warning-photo-input').click()">
+        <i class="ti ti-camera" style="font-size:28px;color:#444;display:block;margin-bottom:6px"></i>
+        <div style="font-size:13px;color:#666">Tap to add photos (multiple allowed)</div>
+      </div>
+      <input type="file" id="warning-photo-input" accept="image/*" capture="environment" multiple style="display:none" onchange="previewWarningPhoto(this)">
+      <div id="warning-photo-preview-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
+      <button class="btn" id="warning-btn" onclick="issueWarning()" style="background:var(--gold);color:#000"><i class="ti ti-flag"></i> Issue Warning</button>
+      <button class="btn outline" onclick="showScreen('lookup')" style="margin-top:8px">Cancel</button>
+    </div>
+  </div>
+
   <!-- Violation issued screen -->
   <div id="screen-issued" style="display:none">
     <div style="text-align:center;padding:12px 0">
@@ -125,6 +167,46 @@ body{font-family:var(--fb);background:#0d0d0d;color:#fff;min-height:100vh;}
   </div>
 </div>
 
+async function issueWarning(){
+  const reason=document.getElementById('warning-reason')?.value.trim();
+  const notes=document.getElementById('warning-notes')?.value.trim();
+  const btn=document.getElementById('warning-btn');
+  if(btn){btn.textContent='Issuing...';btn.disabled=true;}
+
+  const photoUrls=[];
+  if(warningPhotoFiles.length){
+    const authToken=localStorage.getItem('enforce_token')||SUPA_KEY;
+    for(let i=0;i<warningPhotoFiles.length;i++){
+      const file=warningPhotoFiles[i];
+      const fileName=`${Date.now()}_${i}_${currentPlate}.jpg`;
+      const uploadRes=await fetch(`${SUPA_URL}/storage/v1/object/violation-photos/${fileName}`,{
+        method:'POST',
+        headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+authToken,'Content-Type':file.type},
+        body:file
+      });
+      if(uploadRes.ok){
+        photoUrls.push(fileName);
+      }
+    }
+  }
+
+  const warningId='WARN-'+Date.now();
+  await db('warnings','POST',{
+    id:warningId,
+    plate:currentPlate,
+    lot_id:currentLot.id,
+    lot_name:currentLot.name,
+    reason:reason||null,
+    notes:notes||null,
+    photo_urls:photoUrls,
+    issued_by:localStorage.getItem('enforce_officer')||'Staff'
+  });
+
+  if(btn){btn.textContent='Issue Warning';btn.disabled=false;}
+  alert('Warning issued for '+currentPlate);
+  showScreen('lookup');
+}
+
 <script>
 const SUPA_URL='https://sldahhdbvcxdlqdhmsjd.supabase.co';
 const SUPA_KEY='sb_publishable_ZGELlV5vw7QFvva8_8NGcA_pQplXd46';
@@ -133,6 +215,7 @@ let currentPlate='';
 let selectedViolationType=null;
 let violationTypes=[];
 let photoFiles=[];
+let warningPhotoFiles=[];
 
 async function db(table,method,body,query=''){
   const token=localStorage.getItem('enforce_token')||SUPA_KEY;
@@ -389,11 +472,11 @@ async function lookupPlate(){
       html+=`<div class="status-ok"><div class="status-title">✅ Monthly Pass</div><div class="status-detail">${p.holder_name||p.name} · Valid through ${new Date(p.next_bill_date).toLocaleDateString()}${restrictions.type!=='none'?'<br><span style="font-size:11px;color:#4caf50">✓ Within allowed hours/days</span>':''}</div></div>`;
     } else {
       html+=`<div class="status-warn"><div class="status-title">⚠️ Pass Restricted</div><div class="status-detail">${p.holder_name||p.name} has a monthly pass but it is not valid at this time.<br>${getRestrictionText(restrictions)}</div></div>`;
-      html+=`<button class="btn red" onclick="startViolation('${plate}')"><i class="ti ti-alert-triangle"></i> Issue Violation</button>`;
+      html+=`<button class="btn red" onclick="startViolation('${plate}')"><i class="ti ti-alert-triangle"></i> Issue Violation</button><button class="btn outline" onclick="startWarning('${plate}')" style="margin-top:8px"><i class="ti ti-flag"></i> Issue Warning</button>`;
     }
   } else {
     html+=`<div class="status-bad"><div class="status-title">❌ No Valid Parking</div><div class="status-detail">No active session or monthly pass found for this plate at ${currentLot.name}</div></div>`;
-    html+=`<button class="btn red" onclick="startViolation('${plate}')"><i class="ti ti-alert-triangle"></i> Issue Violation</button>`;
+    html+=`<button class="btn red" onclick="startViolation('${plate}')"><i class="ti ti-alert-triangle"></i> Issue Violation</button><button class="btn outline" onclick="startWarning('${plate}')" style="margin-top:8px"><i class="ti ti-flag"></i> Issue Warning</button>`;
   }
 
   // Recent sessions
@@ -421,6 +504,16 @@ async function lookupPlate(){
   }
 
   result.innerHTML=html;
+}
+
+function startWarning(plate){
+  currentPlate=plate;
+  warningPhotoFiles=[];
+  document.getElementById('warning-plate-display').textContent=plate;
+  document.getElementById('warning-reason').value='';
+  document.getElementById('warning-notes').value='';
+  const pl=document.getElementById('warning-photo-preview-list');if(pl)pl.innerHTML='';
+  showScreen('warning');
 }
 
 async function startViolation(plate){
@@ -489,6 +582,35 @@ function previewPhoto(input){
   files.forEach(file=>photoFiles.push(file));
   input.value='';
   renderPhotoPreviews();
+}
+
+function previewWarningPhoto(input){
+  const files=Array.from(input.files||[]);
+  if(!files.length)return;
+  files.forEach(file=>warningPhotoFiles.push(file));
+  input.value='';
+  renderWarningPhotoPreviews();
+}
+
+function renderWarningPhotoPreviews(){
+  const list=document.getElementById('warning-photo-preview-list');
+  if(!list)return;
+  list.innerHTML='';
+  warningPhotoFiles.forEach((file,i)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const wrap=document.createElement('div');
+      wrap.style.cssText='position:relative;width:80px;height:80px';
+      wrap.innerHTML=`<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"><button onclick="removeWarningPhoto(${i})" style="position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:14px;cursor:pointer;line-height:1">×</button>`;
+      list.appendChild(wrap);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeWarningPhoto(index){
+  warningPhotoFiles.splice(index,1);
+  renderWarningPhotoPreviews();
 }
 
 function renderPhotoPreviews(){
