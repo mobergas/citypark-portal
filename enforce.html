@@ -402,7 +402,11 @@ async function lookupPlate(){
     sessions.slice(0,5).forEach(s=>{
       const exp=new Date(new Date(s.start_time).getTime()+s.duration*3600000);
       const isActive=exp.getTime()>now;
-      html+=`<div class="hist-row"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:var(--fc);font-size:14px;font-weight:800">${s.type}</span><span class="sp ${isActive?'active':'expired'}">${isActive?'Active':'Expired'}</span></div><div style="color:#666;margin-top:2px">${new Date(s.start_time).toLocaleDateString()} · $${s.paid.toFixed(2)}</div></div>`;
+      const minsSinceExpired=Math.floor((now-exp.getTime())/60000);
+      const recentlyExpired=!isActive&&minsSinceExpired<=60;
+      const status=isActive?'Active':recentlyExpired?`Expired ${minsSinceExpired}m ago`:'Expired';
+      const statusClass=isActive?'active':recentlyExpired?'expiring':'expired';
+      html+=`<div class="hist-row"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:var(--fc);font-size:14px;font-weight:800">${s.type}</span><span class="sp ${statusClass}">${status}</span></div><div style="color:#666;margin-top:2px">${new Date(s.start_time).toLocaleDateString()} · $${s.paid.toFixed(2)}</div></div>`;
     });
     html+=`</div>`;
   }
