@@ -1044,8 +1044,10 @@ function renderAdmin(){
         ${S.tab==='users'&&isMgr()?rUsers():''}
         ${S.tab==='invoices'&&isMgr()?rInvoices():''}
         ${S.tab==='violations'&&isMgr()?rViolations():''}
+        ${(()=>{manageViolationsRealtime();return'';})()}
         ${S.tab==='comp'&&isMgr()?rComp():''}
         ${S.tab==='auditlog'&&isMgr()?rAuditLog():''}
+        ${(()=>{manageAuditLogRealtime();return'';})()}
         ${S.tab==='masteraccts'&&isMgr()?rMasterAccounts():''}
       </div>
     </div>
@@ -1063,6 +1065,49 @@ function manageSessionsRealtime(){
     _supabaseRT.removeChannel(_sessionsChannel);
     _sessionsChannel=null;
   }
+}
+
+let _violationsChannel=null;
+
+function manageViolationsRealtime(){
+  if(S.tab==='violations'&&S.v==='admin'&&isMgr()&&!_violationsChannel&&_supabaseRT){
+    _violationsChannel=_supabaseRT.channel('violations-live')
+      .on('postgres_changes',{event:'*',schema:'public',table:'violations'},handleViolationRealtimeChange)
+      .subscribe();
+  } else if((S.tab!=='violations'||S.v!=='admin')&&_violationsChannel){
+    _supabaseRT.removeChannel(_violationsChannel);
+    _violationsChannel=null;
+  }
+}
+
+function handleViolationRealtimeChange(payload){
+  if(payload.eventType==='DELETE'){
+    S.violations=S.violations.filter(v=>v.id!==payload.old.id);
+  } else {
+    const v=payload.new;
+    const idx=S.violations.findIndex(x=>x.id===v.id);
+    if(idx>=0)S.violations[idx]=v;
+    else S.violations.unshift(v);
+  }
+  filterViolations();
+}
+
+let _auditLogChannel=null;
+
+function manageAuditLogRealtime(){
+  if(S.tab==='auditlog'&&S.v==='admin'&&isMgr()&&!_auditLogChannel&&_supabaseRT){
+    _auditLogChannel=_supabaseRT.channel('auditlog-live')
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'audit_log'},handleAuditLogRealtimeChange)
+      .subscribe();
+  } else if((S.tab!=='auditlog'||S.v!=='admin')&&_auditLogChannel){
+    _supabaseRT.removeChannel(_auditLogChannel);
+    _auditLogChannel=null;
+  }
+}
+
+function handleAuditLogRealtimeChange(payload){
+  S.auditLog.unshift(payload.new);
+  render();
 }
 
 function handleSessionRealtimeChange(payload){
