@@ -6,7 +6,6 @@ function getRefreshToken(){ return REFRESH_TOKEN || localStorage.getItem('cpm_re
 function getAuthToken(){ return AUTH_TOKEN; }
 
 const SUPA_URL='https://sldahhdbvcxdlqdhmsjd.supabase.co';
-const _supabaseRT = window.supabase ? window.supabase.createClient(SUPA_URL, SUPA_KEY) : null;
 const SUPA_KEY='sb_publishable_ZGELlV5vw7QFvva8_8NGcA_pQplXd46';
 const _supabaseRT = window.supabase ? window.supabase.createClient(SUPA_URL, SUPA_KEY) : null;
 
