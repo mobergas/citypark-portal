@@ -991,6 +991,7 @@ async function doLogin(){
   setAuthToken(authData.access_token);
   setRefreshToken(authData.refresh_token);
   localStorage.setItem('cpm_last_active', Date.now().toString());
+  if(_supabaseRT)_supabaseRT.realtime.setAuth(authData.access_token);
 
   const profile = await getProfile(authData.user.id, authData.access_token);
 
@@ -2203,6 +2204,7 @@ async function init(){
       S.cu = { id: sessionRes.user.id, name: profile.name, role: profile.role };
       S.v = window.location.pathname==='/admin' ? 'admin' : 'pay';
       S.tab = localStorage.getItem('cpm_tab')||'sessions';
+      if(_supabaseRT)_supabaseRT.realtime.setAuth(sessionRes.access_token);
     }
   }
 
