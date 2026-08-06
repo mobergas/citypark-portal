@@ -69,6 +69,7 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTyp
         billingContact:v.billing_contact||null,
         monthlyRate:v.monthly_rate||0,
         billingMethod:v.billing_method||'flat',
+        dontBill:v.dont_bill||false,
         type:v.type,discountPct:v.discount_pct,discountAmt:v.discount_amt,
         maxHours:v.max_hours,active:v.active,notes:v.notes
       };
@@ -195,7 +196,8 @@ async function saveValDB(val){
     billing_email:val.billingEmail||null,
     billing_contact:val.billingContact||null,
     monthly_rate:val.monthlyRate||0,
-    billing_method:val.billingMethod||'flat'
+    billing_method:val.billingMethod||'flat',
+    dont_bill:val.dontBill||false
   };
   if(exists&&exists.length>0)return db('validations','PATCH',body,`?id=eq.${val.id}`);
   return db('validations','POST',body);
