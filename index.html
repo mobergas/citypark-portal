@@ -655,6 +655,7 @@ function render(){
   if(S.v==='pay')mc.innerHTML=S.cstep===2?renderSuccess():renderPay();
   else if(S.v==='extend')mc.innerHTML=renderExtend();
   else if(S.v==='login')mc.innerHTML=renderLogin();
+  else if(S.v==='resetpw')mc.innerHTML=renderResetPassword();
   else if(S.v==='admin')mc.innerHTML=renderAdmin();
   else if(S.v==='lookup')mc.innerHTML=renderLookup();
   attachEv();
@@ -966,7 +967,49 @@ function doLookup(){
   }).join('');
 }
 
-function renderLogin(){return`<div class="lw"><div class="lc"><div class="lh"><div class="li2"><i class="ti ti-lock" style="font-size:22px;color:var(--lime)"></i></div><h2>Staff Login</h2><p>Sign in with your City Park credentials.</p></div><div class="lb"><div class="lerr${S.loginErr?' show':''}" id="lerr"><i class="ti ti-alert-circle" style="font-size:15px;flex-shrink:0"></i> ${S.loginErrMsg||'Incorrect username or password.'}</div><div class="fg2"><label class="fl2">Email</label><input class="fi2" id="lu" type="text" placeholder="Enter email address" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div><div class="fg2"><label class="fl2">Password</label><input class="fi2" id="lp" type="${S.showPw?'text':'password'}" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:44px"><button class="pwtog" onclick="S.showPw=!S.showPw;const v=document.getElementById('lp')?.value||'';render();setTimeout(()=>{const n=document.getElementById('lp');if(n){n.value=v;n.focus();}},20)" type="button"><i class="ti ${S.showPw?'ti-eye-off':'ti-eye'}" style="font-size:17px"></i></button></div><button class="lbtn" onclick="doLogin()"><i class="ti ti-login" style="font-size:15px;margin-right:6px"></i>Sign In</button></div></div></div>`;}
+function renderLogin(){
+  if(S.pwResetMode){
+    return`<div class="lw"><div class="lc"><div class="lh"><div class="li2"><i class="ti ti-key" style="font-size:22px;color:var(--lime)"></i></div><h2>Reset Password</h2><p>Enter your email and we'll send you a reset link.</p></div><div class="lb"><div class="lerr${S.loginErr?' show':''}" id="lerr"><i class="ti ti-alert-circle" style="font-size:15px;flex-shrink:0"></i> ${S.loginErrMsg||''}</div><div id="pwresetmsg" style="display:none;background:var(--lime-bg);border:1px solid var(--lime);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--t2);margin-bottom:12px"></div><div class="fg2"><label class="fl2">Email</label><input class="fi2" id="reset-email" type="text" placeholder="Enter email address" autocomplete="username" onkeydown="if(event.key==='Enter')sendPasswordReset()"></div><button class="lbtn" onclick="sendPasswordReset()"><i class="ti ti-send" style="font-size:15px;margin-right:6px"></i>Send Reset Link</button><button class="lbtn" style="background:transparent;color:var(--t3);margin-top:6px" onclick="S.pwResetMode=false;S.loginErr=false;render()">← Back to Sign In</button></div></div></div>`;
+  }
+  return`<div class="lw"><div class="lc"><div class="lh"><div class="li2"><i class="ti ti-lock" style="font-size:22px;color:var(--lime)"></i></div><h2>Staff Login</h2><p>Sign in with your City Park credentials.</p></div><div class="lb"><div class="lerr${S.loginErr?' show':''}" id="lerr"><i class="ti ti-alert-circle" style="font-size:15px;flex-shrink:0"></i> ${S.loginErrMsg||'Incorrect username or password.'}</div><div class="fg2"><label class="fl2">Email</label><input class="fi2" id="lu" type="text" placeholder="Enter email address" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div><div class="fg2"><label class="fl2">Password</label><input class="fi2" id="lp" type="${S.showPw?'text':'password'}" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:44px"><button class="pwtog" onclick="S.showPw=!S.showPw;const v=document.getElementById('lp')?.value||'';render();setTimeout(()=>{const n=document.getElementById('lp');if(n){n.value=v;n.focus();}},20)" type="button"><i class="ti ${S.showPw?'ti-eye-off':'ti-eye'}" style="font-size:17px"></i></button></div><div style="text-align:right;margin-bottom:10px"><a href="#" onclick="S.pwResetMode=true;S.loginErr=false;render();return false" style="font-size:12px;color:var(--t3);text-decoration:underline">Forgot password?</a></div><button class="lbtn" onclick="doLogin()"><i class="ti ti-login" style="font-size:15px;margin-right:6px"></i>Sign In</button></div></div></div>`;
+}
+
+function renderResetPassword(){
+  return`<div class="lw"><div class="lc"><div class="lh"><div class="li2"><i class="ti ti-key" style="font-size:22px;color:var(--lime)"></i></div><h2>Set New Password</h2><p>Choose a new password for your account.</p></div><div class="lb"><div class="lerr${S.loginErr?' show':''}" id="lerr"><i class="ti ti-alert-circle" style="font-size:15px;flex-shrink:0"></i> ${S.loginErrMsg||''}</div><div class="fg2"><label class="fl2">New Password</label><input class="fi2" id="newpw" type="password" placeholder="At least 6 characters" autocomplete="new-password" onkeydown="if(event.key==='Enter')confirmPasswordReset()"></div><div class="fg2"><label class="fl2">Confirm Password</label><input class="fi2" id="newpw2" type="password" placeholder="Re-enter password" autocomplete="new-password" onkeydown="if(event.key==='Enter')confirmPasswordReset()"></div><button class="lbtn" onclick="confirmPasswordReset()"><i class="ti ti-check" style="font-size:15px;margin-right:6px"></i>Set Password & Sign In</button></div></div></div>`;
+}
+
+async function confirmPasswordReset(){
+  const pw1=document.getElementById('newpw')?.value||'';
+  const pw2=document.getElementById('newpw2')?.value||'';
+  if(pw1.length<6){S.loginErr=true;S.loginErrMsg='Password must be at least 6 characters.';render();return;}
+  if(pw1!==pw2){S.loginErr=true;S.loginErrMsg='Passwords do not match.';render();return;}
+  const btn=document.querySelector('.lbtn');
+  if(btn){btn.textContent='Saving...';btn.disabled=true;}
+  const res=await fetch(`${SUPA_URL}/auth/v1/user`,{
+    method:'PUT',
+    headers:{'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+S._recoveryToken},
+    body:JSON.stringify({password:pw1})
+  });
+  if(!res.ok){
+    S.loginErr=true;S.loginErrMsg='Something went wrong. Please request a new reset link.';
+    if(btn){btn.textContent='Set Password & Sign In';btn.disabled=false;}
+    render();
+    return;
+  }
+  const userRes=await fetch(`${SUPA_URL}/auth/v1/user`,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+S._recoveryToken}});
+  const userData=userRes.ok?await userRes.json():null;
+  const profile=userData?await getProfile(userData.id,S._recoveryToken):null;
+  if(profile&&profile.active){
+    setAuthToken(S._recoveryToken);
+    S.cu={id:userData.id,name:profile.name,role:profile.role};
+    S.v='admin';S.tab='sessions';S.loginErr=false;S._recoveryToken=null;
+    render();
+  } else {
+    S.v='login';S.pwResetMode=false;S._recoveryToken=null;
+    render();
+  }
+}
+
 async function doLogin(){
   const email = document.getElementById('lu').value.trim();
   const password = document.getElementById('lp').value;
@@ -1019,6 +1062,25 @@ async function signOut(){
   S.cu = null;
   S.v = 'login';
   render();
+}
+
+async function sendPasswordReset(){
+  const email=document.getElementById('reset-email')?.value.trim();
+  if(!email||!email.includes('@')){S.loginErr=true;S.loginErrMsg='Please enter a valid email address.';render();return;}
+  const btn=document.querySelector('.lbtn');
+  if(btn){btn.textContent='Sending...';btn.disabled=true;}
+  const redirectUrl=encodeURIComponent(window.location.origin+'/admin');
+  const res=await fetch(`${SUPA_URL}/auth/v1/recover?redirect_to=${redirectUrl}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SUPA_KEY},
+    body:JSON.stringify({email})
+  });
+  const msgEl=document.getElementById('pwresetmsg');
+  if(msgEl){
+    msgEl.style.display='block';
+    msgEl.textContent=res.ok?'If an account exists for that email, a reset link has been sent. Check your inbox.':'Something went wrong. Please try again.';
+  }
+  if(btn){btn.textContent='Send Reset Link';btn.disabled=false;}
 }
 
 function renderAdmin(){
@@ -2228,6 +2290,16 @@ function buildReceiptEmail(s,l){
 async function init(){
   const mc=document.getElementById('mc');
   mc.innerHTML='<div style="text-align:center;padding:60px;color:var(--t3);font-family:var(--fc);font-size:16px;font-weight:700;letter-spacing:.06em;text-transform:uppercase"><i class="ti ti-loader" style="font-size:28px;display:block;margin-bottom:12px;color:var(--lime)"></i>Loading...</div>';
+
+  // Check for a password recovery link
+  const hashParams=new URLSearchParams(window.location.hash.replace('#',''));
+  if(hashParams.get('type')==='recovery'&&hashParams.get('access_token')){
+    S._recoveryToken=hashParams.get('access_token');
+    S.v='resetpw';
+    history.replaceState(null,'',window.location.pathname);
+    render();
+    return;
+  }
   
   const sessionRes = await supabaseGetSession();
   if(sessionRes && sessionRes.access_token){
