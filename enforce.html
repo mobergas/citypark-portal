@@ -252,8 +252,15 @@ async function db(table,method,body,query=''){
 }
 
 let currentUser=null;
+let _pwResetMode=false;
 
 async function init(){
+  const hashParams=new URLSearchParams(window.location.hash.replace('#',''));
+  if(hashParams.get('type')==='recovery'&&hashParams.get('access_token')){
+    history.replaceState(null,'',window.location.pathname);
+    showResetPasswordScreen(hashParams.get('access_token'));
+    return;
+  }
   // Check for existing session
   const token=localStorage.getItem('enforce_token');
   if(token){
@@ -265,6 +272,70 @@ async function init(){
     }
   }
   showLoginScreen();
+}
+
+async function sendEnfPasswordReset(){
+  const email=document.getElementById('reset-email')?.value.trim();
+  const errEl=document.getElementById('reset-err');
+  if(!email||!email.includes('@')){if(errEl)errEl.textContent='Please enter a valid email address.';return;}
+  const btn=document.querySelector('.btn');
+  if(btn){btn.textContent='Sending...';btn.disabled=true;}
+  const redirectUrl=encodeURIComponent(window.location.origin+'/enforce');
+  await fetch(`${SUPA_URL}/auth/v1/recover?redirect_to=${redirectUrl}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SUPA_KEY},
+    body:JSON.stringify({email})
+  });
+  const msgEl=document.getElementById('reset-msg');
+  if(msgEl){msgEl.style.display='block';msgEl.textContent='If an account exists for that email, a reset link has been sent. Check your inbox.';}
+  if(btn){btn.textContent='Send Reset Link';btn.disabled=false;}
+}
+
+function showResetPasswordScreen(recoveryToken){
+  document.getElementById('main').innerHTML=`
+    <div style="text-align:center;padding:40px 0 24px">
+      <div style="font-size:48px;margin-bottom:8px">🅿️</div>
+      <div style="font-family:var(--fc);font-size:24px;font-weight:900;text-transform:uppercase;margin-bottom:4px">Set New Password</div>
+      <div style="font-size:13px;color:#666;margin-bottom:24px">Choose a new password for your account</div>
+    </div>
+    <div class="card">
+      <label class="fl">New Password</label>
+      <input class="fi" id="newpw" type="password" placeholder="At least 6 characters" autocomplete="new-password">
+      <label class="fl" style="margin-top:12px">Confirm Password</label>
+      <input class="fi" id="newpw2" type="password" placeholder="Re-enter password" autocomplete="new-password" style="margin-bottom:12px">
+      <div id="reset-err" style="color:var(--red);font-size:12px;margin-bottom:8px;min-height:16px"></div>
+      <button class="btn" onclick="confirmEnfPasswordReset('${recoveryToken}')">Set Password &amp; Sign In</button>
+    </div>
+  `;
+}
+
+async function confirmEnfPasswordReset(recoveryToken){
+  const pw1=document.getElementById('newpw')?.value||'';
+  const pw2=document.getElementById('newpw2')?.value||'';
+  const errEl=document.getElementById('reset-err');
+  if(pw1.length<6){if(errEl)errEl.textContent='Password must be at least 6 characters.';return;}
+  if(pw1!==pw2){if(errEl)errEl.textContent='Passwords do not match.';return;}
+  const btn=document.querySelector('.btn');
+  if(btn){btn.textContent='Saving...';btn.disabled=true;}
+  const res=await fetch(`${SUPA_URL}/auth/v1/user`,{
+    method:'PUT',
+    headers:{'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+recoveryToken},
+    body:JSON.stringify({password:pw1})
+  });
+  if(!res.ok){
+    if(errEl)errEl.textContent='Something went wrong. Please request a new reset link.';
+    if(btn){btn.textContent='Set Password & Sign In';btn.disabled=false;}
+    return;
+  }
+  const profile=await verifyToken(recoveryToken);
+  if(profile){
+    currentUser=profile;
+    localStorage.setItem('enforce_token',recoveryToken);
+    initApp();
+  } else {
+    _pwResetMode=false;
+    showLoginScreen();
+  }
 }
 
 async function verifyToken(token){
@@ -286,6 +357,25 @@ async function verifyToken(token){
 }
 
 function showLoginScreen(){
+  if(_pwResetMode){
+    document.getElementById('main').innerHTML=`
+      <div style="text-align:center;padding:40px 0 24px">
+        <div style="font-size:48px;margin-bottom:8px">🅿️</div>
+        <div style="font-family:var(--fc);font-size:24px;font-weight:900;text-transform:uppercase;margin-bottom:4px">Reset Password</div>
+        <div style="font-size:13px;color:#666;margin-bottom:24px">Enter your email and we'll send you a reset link</div>
+      </div>
+      <div class="card">
+        <label class="fl">Email</label>
+        <input class="fi" id="reset-email" type="email" placeholder="your@email.com" autocomplete="username" onkeydown="if(event.key==='Enter')sendEnfPasswordReset()">
+        <div id="reset-msg" style="display:none;background:#0a2e0a;border:1.5px solid #2e7d32;border-radius:8px;padding:10px 12px;font-size:12px;color:#ccc;margin:12px 0"></div>
+        <div id="reset-err" style="color:var(--red);font-size:12px;margin-bottom:8px;min-height:16px"></div>
+        <button class="btn" onclick="sendEnfPasswordReset()">Send Reset Link</button>
+        <button class="btn outline" style="margin-top:8px" onclick="_pwResetMode=false;showLoginScreen()">← Back to Sign In</button>
+      </div>
+    `;
+    setTimeout(()=>document.getElementById('reset-email')?.focus(),100);
+    return;
+  }
   document.getElementById('main').innerHTML=`
     <div style="text-align:center;padding:40px 0 24px">
       <div style="font-size:48px;margin-bottom:8px">🅿️</div>
@@ -297,6 +387,7 @@ function showLoginScreen(){
       <input class="fi" id="enf-email" type="email" placeholder="your@email.com" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('enf-pass').focus()">
       <label class="fl" style="margin-top:12px">Password</label>
       <input class="fi" id="enf-pass" type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')enfLogin()" style="margin-bottom:12px">
+      <div style="text-align:right;margin-bottom:8px"><a href="#" onclick="_pwResetMode=true;showLoginScreen();return false" style="font-size:12px;color:#666;text-decoration:underline">Forgot password?</a></div>
       <div id="enf-err" style="color:var(--red);font-size:12px;margin-bottom:8px;min-height:16px"></div>
       <button class="btn" onclick="enfLogin()">Sign In</button>
     </div>
