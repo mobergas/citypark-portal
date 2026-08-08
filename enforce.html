@@ -634,7 +634,7 @@ async function lookupPlate(){
   if(violations&&violations.length>0){
     html+=`<div class="card" style="margin-top:14px"><div class="card-title" style="color:var(--red)"><i class="ti ti-alert-triangle"></i> Violation History</div>`;
     violations.forEach(v=>{
-      html+=`<div class="hist-row"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:var(--fc);font-size:14px;font-weight:800">${v.violation_name}</span><span class="sp ${v.status==='paid'?'paid':'unpaid'}">${v.status}</span></div><div style="color:#666;margin-top:2px">${new Date(v.created_at).toLocaleDateString()} · $${v.fine_amount.toFixed(2)} · ${v.lot_name||'—'}</div></div>`;
+      html+=`<div class="hist-row"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:var(--fc);font-size:14px;font-weight:800">${v.violation_name}</span><span class="sp ${v.status==='paid'?'paid':'unpaid'}">${v.status}</span></div><div style="color:#666;margin-top:2px">${new Date(v.created_at).toLocaleDateString()} · $${v.fine_amount.toFixed(2)} · ${v.lot_name||'—'}</div><button class="btn outline" style="margin-top:6px;padding:8px;font-size:12px" onclick='reprintViolation(${JSON.stringify(v).replace(/'/g,"&#39;")})'><i class="ti ti-printer"></i> Reprint</button></div>`;
     });
     html+=`</div>`;
   }
@@ -830,11 +830,29 @@ async function issueViolation(){
   });
 
   const issuedAt=new Date();
+  printViolationTicket({
+    id:violationId,plate:currentPlate,lot_name:currentLot.name,
+    violation_name:selectedViolationType.name,fine_amount:selectedViolationType.fine_amount,
+    parking_fee:parkingFee,created_at:issuedAt.toISOString(),issued_by:localStorage.getItem('enforce_officer')||'Staff'
+  });
+  return;
+}
+
+function reprintViolation(v){
+  showScreen('issued');
+  printViolationTicket(v);
+}
+
+function printViolationTicket(v){
+  const issuedAt=new Date(v.created_at);
+  const totalFine=v.fine_amount;
+  const parkingFee=v.parking_fee||0;
+  const violationFineOnly=totalFine-parkingFee;
   document.getElementById('issued-summary').innerHTML=`
-    Plate: <strong>${currentPlate}</strong><br>
-    Violation: <strong>${selectedViolationType.name}</strong><br>
-    Fine: <strong>$${selectedViolationType.fine_amount.toFixed(2)}</strong>${parkingFee>0?`<br>Unpaid Parking Fee: <strong>$${parkingFee.toFixed(2)}</strong><br>Total: <strong>$${totalFine.toFixed(2)}</strong>`:''}<br>
-    Lot: <strong>${currentLot.name}</strong>
+    Plate: <strong>${v.plate}</strong><br>
+    Violation: <strong>${v.violation_name}</strong><br>
+    Fine: <strong>$${violationFineOnly.toFixed(2)}</strong>${parkingFee>0?`<br>Unpaid Parking Fee: <strong>$${parkingFee.toFixed(2)}</strong><br>Total: <strong>$${totalFine.toFixed(2)}</strong>`:''}<br>
+    Lot: <strong>${v.lot_name}</strong>
   `;
 
   // Build print ticket
@@ -846,7 +864,7 @@ async function issueViolation(){
       </div>
       <div style="margin-bottom:3mm">
         <div style="font-size:10px;color:#666">VIOLATION ID</div>
-        <div style="font-size:13px;font-weight:900">${violationId}</div>
+        <div style="font-size:13px;font-weight:900">${v.id}</div>
       </div>
       <div style="margin-bottom:3mm">
         <div style="font-size:10px;color:#666">DATE & TIME</div>
@@ -854,30 +872,30 @@ async function issueViolation(){
       </div>
       <div style="margin-bottom:3mm">
         <div style="font-size:10px;color:#666">LICENSE PLATE</div>
-        <div style="font-size:16px;font-weight:900;letter-spacing:1px">${currentPlate}</div>
+        <div style="font-size:16px;font-weight:900;letter-spacing:1px">${v.plate}</div>
       </div>
       <div style="margin-bottom:3mm">
         <div style="font-size:10px;color:#666">LOCATION</div>
-        <div style="font-size:13px;font-weight:900">${currentLot.name}</div>
+        <div style="font-size:13px;font-weight:900">${v.lot_name}</div>
       </div>
       <div style="margin-bottom:3mm">
         <div style="font-size:10px;color:#666">VIOLATION</div>
-        <div style="font-size:14px;font-weight:900">${selectedViolationType.name}</div>
+        <div style="font-size:14px;font-weight:900">${v.violation_name}</div>
       </div>
       <div style="border-top:2px solid #000;border-bottom:2px solid #000;padding:2mm 0;margin:3mm 0;text-align:center">
-        ${parkingFee>0?`<div style="font-size:9px;margin-bottom:1mm">Violation Fine: $${selectedViolationType.fine_amount.toFixed(2)} + Unpaid Parking: $${parkingFee.toFixed(2)}</div>`:''}
+        ${parkingFee>0?`<div style="font-size:9px;margin-bottom:1mm">Violation Fine: $${violationFineOnly.toFixed(2)} + Unpaid Parking: $${parkingFee.toFixed(2)}</div>`:''}
         <div style="font-size:10px">TOTAL AMOUNT DUE</div>
         <div style="font-size:20px;font-weight:900">$${totalFine.toFixed(2)}</div>
       </div>
       <div style="margin-bottom:3mm;font-size:10px;line-height:1.5">
         To pay this violation, scan the QR code below or visit:<br>
         <strong>cityparkmanagement.app/payfine</strong><br>
-        Reference: ${violationId}
+        Reference: ${v.id}
       </div>
       <div style="text-align:center;font-size:9px;color:#666;margin-top:3mm;border-top:1px dashed #999;padding-top:2mm">
         City Park Management<br>
         violations@cityparkmanagement.com<br>
-        Issued by: ${localStorage.getItem('enforce_officer')||'Staff'}
+        Issued by: ${v.issued_by}
       </div>
       <div style="text-align:center;margin-top:3mm;display:flex;justify-content:center" id="ticket-qr"></div>
       <div style="text-align:center;font-size:9px;font-weight:700;line-height:1.5;margin-top:3mm;border-top:1px dashed #999;padding-top:2mm"> FAILURE TO PAY WITHIN 30 DAYS MAY RESULT IN ADDITIONAL ENFORCEMENT ACTION INCLUDING TOWING, BOOTING, AND REFERRAL TO COLLECTIONS.</div>
@@ -888,7 +906,7 @@ async function issueViolation(){
   setTimeout(()=>{
     const qrDiv=document.getElementById('ticket-qr');
     if(qrDiv){
-      new QRCode(qrDiv,{text:`https://cityparkmanagement.app/payfine?id=${violationId}`,width:100,height:100,correctLevel:QRCode.CorrectLevel.H});
+      new QRCode(qrDiv,{text:`https://cityparkmanagement.app/payfine?id=${v.id}`,width:100,height:100,correctLevel:QRCode.CorrectLevel.H});
     }
   },100);
 
