@@ -34,9 +34,33 @@ Deno.serve(async (req) => {
 
     if (!res.ok) {
       // If it was already captured (auto-captured before the validation code was applied),
-      // fall back to a refund for the difference instead of failing outright.
-      const alreadyCaptured = data.error?.message?.includes('already been captured');
-      console.log('DEBUG: alreadyCaptured=', alreadyCaptured, 'amount=', amount, 'originalAmount=', originalAmount, 'cancel=', cancel);
+      // fall back to a refund instead of failing outright.
+      const alreadyCaptured = data.error?.message?.includes('already been captured') || data.error?.message?.includes('status of succeeded');
+      console.log('DEBUG: cancel=', cancel, 'alreadyCaptured=', alreadyCaptured, 'errorMsg=', data.error?.message);
+
+      // Full refund case: code made parking free, but payment was already captured
+      if (alreadyCaptured && cancel) {
+        const fullRefundRes = await fetch('https://api.stripe.com/v1/refunds', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Basic ' + btoa(stripeKey + ':'),
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({ payment_intent: paymentIntentId }).toString(),
+        });
+        const fullRefundData = await fullRefundRes.json();
+        if (!fullRefundRes.ok) {
+          return new Response(JSON.stringify({ error: fullRefundData.error?.message || 'Refund failed' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+        return new Response(JSON.stringify({ success: true, refunded: true }), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+
+      // Partial reduction case (amount specified but not zero)
       if (alreadyCaptured && !cancel && amount !== undefined && originalAmount !== undefined) {
         const targetAmount = Math.round(amount * 100);
         const originalAmountCents = Math.round(originalAmount * 100);

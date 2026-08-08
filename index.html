@@ -523,7 +523,7 @@ const T={
     contact:'Contact',monthlyAvail:'Monthly passes available',
     monthlyInvite:'Monthly parking at {LOT} is by invitation only. Contact the parking office to request a pass.',
     confirmed:'Payment Confirmed!',freePark:'Free Parking!',
-    reserved:'Your spot is reserved · Show this screen if asked',
+    reserved:'',
     validatedBy:'Validated by',freeApplied:'Free parking applied',discount:'discount',
     ticket:'Ticket',lotLabel:'Lot',zoneLabel:'Zone',expires:'Expires',paid:'Paid',
     timeLeft:'Time remaining',textAlert:'Text alert set · 20 min before expiry',
@@ -842,7 +842,7 @@ function renderSuccess(){
   const val=d.valId?S.vals[d.valId]:null;
   const valWindowMs=(d.valWindowMin??15)*60*1000;const valWindowRem=Math.max(0,d.start+valWindowMs-Date.now());const inValWindow=valWindowRem>0&&d.paymentIntentId&&!d.captured&&d.paid>0;
   return`<div class="cw"><div class="ccard">
-    <div class="suc-hd"><div aria-hidden="true" style="font-size:36px;margin-bottom:4px">${d.paid===0?'🎟️':'✓'}</div><h2>${d.paid===0?'Free Parking!':'Payment Confirmed!'}</h2><p style="font-size:12px;color:var(--blk);opacity:.7">Your spot is reserved · Show this screen if asked</p></div>
+    <div class="suc-hd"><div aria-hidden="true" style="font-size:36px;margin-bottom:4px">${d.paid===0?'🎟️':'✓'}</div><h2>${d.paid===0?'Free Parking!':'Payment Confirmed!'}</h2></div>
     <div class="ccbd">
       ${val?`<div style="background:var(--gold-bg);border:1.5px solid var(--gold-bd);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px"><span style="font-size:18px">🎟️</span><div><div style="font-family:var(--fc);font-size:13px;font-weight:800;color:#b45309;text-transform:uppercase">Validated by ${val.name}</div><div style="font-size:11px;color:#78350f;margin-top:2px">${val.type==='free'?'Free parking applied':val.type==='percent'?val.discountPct+'% discount':'$'+val.discountAmt.toFixed(2)+' discount'}</div></div></div>`:''}
       <div class="tkt"><div class="tkt-top"><span class="tkt-id">${d.id}</span><span style="font-family:var(--fc);font-size:10px;font-weight:700;text-transform:uppercase;color:#888">${d.type}</span></div>
