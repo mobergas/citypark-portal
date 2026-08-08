@@ -139,23 +139,38 @@ Deno.serve(async () => {
 
     // Send 20-minute expiration warning SMS
     if (!s.sms_sent && s.phone && remaining > 0 && remaining <= 20 * 60 * 1000) {
-      const l2 = await supabase.from('lots').select('*').eq('id', s.lot_id).single();
-      const lotName = l2.data?.name || 'the lot';
-      const lotZone = l2.data?.zone || '';
-      await sendSMS(s.phone, `City Park Management: Your parking for plate ${s.plate} at ${lotName} (Zone ${lotZone}) expires in 20 min. Tap to extend: cityparkmanagement.app/extend?session=${s.id}`);
-      const { error: smsErr } = await supabase.from('sessions').update({ sms_sent: true }).eq('id', s.id);
+      // Claim this session first — only proceed if we're the one who successfully flips the flag
+      const { data: claimed, error: smsErr } = await supabase
+        .from('sessions')
+        .update({ sms_sent: true })
+        .eq('id', s.id)
+        .eq('sms_sent', false)
+        .select();
       if (smsErr) console.error('Failed to mark sms_sent for', s.id, smsErr);
+      if (claimed && claimed.length > 0) {
+        const l2 = await supabase.from('lots').select('*').eq('id', s.lot_id).single();
+        const lotName = l2.data?.name || 'the lot';
+        const lotZone = l2.data?.zone || '';
+        await sendSMS(s.phone, `City Park Management: Your parking for plate ${s.plate} at ${lotName} (Zone ${lotZone}) expires in 20 min. Tap to extend: cityparkmanagement.app/extend?session=${s.id}`);
+      }
     }
 
     // Send receipt SMS when session expires
     if (remaining <= 0 && !s.receipt_sms_sent && s.phone) {
-      const l3 = await supabase.from('lots').select('*').eq('id', s.lot_id).single();
-      const lotName = l3.data?.name || 'the lot';
-      const lotZone = l3.data?.zone || '';
-      const dur = s.rate === 'hourly' ? s.duration + 'hr' : s.rate === 'event' ? 'Event' : 'Monthly';
-      await sendSMS(s.phone, `City Park Management: Receipt for ${s.plate} at ${lotName} (Zone ${lotZone}). Duration: ${dur}. Amount paid: $${s.paid.toFixed(2)}. Thank you for parking with us!`);
-      const { error: receiptSmsErr } = await supabase.from('sessions').update({ receipt_sms_sent: true }).eq('id', s.id);
+      const { data: claimed, error: receiptSmsErr } = await supabase
+        .from('sessions')
+        .update({ receipt_sms_sent: true })
+        .eq('id', s.id)
+        .eq('receipt_sms_sent', false)
+        .select();
       if (receiptSmsErr) console.error('Failed to mark receipt_sms_sent for', s.id, receiptSmsErr);
+      if (claimed && claimed.length > 0) {
+        const l3 = await supabase.from('lots').select('*').eq('id', s.lot_id).single();
+        const lotName = l3.data?.name || 'the lot';
+        const lotZone = l3.data?.zone || '';
+        const dur = s.rate === 'hourly' ? s.duration + 'hr' : s.rate === 'event' ? 'Event' : 'Monthly';
+        await sendSMS(s.phone, `City Park Management: Receipt for ${s.plate} at ${lotName} (Zone ${lotZone}). Duration: ${dur}. Amount paid: $${s.paid.toFixed(2)}. Thank you for parking with us!`);
+      }
     }
 
     // Send receipt email when session expires
