@@ -749,6 +749,13 @@ async function handlePay(){
     return;
   }
   const l=lot(),{total,base,fee,disc}=getTotal();
+  if(S.rate==='monthly'&&l.max_monthly_passes>0){
+    const activeMonthly=S.sess.filter(s=>s.lotId===S.lotId&&s.type==='Monthly'&&gSt(s)!=='expired').length;
+    if(activeMonthly>=l.max_monthly_passes){
+      alert(`This lot has reached its limit of ${l.max_monthly_passes} monthly passes. Please contact the parking office for availability.`);
+      return;
+    }
+  }
   const dur=S.rate==='hourly'?S.hours:S.rate==='event'?12:720;
   const type=S.rate==='hourly'?'Hourly':S.rate==='event'?'Event Parking':'Monthly';
   const emailVal=document.getElementById('email-inp')?.value||S.email||'';
