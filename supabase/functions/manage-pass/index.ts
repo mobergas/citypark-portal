@@ -37,7 +37,27 @@ Deno.serve(async (req) => {
       const pass = await getValidPass(passId, token);
       const updates: Record<string, unknown> = {};
       if (typeof body.email === 'string' && body.email.trim()) updates.email = body.email.trim().toLowerCase();
-      if (typeof body.plate === 'string') updates.plate = body.plate.trim().toUpperCase() || null;
+
+      if (typeof body.plate === 'string') {
+        const newPlate = body.plate.trim().toUpperCase() || null;
+        if (newPlate !== pass.plate) {
+          const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
+          const sameMonth = pass.plate_change_month === currentMonth;
+          const currentCount = sameMonth ? (pass.plate_change_count || 0) : 0;
+
+          if (currentCount >= 2) {
+            return new Response(JSON.stringify({ error: 'You have reached the limit of 2 plate changes this month. Please contact us at info@cityparkmanagement.com if you need further assistance.' }), {
+              status: 400,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          }
+
+          updates.plate = newPlate;
+          updates.plate_change_count = currentCount + 1;
+          updates.plate_change_month = currentMonth;
+        }
+      }
+
       await supabase.from('passes').update(updates).eq('id', pass.id);
       return new Response(JSON.stringify({ success: true }), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
