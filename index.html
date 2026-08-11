@@ -471,7 +471,7 @@ This invite is personal to you and expires in 7 days. Questions? Reply to this e
 
 const S={
   v:'pay',
-  cstep:1,lotId:'lot1',rate:'hourly',hours:3,plate:'',phone:'',email:'',vehicle:'car',
+  cstep:1,lotId:'lot1',rate:'hourly',hours:3,plate:'',phone:'',email:'',vehicle:'car',custName:'',
   val:null,codeErr:false,payData:null,tic:Date.now()+Math.floor(Math.random()*1000),extId:null,extHrs:1,extDone:false,
   cu:null,loginErr:false,showPw:false,tab:'sessions',sfLot:'all',
   eLot:null,eVal:null,eUsr:null,newVT:'free',openC:{},
@@ -689,6 +689,7 @@ function renderPay(){
           </div>
         </div>
         ${S.rate==='hourly'?`<div class="fg"><label class="fl">${t('duration')}</label><div class="hrs-row"><button class="hrs-btn" onclick="S.hours=Math.max(1,S.hours-1);render()" aria-label="Decrease hours">−</button><div class="hrs-disp" aria-live="polite">${S.hours}</div><button class="hrs-btn" onclick="S.hours=Math.min(12,S.hours+1);render()" aria-label="Increase hours">+</button><span class="hrs-lbl">${S.hours===1?'hour':'hours'}</span></div></div>`:''}
+        ${S.rate==='monthly'?`<div class="fg"><label class="fl">Full Name <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--red)">* required</span></label><input class="fi" id="name-inp" placeholder="Enter your full name" value="${escH(S.custName||'')}" oninput="S.custName=this.value"></div>`:''}
         <div class="fg"><label class="fl">${t('plate')}</label><input class="fi" style="font-family:var(--fc);font-size:22px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;text-align:center" id="plate-inp" placeholder="Enter plate here" value="${escH(S.plate)}" oninput="S.plate=this.value.toUpperCase();this.value=S.plate;updatePayBtn()" maxlength="10"></div>
         <div class="fg"><label class="fl">${t('vehicle')}</label><select class="fse" id="veh-sel"><option value="car"${S.vehicle==='car'?' selected':''}>${t('car')}</option><option value="truck"${S.vehicle==='truck'?' selected':''}>${t('truck')}</option><option value="motorcycle"${S.vehicle==='motorcycle'?' selected':''}>${t('moto')}</option></select></div>
         <div class="fg"><label class="fl">Phone <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--red)">* required</span></label><div class="ph-row"><div class="ph-pfx"><i class="ti ti-device-mobile" style="font-size:13px"></i> +1</div><input class="fi" id="phone-inp" placeholder="(555) 000-0000" value="${escH(S.phone)}" oninput="S.phone=this.value;updatePayBtn()" style="flex:1" type="tel"></div><label id="consent-label" style="display:flex;align-items:flex-start;gap:10px;margin-top:10px;cursor:pointer"><input type="checkbox" id="sms-consent" ${S.smsConsent?'checked':''} onchange="S.smsConsent=this.checked;updatePayBtn();document.getElementById('consent-err').style.display='none';document.getElementById('consent-label').style.color=''" style="margin-top:3px;flex-shrink:0;width:20px;height:20px;cursor:pointer"><span style="font-size:14px;color:var(--t2);line-height:1.6">${t('smsConsentText')} <a href="/sms-terms" target="_blank" style="color:var(--lime-dark);text-decoration:underline">${t('smsTerms')}</a></span></label><div id="consent-err" role="alert" aria-live="assertive" style="display:none;color:var(--red);font-size:12px;font-weight:700;margin-top:4px">${t('consentErr')}</div></div> <div class="fg"><label class="fl">Email <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--t3)">optional · for email receipt</span></label><input class="fi" id="email-inp" placeholder="your@email.com" value="${escH(S.email||'')}" oninput="S.email=this.value" type="email"></div>
@@ -750,8 +751,8 @@ async function handlePay(){
   }
   const l=lot(),{total,base,fee,disc}=getTotal();
   if(S.rate==='monthly'&&l.max_monthly_passes>0){
-    const activeMonthly=S.sess.filter(s=>s.lotId===S.lotId&&s.type==='Monthly'&&gSt(s)!=='expired').length;
-    if(activeMonthly>=l.max_monthly_passes){
+    const activeCount=(S.passes||[]).filter(p=>p.lotId===S.lotId&&(p.status==='active'||p.status==='pending')).length;
+    if(activeCount>=l.max_monthly_passes){
       alert(`This lot has reached its limit of ${l.max_monthly_passes} monthly passes. Please contact the parking office for availability.`);
       return;
     }
@@ -762,6 +763,23 @@ async function handlePay(){
   const isFree=parseFloat(total)===0;
 
   const valWindowMin=l.val_window_minutes??15;
+
+  if(S.rate==='monthly'){
+    const name=S.custName?.trim();
+    if(!name){alert('Please enter your full name.');return;}
+    const tok='tok_'+Math.random().toString(36).slice(2,18);
+    const np={
+      id:'MP-'+Date.now(),
+      name,email:emailVal,lotId:S.lotId,status:'pending',
+      startDate:new Date().toISOString(),nextBillDate:null,canceledOn:null,
+      monthlyAmount:l.pricing.monthly,custom_price:l.pricing.monthly,
+      totalBilled:0,inviteToken:tok,signup_token:tok,
+      lot_name:l.name,holder_name:name
+    };
+    await savePassDB(np);
+    window.location.href=`/pass/signup?token=${tok}&lot=${S.lotId}`;
+    return;
+  }
 
   if(isFree){
     const wasComp=S.val?.isComp,compId=S.val?.id;
