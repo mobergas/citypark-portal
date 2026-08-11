@@ -513,7 +513,7 @@ const T={
     car:'Car / SUV',truck:'Truck / Van',moto:'Motorcycle',
     hourly:'Hourly',event:'Event Parking',monthly:'Monthly Pass',
     perHour:'per hour',flatRate:'flat rate',perMonth:'per month',
-    hour:'hour',hours:'hours',
+    hour:'hour',hours:'hours',days30:'30 days',
     rate:'Rate',dur:'Duration',subtotal:'Subtotal',
     serviceFee:'Service fee',totalDue:'Total due',
     payBtn:'Pay',claimFree:'Claim Free Parking',
@@ -545,7 +545,7 @@ const T={
     car:'Auto / SUV',truck:'Camioneta / Van',moto:'Motocicleta',
     hourly:'Por hora',event:'Evento',monthly:'Pase mensual',
     perHour:'por hora',flatRate:'tarifa fija',perMonth:'por mes',
-    hour:'hora',hours:'horas',
+    hour:'hora',hours:'horas',days30:'30 días',
     rate:'Tarifa',dur:'Duración',subtotal:'Subtotal',
     serviceFee:'Cargo por servicio',totalDue:'Total a pagar',
     payBtn:'Pagar',claimFree:'Reclamar Estacionamiento Gratis',
@@ -697,7 +697,7 @@ function renderPay(){
         <div class="psumm">
           ${S.rate==='hourly'?`<div class="psr"><span class="pl">${t('rate')}</span><span class="pv">$${p.hourly.toFixed(2)}/hr</span></div><div class="psr"><span class="pl">${t('dur')}</span><span class="pv">${S.hours} ${S.hours===1?t('hour'):t('hours')}</span></div>`:''}
           ${S.rate==='event'?`<div class="psr"><span class="pl">${t('event')}</span><span class="pv">${t('flatRate')}</span></div>`:''}
-          ${S.rate==='monthly'?`<div class="psr"><span class="pl">${t('monthly')}</span><span class="pv">30 días</span></div>`:''}
+          ${S.rate==='monthly'?`<div class="psr"><span class="pl">${t('monthly')}</span><span class="pv">${t('days30')}</span></div>`:''}
           <div class="psr"><span class="pl">${t('subtotal')}</span><span class="pv">$${base}</span></div>
           ${parseFloat(fee)>0?`<div class="psr"><span class="pl">${t('serviceFee')}</span><span class="pv">$${fee}</span></div>`:''}
           ${parseFloat(disc)>0?`<div class="psr dr"><span class="pl"><i class="ti ti-discount" style="font-size:11px;margin-right:3px"></i>${discLabel}</span><span class="pv">−$${disc}</span></div>`:''}
