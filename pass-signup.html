@@ -76,9 +76,11 @@ async function db(table,method,body,query=''){
   return res.json();
 }
 
+let prefilledPlate='';
 async function init(){
   const params=new URLSearchParams(window.location.search);
   const token=params.get('token');
+  prefilledPlate=(params.get('plate')||'').toUpperCase();
   if(!token){showError('Invalid invitation link.');return;}
 
   const passes=await db('passes','GET',null,`?signup_token=eq.${token}&select=*`);
@@ -127,7 +129,7 @@ function showSignup(pass){
         <div class="divider"></div>
         <div class="fg">
           <label class="fl">License Plate</label>
-          <input class="fi" id="plate-inp" placeholder="e.g. ABC 1234" maxlength="10" oninput="this.value=this.value.toUpperCase()" style="font-family:Barlow Condensed,sans-serif;font-size:22px;font-weight:800;letter-spacing:.12em;text-align:center;text-transform:uppercase">
+          <input class="fi" id="plate-inp" placeholder="e.g. ABC 1234" maxlength="10" value="${prefilledPlate}" oninput="this.value=this.value.toUpperCase()" style="font-family:Barlow Condensed,sans-serif;font-size:22px;font-weight:800;letter-spacing:.12em;text-align:center;text-transform:uppercase">
         </div>
         <button class="btn" id="signup-btn" onclick="submitFreeSignup()">
           <i class="ti ti-check"></i> Confirm & Activate Pass
@@ -154,7 +156,7 @@ function showSignup(pass){
       <div class="divider"></div>
       <div class="fg">
         <label class="fl">License Plate</label>
-        <input class="fi" id="plate-inp" placeholder="e.g. ABC 1234" maxlength="10" oninput="this.value=this.value.toUpperCase()" style="font-family:Barlow Condensed,sans-serif;font-size:22px;font-weight:800;letter-spacing:.12em;text-align:center;text-transform:uppercase">
+        <input class="fi" id="plate-inp" placeholder="e.g. ABC 1234" maxlength="10" value="${prefilledPlate}" oninput="this.value=this.value.toUpperCase()" style="font-family:Barlow Condensed,sans-serif;font-size:22px;font-weight:800;letter-spacing:.12em;text-align:center;text-transform:uppercase">
       </div>
         <div class="fg">
         <label class="fl">Card details</label>
