@@ -250,8 +250,8 @@ async function submitSignup(prorated){
 
   const price=passData.custom_price||passData.monthly_price||0;
   const serviceFee=passData.service_fee||0;
-  const {prorated,nextBill}=calcProrate(price);
-  const amount=+(prorated+serviceFee).toFixed(2);
+  const {prorated:baseProrated,nextBill}=calcProrate(price);
+  const amount=+(baseProrated+serviceFee).toFixed(2);
 
   const res=await fetch(`${SUPA_URL}/functions/v1/stripe-setup`,{
     method:'POST',
