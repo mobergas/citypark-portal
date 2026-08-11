@@ -43,7 +43,7 @@ async function capturePaymentIntent(paymentIntentId: string, amount: number) {
 
 async function chargeMonthlyPass(pass: any) {
   const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
-  const amount = pass.custom_price || pass.monthly_amount;
+  const amount = (pass.custom_price || pass.monthly_amount) + (pass.service_fee || 0);
   const body = new URLSearchParams({
     amount: Math.round(amount * 100).toString(),
     currency: 'usd',
@@ -191,7 +191,7 @@ Deno.serve(async () => {
     nextBill.setHours(0, 0, 0, 0);
     if (nextBill.getTime() <= today.getTime()) {
       try {
-        const amount = pass.custom_price || pass.monthly_amount;
+        const amount = (pass.custom_price || pass.monthly_amount) + (pass.service_fee || 0);
         const result = await chargeMonthlyPass(pass);
         if (result.error) {
           console.error('Monthly charge failed for', pass.id, result.error);

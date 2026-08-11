@@ -85,8 +85,13 @@ async function init(){
 
   const passes=await db('passes','GET',null,`?signup_token=eq.${token}&select=*`);
   if(passes&&passes.length>0){
-    const lotInfo=await db('lots','GET',null,`?id=eq.${passes[0].lot_id}&select=pass_restrictions,address`);
-    if(lotInfo&&lotInfo.length>0){passes[0].pass_restrictions=lotInfo[0].pass_restrictions;passes[0].lot_address=lotInfo[0].address||'';}
+    const lotInfo=await db('lots','GET',null,`?id=eq.${passes[0].lot_id}&select=pass_restrictions,address,fees`);
+    if(lotInfo&&lotInfo.length>0){
+      passes[0].pass_restrictions=lotInfo[0].pass_restrictions;
+      passes[0].lot_address=lotInfo[0].address||'';
+      const monthlyFee=lotInfo[0].fees?.monthly;
+      passes[0].service_fee=monthlyFee?.enabled?(monthlyFee.amount||0):0;
+    }
   }
   if(!passes||!passes.length){showError('This invitation link is invalid or has expired.');return;}
   
@@ -111,8 +116,10 @@ function calcProrate(monthlyPrice){
 
 function showSignup(pass){
   const price=pass.custom_price||pass.monthly_price||0;
+  const serviceFee=pass.service_fee||0;
   const isFree=price===0;
   const {prorated,daysLeft,daysInMonth,nextBill,monthlyPrice}=calcProrate(price);
+  const dueToday=+(prorated+serviceFee).toFixed(2);
   const nextBillStr=nextBill.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
 
   if(isFree){
@@ -151,7 +158,9 @@ function showSignup(pass){
       ${pass.lot_address?`<div class="info-row"><span class="info-label">Address</span><span class="info-val">${pass.lot_address}</span></div>`:''}
       <div class="info-row"><span class="info-label">Monthly rate</span><span class="info-val">$${price.toFixed(2)}/mo</span></div>${(()=>{const r=passData.pass_restrictions||{type:'none'};if(r.type==='none'||passData.override_restrictions)return'';return`<div class="info-row"><span class="info-label">Access hours</span><span class="info-val" style="color:#d32f2f;font-size:13px">${getRestrictionTextSignup(r)}</span></div>`;})()}
       <div class="divider"></div>
-      <div class="info-row"><span class="info-label">Due today (${daysLeft} of ${daysInMonth} days)</span><span class="info-val green">$${prorated.toFixed(2)}</span></div>
+      <div class="info-row"><span class="info-label">Prorated rate (${daysLeft} of ${daysInMonth} days)</span><span class="info-val">$${prorated.toFixed(2)}</span></div>
+      ${serviceFee>0?`<div class="info-row"><span class="info-label">Service fee</span><span class="info-val">$${serviceFee.toFixed(2)}</span></div>`:''}
+      <div class="info-row"><span class="info-label">Due today</span><span class="info-val green">$${dueToday.toFixed(2)}</span></div>
       <div class="info-row"><span class="info-label">Next billing date</span><span class="info-val">${nextBillStr}</span></div>
       <div class="divider"></div>
       <div class="fg">
@@ -163,10 +172,10 @@ function showSignup(pass){
         <div class="card-el" id="card-element"></div>
         <div class="err" id="card-errors"></div>
       </div>
-      <button class="btn" id="signup-btn" onclick="submitSignup(${prorated})">
-        <i class="ti ti-credit-card"></i> Pay $${prorated.toFixed(2)} & Activate Pass
+      <button class="btn" id="signup-btn" onclick="submitSignup(${dueToday})">
+        <i class="ti ti-credit-card"></i> Pay $${dueToday.toFixed(2)} & Activate Pass
       </button>
-      <p class="note"><i class="ti ti-lock" style="font-size:11px"></i> Secured payment · Your card will be charged $${price.toFixed(2)} on the 1st of each month starting ${nextBillStr}</p>
+      <p class="note"><i class="ti ti-lock" style="font-size:11px"></i> Secured payment · Your card will be charged $${(price+serviceFee).toFixed(2)} on the 1st of each month starting ${nextBillStr}</p>
     </div>
   `;
 
@@ -240,7 +249,9 @@ async function submitSignup(prorated){
   }
 
   const price=passData.custom_price||passData.monthly_price||0;
-  const {prorated:amount,nextBill}=calcProrate(price);
+  const serviceFee=passData.service_fee||0;
+  const {prorated,nextBill}=calcProrate(price);
+  const amount=+(prorated+serviceFee).toFixed(2);
 
   const res=await fetch(`${SUPA_URL}/functions/v1/stripe-setup`,{
     method:'POST',
@@ -272,7 +283,8 @@ async function submitSignup(prorated){
     next_bill_date:nextBill.toISOString(),
     start_date:new Date().toISOString(),
     plate:plate||null,
-    billed_at:new Date().toISOString()
+    billed_at:new Date().toISOString(),
+    service_fee:serviceFee
   },`?signup_token=eq.${passData.signup_token}`);
 
   // Send receipt email
@@ -282,7 +294,7 @@ async function submitSignup(prorated){
     body:JSON.stringify({
       to:passData.email,
       subject:'Welcome to City Park Monthly Parking — Receipt',
-      html:`<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:30px 0;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;"><tr><td style="background:#0d0d0d;padding:24px 32px;border-bottom:5px solid #b5d96e;"><img src="https://sldahhdbvcxdlqdhmsjd.supabase.co/storage/v1/object/public/assets/Logo%201.png" alt="City Park Management" style="height:48px;display:block;"></td></tr><tr><td style="padding:32px;font-size:15px;line-height:1.7;color:#444;"><h2 style="margin-bottom:4px;">Welcome, ${passData.holder_name||passData.name}!</h2><p style="color:#888;font-size:13px;margin-bottom:24px;">Your monthly parking pass is now active.</p><table width="100%" cellpadding="8" cellspacing="0" style="background:#f5f5f5;border-radius:8px;margin-bottom:24px;"><tr><td style="color:#888;font-size:13px;">Lot</td><td style="font-weight:700;">${passData.lot_name}</td></tr><tr><td style="color:#888;font-size:13px;">Address</td><td style="font-weight:700;">${passData.lot_address||'—'}</td></tr><tr><td style="color:#888;font-size:13px;">Plate</td><td style="font-weight:700;">${document.getElementById('plate-inp')?.value||'—'}</td></tr><tr><td style="color:#888;font-size:13px;">Amount Charged Today</td><td style="font-weight:700;color:#2e7d32;">$${amount.toFixed(2)}</td></tr><tr><td style="color:#888;font-size:13px;">Monthly Rate</td><td style="font-weight:700;">$${price.toFixed(2)}/mo</td></tr><tr><td style="color:#888;font-size:13px;">Next Bill Date</td><td style="font-weight:700;">${nextBill.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</td></tr></table><div style="text-align:center;margin:0 0 20px"><a href="https://cityparkmanagement.app/manage-pass" style="background:#b5d96e;color:#0d0d0d;font-weight:900;font-size:14px;padding:13px 26px;border-radius:10px;text-decoration:none;display:inline-block;text-transform:uppercase;">Manage My Pass</a></div><p style="font-size:13px;color:#888;">Your card will be charged automatically on the 1st of each month. Update your email, plate, or card, or cancel anytime at the link above, or contact us at <a href="mailto:info@cityparkmanagement.com">info@cityparkmanagement.com</a></p></td></tr><tr><td style="background:#f5f5f5;padding:16px 32px;text-align:center;font-size:11px;color:#888;">City Park Management · info@cityparkmanagement.com</td></tr></table></td></tr></table></body></html>`
+      html:`<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:30px 0;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;"><tr><td style="background:#0d0d0d;padding:24px 32px;border-bottom:5px solid #b5d96e;"><img src="https://sldahhdbvcxdlqdhmsjd.supabase.co/storage/v1/object/public/assets/Logo%201.png" alt="City Park Management" style="height:48px;display:block;"></td></tr><tr><td style="padding:32px;font-size:15px;line-height:1.7;color:#444;"><h2 style="margin-bottom:4px;">Welcome, ${passData.holder_name||passData.name}!</h2><p style="color:#888;font-size:13px;margin-bottom:24px;">Your monthly parking pass is now active.</p><table width="100%" cellpadding="8" cellspacing="0" style="background:#f5f5f5;border-radius:8px;margin-bottom:24px;"><tr><td style="color:#888;font-size:13px;">Lot</td><td style="font-weight:700;">${passData.lot_name}</td></tr><tr><td style="color:#888;font-size:13px;">Address</td><td style="font-weight:700;">${passData.lot_address||'—'}</td></tr><tr><td style="color:#888;font-size:13px;">Plate</td><td style="font-weight:700;">${document.getElementById('plate-inp')?.value||'—'}</td></tr><tr><td style="color:#888;font-size:13px;">Amount Charged Today</td><td style="font-weight:700;color:#2e7d32;">$${amount.toFixed(2)}</td></tr><tr><td style="color:#888;font-size:13px;">Monthly Rate</td><td style="font-weight:700;">$${(price+serviceFee).toFixed(2)}/mo</td></tr><tr><td style="color:#888;font-size:13px;">Next Bill Date</td><td style="font-weight:700;">${nextBill.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</td></tr></table><div style="text-align:center;margin:0 0 20px"><a href="https://cityparkmanagement.app/manage-pass" style="background:#b5d96e;color:#0d0d0d;font-weight:900;font-size:14px;padding:13px 26px;border-radius:10px;text-decoration:none;display:inline-block;text-transform:uppercase;">Manage My Pass</a></div><p style="font-size:13px;color:#888;">Your card will be charged automatically on the 1st of each month. Update your email, plate, or card, or cancel anytime at the link above, or contact us at <a href="mailto:info@cityparkmanagement.com">info@cityparkmanagement.com</a></p></td></tr><tr><td style="background:#f5f5f5;padding:16px 32px;text-align:center;font-size:11px;color:#888;">City Park Management · info@cityparkmanagement.com</td></tr></table></td></tr></table></body></html>`
     })
   });
   showSuccess(passData,price,nextBill);
