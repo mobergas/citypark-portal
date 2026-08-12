@@ -580,7 +580,7 @@ async function lookupPlate(){
   // Check active sessions
   const sessions=await db('sessions','GET',null,`?plate=eq.${encodeURIComponent(plate)}&lot_id=eq.${currentLot.id}&select=*&order=start_time.desc&limit=10`);
   const lotData=await db('lots','GET',null,`?id=eq.${currentLot.id}&select=*`);
-  const passes=await db('passes','GET',null,`?plate=eq.${encodeURIComponent(plate)}&lot_id=eq.${currentLot.id}&status=eq.active&select=*`);
+  const passes=await db('passes','GET',null,`?plate=eq.${encodeURIComponent(plate)}&lot_id=eq.${currentLot.id}&status=in.(active,past_due)&select=*`);
   const now=Date.now();
   const activeSess=(sessions||[]).filter(s=>new Date(s.start_time).getTime()+s.duration*3600000>now);
 
@@ -603,12 +603,26 @@ async function lookupPlate(){
     const lotInfo=await db('lots','GET',null,`?id=eq.${currentLot.id}&select=*`);
   const lot=lotInfo?.[0];
     const restrictions=lot?.pass_restrictions||{type:'none'};
-    const isValidNow=p.override_restrictions||checkPassRestrictions(restrictions);
-    if(isValidNow){
-      html+=`<div class="status-ok"><div class="status-title">✅ Monthly Pass</div><div class="status-detail">${p.holder_name||p.name} · Valid through ${new Date(p.next_bill_date).toLocaleDateString()}${restrictions.type!=='none'?'<br><span style="font-size:11px;color:#4caf50">✓ Within allowed hours/days</span>':''}</div></div>`;
+
+    if(p.status==='past_due'){
+      const failedAt=p.past_due_since?new Date(p.past_due_since):null;
+      const graceEnds=failedAt?new Date(failedAt.getTime()+48*3600000):null;
+      const inGrace=graceEnds&&Date.now()<graceEnds.getTime();
+      if(inGrace){
+        const hoursLeft=Math.max(0,Math.ceil((graceEnds.getTime()-Date.now())/3600000));
+        html+=`<div class="status-warn"><div class="status-title">⚠️ Payment Failed</div><div class="status-detail">${p.holder_name||p.name}'s monthly pass payment failed. Grace period ends in ${hoursLeft} hour${hoursLeft===1?'':'s'}.</div></div>`;
+      } else {
+        html+=`<div class="status-bad"><div class="status-title">❌ Pass Expired — Payment Failed</div><div class="status-detail">${p.holder_name||p.name}'s payment failed and the grace period has ended. Pass is no longer valid.</div></div>`;
+        html+=`<button class="btn red" onclick="startViolation('${plate}')"><i class="ti ti-alert-triangle"></i> Issue Violation</button><button class="btn outline" onclick="startWarning('${plate}')" style="margin-top:8px"><i class="ti ti-flag"></i> Issue Warning</button>`;
+      }
     } else {
-      html+=`<div class="status-warn"><div class="status-title">⚠️ Pass Restricted</div><div class="status-detail">${p.holder_name||p.name} has a monthly pass but it is not valid at this time.<br>${getRestrictionText(restrictions)}</div></div>`;
-      html+=`<button class="btn red" onclick="startViolation('${plate}')"><i class="ti ti-alert-triangle"></i> Issue Violation</button><button class="btn outline" onclick="startWarning('${plate}')" style="margin-top:8px"><i class="ti ti-flag"></i> Issue Warning</button>`;
+      const isValidNow=p.override_restrictions||checkPassRestrictions(restrictions);
+      if(isValidNow){
+        html+=`<div class="status-ok"><div class="status-title">✅ Monthly Pass</div><div class="status-detail">${p.holder_name||p.name} · Valid through ${new Date(p.next_bill_date).toLocaleDateString()}${restrictions.type!=='none'?'<br><span style="font-size:11px;color:#4caf50">✓ Within allowed hours/days</span>':''}</div></div>`;
+      } else {
+        html+=`<div class="status-warn"><div class="status-title">⚠️ Pass Restricted</div><div class="status-detail">${p.holder_name||p.name} has a monthly pass but it is not valid at this time.<br>${getRestrictionText(restrictions)}</div></div>`;
+        html+=`<button class="btn red" onclick="startViolation('${plate}')"><i class="ti ti-alert-triangle"></i> Issue Violation</button><button class="btn outline" onclick="startWarning('${plate}')" style="margin-top:8px"><i class="ti ti-flag"></i> Issue Warning</button>`;
+      }
     }
   } else {
     html+=`<div class="status-bad"><div class="status-title">❌ No Valid Parking</div><div class="status-detail">No active session or monthly pass found for this plate at ${currentLot.name}</div></div>`;
