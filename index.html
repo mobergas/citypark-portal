@@ -729,7 +729,11 @@ function updatePayBtn(){const btn=document.querySelector('.paybtn');if(!btn)retu
   if(btn){btn.disabled=false;btn.textContent=t('apply');}
 
   if(data.valid){
-    S.val=data.val;S.codeErr=false;render();return;
+    S.val=data.val;S.codeErr=false;
+    if(S.rate==='hourly'&&data.val.maxHours>0&&data.val.maxHours>S.hours){
+      S.hours=data.val.maxHours;
+    }
+    render();return;
   }
 
   S.codeErr=true;
