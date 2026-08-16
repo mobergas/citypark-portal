@@ -430,7 +430,9 @@ async function enfLogin(){
 }
 
 async function initApp(){
-  const lots=await db('lots','GET',null,'?select=*&order=name');
+  const allLots=await db('lots','GET',null,'?select=*&order=name');
+  const allowedIds=currentUser?.allowed_lot_ids;
+  const lots=(allowedIds&&allowedIds.length)?(allLots||[]).filter(l=>allowedIds.includes(l.id)):allLots;
   // Restore the main screens HTML
   document.getElementById('main').innerHTML=`
     <div id="screen-lot">
