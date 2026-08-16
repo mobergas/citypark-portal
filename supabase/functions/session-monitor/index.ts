@@ -195,7 +195,7 @@ Deno.serve(async () => {
         const result = await chargeMonthlyPass(pass);
         if (result.error) {
           console.error('Monthly charge failed for', pass.id, result.error);
-          await supabase.from('passes').update({ status: 'past_due' }).eq('id', pass.id);
+          await supabase.from('passes').update({ status: 'past_due', past_due_since: new Date().toISOString() }).eq('id', pass.id);
           continue;
         }
         const next = new Date(today.getFullYear(), today.getMonth() + 1, 1);
@@ -209,6 +209,27 @@ Deno.serve(async () => {
         }
       } catch(e) {
         console.error('Monthly billing error for', pass.id, e);
+      }
+    }
+  }
+
+  // Cancel past_due passes once their 48-hour grace period has expired
+  const { data: pastDuePasses } = await supabase.from('passes').select('*').eq('status', 'past_due');
+  for (const pass of pastDuePasses || []) {
+    if (!pass.past_due_since) continue;
+    const graceEnds = new Date(pass.past_due_since).getTime() + 48 * 3600000;
+    if (Date.now() >= graceEnds) {
+      await supabase.from('passes').update({
+        status: 'canceled',
+        canceled_on: new Date().toISOString(),
+        next_bill_date: null
+      }).eq('id', pass.id);
+      console.log('Auto-canceled past_due pass after grace period:', pass.id);
+
+      if (pass.email) {
+        const updateLink = pass.card_update_token ? `https://cityparkmanagement.app/update-card?token=${pass.card_update_token}` : 'https://cityparkmanagement.app';
+        const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:30px 0;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;"><tr><td style="background:#0d0d0d;padding:24px 32px;border-bottom:5px solid #d32f2f;"><img src="https://sldahhdbvcxdlqdhmsjd.supabase.co/storage/v1/object/public/assets/Logo%201.png" alt="City Park Management" style="height:48px;display:block;"></td></tr><tr><td style="padding:32px;font-size:15px;line-height:1.7;color:#444;"><h2 style="color:#d32f2f;margin-bottom:8px;">Your Pass Has Been Canceled</h2><p>Hi ${pass.holder_name || pass.name},</p><p style="margin-top:12px">We were unable to collect payment for your monthly parking pass at <strong>${pass.lot_name || 'your lot'}</strong>, and the 48-hour grace period has now ended. Your pass has been canceled and is no longer valid for parking.</p><p style="margin-top:12px">If you'd like to reactivate your pass, please contact us or sign up again.</p><div style="text-align:center;margin:28px 0;"><a href="https://cityparkmanagement.app" style="background:#b5d96e;color:#0d0d0d;font-weight:900;font-size:16px;padding:16px 32px;border-radius:10px;text-decoration:none;display:inline-block;text-transform:uppercase;">Visit City Park Management</a></div><p style="font-size:13px;color:#888;">Questions? Contact us at <a href="mailto:info@cityparkmanagement.com">info@cityparkmanagement.com</a></p></td></tr><tr><td style="background:#f5f5f5;padding:16px 32px;text-align:center;font-size:11px;color:#888;">City Park Management · info@cityparkmanagement.com</td></tr></table></td></tr></table></body></html>`;
+        await sendEmail(pass.email, 'Your City Park Monthly Pass Has Been Canceled', html);
       }
     }
   }
