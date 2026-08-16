@@ -93,7 +93,8 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTyp
   if(profiles){
     S.users=profiles.map(p=>({
       id:p.id,name:p.name,role:p.role,active:p.active,
-      username:p.name.toLowerCase().replace(/\s+/g,'.')
+      username:p.name.toLowerCase().replace(/\s+/g,'.'),
+      allowed_lot_ids:p.allowed_lot_ids||null
     }));
   }
   if(compCodes){
@@ -231,7 +232,7 @@ async function updatePassDB(id,updates){
 
 async function saveUserDB(user){
   const exists=await db('profiles','GET',null,`?id=eq.${user.id}&select=id`);
-  const body={id:user.id,name:user.name,role:user.role,active:user.active};
+  const body={id:user.id,name:user.name,role:user.role,active:user.active,allowed_lot_ids:user.allowed_lot_ids||null};
   if(exists&&exists.length>0)return db('profiles','PATCH',body,`?id=eq.${user.id}`);
   return db('profiles','POST',body);
 }
