@@ -1087,7 +1087,7 @@ async function doLogin(){
     return;
   }
 
-  S.cu = { id: authData.user.id, name: profile.name, role: profile.role };
+  S.cu = { id: authData.user.id, name: profile.name, role: profile.role, allowed_lot_ids: profile.allowed_lot_ids || null };
   S.loginErr = false;
   S.tab = 'sessions';
   S.v = window.location.pathname==='/admin' ? 'admin' : 'pay';
@@ -2395,7 +2395,7 @@ async function init(){
   if(sessionRes && sessionRes.access_token){
     const profile = await getProfile(sessionRes.user.id, sessionRes.access_token);
     if(profile && profile.active){
-      S.cu = { id: sessionRes.user.id, name: profile.name, role: profile.role };
+      S.cu = { id: sessionRes.user.id, name: profile.name, role: profile.role, allowed_lot_ids: profile.allowed_lot_ids || null };
       S.v = window.location.pathname==='/admin' ? 'admin' : 'pay';
       S.tab = localStorage.getItem('cpm_tab')||'sessions';
       if(_supabaseRT)_supabaseRT.realtime.setAuth(sessionRes.access_token);
