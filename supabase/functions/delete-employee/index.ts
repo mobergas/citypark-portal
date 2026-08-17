@@ -21,8 +21,8 @@ Deno.serve(async (req) => {
     }
 
     const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', userData.user.id).single();
-    if (!callerProfile || callerProfile.role !== 'manager') {
-      return new Response(JSON.stringify({ error: 'Only managers can delete employees' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    if (!callerProfile || callerProfile.role !== 'admin') {
+      return new Response(JSON.stringify({ error: 'Only admins can delete employees' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     }
 
     const { employeeId } = await req.json();

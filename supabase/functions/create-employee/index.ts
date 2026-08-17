@@ -21,13 +21,14 @@ Deno.serve(async (req) => {
     }
 
     const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', userData.user.id).single();
-    if (!callerProfile || callerProfile.role !== 'manager') {
-      return new Response(JSON.stringify({ error: 'Only managers can create staff accounts' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    if (!callerProfile || callerProfile.role !== 'admin') {
+      return new Response(JSON.stringify({ error: 'Only admins can create staff accounts' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     }
 
     const { email, password, name, role } = await req.json();
     if (!email || !password || !name || !role) throw new Error('Missing required fields');
     if (password.length < 6) throw new Error('Password must be at least 6 characters');
+    if (!['admin', 'manager', 'employee'].includes(role)) throw new Error('Invalid role');
 
     const { data: newUser, error: createErr } = await supabase.auth.admin.createUser({ email, password, email_confirm: true });
     if (createErr) throw createErr;
