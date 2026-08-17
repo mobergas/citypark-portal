@@ -2342,13 +2342,18 @@ function resetInactivity(){
 
 function handleExpiredSession(){
   if(!S.cu)return;
+  const wasOnAdminScreen=S.v==='admin';
   setAuthToken(null);
   setRefreshToken(null);
   S.cu=null;
-  S.v='login';
   clearTimeout(inactivityTimer);
-  render();
-  alert('Your session has expired. Please log in again.');
+  if(wasOnAdminScreen){
+    S.v='login';
+    render();
+    alert('Your session has expired. Please log in again.');
+  } else {
+    render();
+  }
 }
 
 document.addEventListener('mousemove',resetInactivity);
