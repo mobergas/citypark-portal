@@ -2398,14 +2398,17 @@ async function init(){
     return;
   }
   
-  const sessionRes = await supabaseGetSession();
-  if(sessionRes && sessionRes.access_token){
-    const profile = await getProfile(sessionRes.user.id, sessionRes.access_token);
-    if(profile && profile.active){
-      S.cu = { id: sessionRes.user.id, name: profile.name, role: profile.role, allowed_lot_ids: profile.allowed_lot_ids || null };
-      S.v = window.location.pathname==='/admin' ? 'admin' : 'pay';
-      S.tab = localStorage.getItem('cpm_tab')||'sessions';
-      if(_supabaseRT)_supabaseRT.realtime.setAuth(sessionRes.access_token);
+  const isStaffPage = window.location.pathname==='/admin';
+  if(isStaffPage){
+    const sessionRes = await supabaseGetSession();
+    if(sessionRes && sessionRes.access_token){
+      const profile = await getProfile(sessionRes.user.id, sessionRes.access_token);
+      if(profile && profile.active){
+        S.cu = { id: sessionRes.user.id, name: profile.name, role: profile.role, allowed_lot_ids: profile.allowed_lot_ids || null };
+        S.v = 'admin';
+        S.tab = localStorage.getItem('cpm_tab')||'sessions';
+        if(_supabaseRT)_supabaseRT.realtime.setAuth(sessionRes.access_token);
+      }
     }
   }
 
