@@ -448,6 +448,13 @@ async function initApp(){
         </select>
       </div>
     </div>
+    <div id="screen-lotnotes" style="display:none">
+      <div class="card">
+        <div class="card-title"><i class="ti ti-note" style="color:var(--gold)"></i> Lot Notes</div>
+        <div id="lotnotes-content" style="font-size:15px;line-height:1.7;color:#ccc;white-space:pre-wrap;margin-bottom:16px"></div>
+        <button class="btn" onclick="showScreen('lookup')"><i class="ti ti-check"></i> Got It — Continue</button>
+      </div>
+    </div>
     <div id="screen-lookup" style="display:none">
       <div class="card">
         <div class="card-title"><i class="ti ti-search"></i> Plate Lookup</div>
@@ -504,6 +511,7 @@ async function initApp(){
       <button class="btn" onclick="newLookup()">Look Up Another Plate</button>
     </div>
   `;
+  window._enforceLots=lots||[];
   showScreen('lot');
   const sel=document.getElementById('lot-select');
   if(sel){
@@ -539,10 +547,19 @@ function selectLot(lotId){
   if(!lotId)return;
   const sel=document.getElementById('lot-select');
   const name=sel.options[sel.selectedIndex].text;
-  currentLot={id:lotId,name:name.split(' · ')[0],zone:name.split('Zone ')[1]};
+  const fullLot=(window._enforceLots||[]).find(l=>l.id===lotId);
+  currentLot={id:lotId,name:name.split(' · ')[0],zone:name.split('Zone ')[1],lot_notes:fullLot?.lot_notes||''};
   localStorage.setItem('enforce_lot',lotId);
   updateLotBadge();
-  showScreen('lookup');
+  showLotNotes();
+}
+
+function showLotNotes(){
+  const content=document.getElementById('lotnotes-content');
+  if(content){
+    content.textContent=currentLot.lot_notes&&currentLot.lot_notes.trim()?currentLot.lot_notes:'No special notes for this lot.';
+  }
+  showScreen('lotnotes');
 }
 
 function updateLotBadge(){
@@ -567,7 +584,7 @@ function changeLot(){
 }
 
 function showScreen(name){
-  ['lot','lookup','violation','warning','issued'].forEach(s=>document.getElementById('screen-'+s).style.display='none');
+  ['lot','lotnotes','lookup','violation','warning','issued'].forEach(s=>document.getElementById('screen-'+s).style.display='none');
   document.getElementById('screen-'+name).style.display='block';
   if(name==='lookup'){document.getElementById('lookup-result').innerHTML='';document.getElementById('plate-input').value='';document.getElementById('plate-input').focus();}
 }

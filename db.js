@@ -53,6 +53,7 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTyp
         monthlyselfsrv:l.monthlyselfsrv,
         total_spaces:l.total_spaces||0,
         max_monthly_passes:l.max_monthly_passes||0,
+        lot_notes:l.lot_notes||'',
         pass_restrictions:l.pass_restrictions||{type:'none'},
         val_window_minutes:l.val_window_minutes??15
       };
@@ -177,6 +178,7 @@ async function saveLotDB(lot){
     fees:lot.fees,pricing:lot.pricing,
     total_spaces:lot.total_spaces||0,
     max_monthly_passes:lot.max_monthly_passes||0,
+    lot_notes:lot.lot_notes||'',
     pass_restrictions:lot.pass_restrictions||{type:'none'},
     val_window_minutes:lot.val_window_minutes??15
   };
