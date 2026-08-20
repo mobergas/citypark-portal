@@ -1564,7 +1564,7 @@ function sendPassInvite(){
   const tok='tok_'+Math.random().toString(36).slice(2,18);
   const signupLink=`https://cityparkmanagement.app/pass/signup?token=${tok}&lot=${lotId}`;
   const overrideRestrictions=document.getElementById('pm-override')?.checked||false;
-const np={id:'MP-'+(1000+S.passes.length+1),name,email,lotId,status:'pending',startDate:NOW,nextBillDate:null,canceledOn:null,monthlyAmount:customPrice,custom_price:customPrice,totalBilled:0,inviteToken:tok,signup_token:tok,lot_name:l.name,holder_name:name,override_restrictions:overrideRestrictions};
+const np={id:'MP-'+Date.now(),name,email,lotId,status:'pending',startDate:NOW,nextBillDate:null,canceledOn:null,monthlyAmount:customPrice,custom_price:customPrice,totalBilled:0,inviteToken:tok,signup_token:tok,lot_name:l.name,holder_name:name,override_restrictions:overrideRestrictions};
   console.log('saving pass with token:', tok, 'signup_token:', np.signup_token);
   S.passes.push(np);
   savePassDB(np);
