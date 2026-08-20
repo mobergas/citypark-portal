@@ -51,6 +51,7 @@ body{font-family:var(--fb);background:#f5f5f5;color:var(--blk);min-height:100vh;
   <div class="card" id="main-card">
     <div class="loading"><i class="ti ti-loader" style="font-size:32px;color:#ccc"></i><p style="margin-top:12px">Loading your invitation...</p></div>
   </div>
+  <p style="text-align:center;font-size:12px;color:#999;margin-top:16px">View our <a href="/monthly-terms" target="_blank" style="color:#7a9e3b">Monthly Parking Terms</a></p>
 </div>
 
 <script>
@@ -176,6 +177,7 @@ function showSignup(pass){
         <i class="ti ti-credit-card"></i> Pay $${dueToday.toFixed(2)} & Activate Pass
       </button>
       <p class="note"><i class="ti ti-lock" style="font-size:11px"></i> Secured payment · Your card will be charged $${(price+serviceFee).toFixed(2)} on the 1st of each month starting ${nextBillStr}</p>
+      <p class="note" style="margin-top:6px">By activating this pass, you agree to our <a href="/monthly-terms" target="_blank" style="color:#7a9e3b">Monthly Parking Terms</a>.</p>
     </div>
   `;
 
