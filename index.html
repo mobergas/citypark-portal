@@ -423,6 +423,7 @@ tfoot td{padding:10px;font-size:13px;background:var(--lime-bg);font-weight:600}
 <div class="mov" id="qr-modal"><div class="md" style="width:380px"><div class="mdh"><h3 id="qrt">QR Code</h3></div><div class="qmb" id="qrb"></div><div class="mdf"><button class="bcl" onclick="closeM('qr-modal')">Close</button><button class="bsv3" onclick="const c=document.getElementById('qr-main');if(c){const a=document.createElement('a');a.href=c.toDataURL('image/png');a.download='CityPark_QR_'+document.getElementById('qrt').textContent.replace(/\s+/g,'_')+'.png';a.click();}">⬇ Download</button></div></div></div>
 <div class="mov" id="val-modal"><div class="md" style="width:500px"><div class="mdh ga"><h3 id="vmt">New Validation</h3></div><div class="mds" id="vmb"></div><div class="mdf"><button class="bcl" onclick="closeM('val-modal')">Cancel</button><button class="bsv3 go" onclick="saveVal()">✓ Save</button></div></div></div>
 <div class="mov" id="master-modal"><div class="md" style="width:500px"><div class="mdh ga"><h3 id="mamt">New Master Account</h3></div><div class="mds" id="mamb"></div><div class="mdf"><button class="bcl" onclick="closeM('master-modal')">Cancel</button><button class="bsv3 go" onclick="saveMasterAcct()">✓ Save</button></div></div></div>
+<div class="mov" id="admin-invite-modal"><div class="md" style="width:460px"><div class="mdh ga"><h3>Invite Parker</h3></div><div class="mds" id="admin-invite-body"></div><div class="mdf"><button class="bcl" onclick="closeM('admin-invite-modal')">Cancel</button><button class="bsv3 go" id="admin-invite-btn" onclick="sendAdminMasterInvite()">✓ Send Invite</button></div></div></div>
 <div class="mov" id="vqr-modal"><div class="md" style="width:400px"><div class="mdh ga"><h3 id="vqrt">Validation QR</h3></div><div class="qmb" id="vqrb"></div><div class="mdf"><button class="bcl" onclick="closeM('vqr-modal')">Close</button><button class="bsv3 go" onclick="alert('QR downloaded')">⬇ Download</button></div></div></div>
 <div class="mov" id="inv-modal"><div class="md" style="width:600px"><div class="mdh ga"><h3 id="ivt">Invoice</h3></div><div class="mds" id="ivb"></div><div class="mdf"><button class="bcl" onclick="closeM('inv-modal')">Close</button><button class="bsv3 go" onclick="exportInvoicePDF()">⬇ Export PDF</button></div></div></div>
 <div class="mov" id="usr-modal"><div class="md" style="width:420px"><div class="mdh"><h3 id="umt">Add User</h3></div><div class="mds" id="umb"></div><div class="mdf"><button class="bcl" onclick="closeM('usr-modal')">Cancel</button><button class="bsv3" onclick="saveUser()">✓ Save</button></div></div></div>
@@ -2140,6 +2141,7 @@ function rMasterAccounts(){
           <div class="tb2" style="width:100%;margin-top:2px"><div class="tb2f" style="width:${pct}%;background:${pct>=100?'var(--red)':'var(--lime-dark)'}"></div></div>
         </div>
         <div class="vac">
+          <button class="ab" onclick="openAdminInviteModal('${a.id}')" style="border-color:var(--gold);color:var(--gold)"><i class="ti ti-user-plus" style="font-size:11px;margin-right:3px"></i>Invite Parker</button>
           <button class="ab" onclick="copyMasterLink('${a.id}')" style="border-color:#7a9e3b;color:#7a9e3b"><i class="ti ti-link" style="font-size:11px;margin-right:3px"></i>Portal Link</button>
           <button class="ab" onclick="refreshMasterToken('${a.id}')" title="Refresh portal link"><i class="ti ti-refresh" style="font-size:11px"></i></button>
           <button class="ab" onclick="openMasterAcctModal('${a.id}')"><i class="ti ti-settings" style="font-size:11px;margin-right:3px"></i>Edit</button>
@@ -2176,6 +2178,48 @@ async function saveMasterAcct(){
     logAudit('Created master account',name);
   }
   closeM('master-modal');
+  render();
+}
+
+function openAdminInviteModal(acctId){
+  S._adminInviteAcctId=acctId;
+  const a=(S.masterAccounts||[]).find(x=>x.id===acctId);
+  if(!a)return;
+  const lotOpts=(a.lot_ids||[]).map(id=>S.lots[id]?`<option value="${id}">${S.lots[id].name}</option>`:'').join('');
+  document.getElementById('admin-invite-body').innerHTML=`
+    <p style="font-size:13px;color:var(--t2);margin-bottom:14px">Send a free pass invite on behalf of <strong>${escH(a.business_name)}</strong>.</p>
+    <div class="fg"><label class="fl">Full name</label><input class="fi" id="ai-name" placeholder="e.g. Jane Smith"></div>
+    <div class="fg"><label class="fl">Email address</label><input class="fi" id="ai-email" type="email" placeholder="e.g. jane@example.com"></div>
+    <div class="fg"><label class="fl">Lot</label><select class="fse" id="ai-lot">${lotOpts}</select></div>
+    <div id="admin-invite-err" style="color:var(--red);font-size:12px;margin-top:6px"></div>
+  `;
+  document.getElementById('admin-invite-modal').classList.add('show');
+}
+
+async function sendAdminMasterInvite(){
+  const acctId=S._adminInviteAcctId;
+  const name=document.getElementById('ai-name')?.value.trim();
+  const email=document.getElementById('ai-email')?.value.trim();
+  const lotId=document.getElementById('ai-lot')?.value;
+  const errEl=document.getElementById('admin-invite-err');
+  if(errEl)errEl.textContent='';
+  if(!name){if(errEl)errEl.textContent='Name required.';return;}
+  if(!email||!email.includes('@')){if(errEl)errEl.textContent='Valid email required.';return;}
+  if(!lotId){if(errEl)errEl.textContent='No lots assigned to this account.';return;}
+  const btn=document.getElementById('admin-invite-btn');
+  if(btn){btn.textContent='Sending...';btn.disabled=true;}
+  const res=await fetch(`${SUPA_URL}/functions/v1/admin-send-master-invite`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+(getAuthToken()||SUPA_KEY)},
+    body:JSON.stringify({masterAccountId:acctId,name,email,lotId})
+  });
+  const data=await res.json();
+  if(btn){btn.textContent='✓ Send Invite';btn.disabled=false;}
+  if(data.error){if(errEl)errEl.textContent=data.error;return;}
+  const acct=(S.masterAccounts||[]).find(x=>x.id===acctId);
+  logAudit('Invited master account parker',`${name} — ${acct?.business_name||''}`);
+  closeM('admin-invite-modal');
+  await loadFromDB();
   render();
 }
 
