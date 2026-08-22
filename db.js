@@ -88,7 +88,8 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTyp
       plate:p.plate||null,
       override_restrictions:p.override_restrictions||false,
       billedAt:p.billed_at||null,
-      past_due_since:p.past_due_since||null
+      past_due_since:p.past_due_since||null,
+      master_account_id:p.master_account_id||null
     }));
   }
   if(profiles){
