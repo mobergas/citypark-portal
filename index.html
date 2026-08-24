@@ -1148,9 +1148,11 @@ function renderHomeCharts(){
   // Revenue breakdown pie
   const pieCanvas=document.getElementById('hm-revenue-pie');
   if(pieCanvas){
-    const parkingRev=inRange.reduce((a,s)=>a+(s.pkch||s.paid),0);
+    const paidViolsInRange=(S.violations||[]).filter(v=>v.status==='paid'&&v.paid_at&&lotIds.includes(v.lot_id)&&new Date(v.paid_at)>=from&&new Date(v.paid_at)<toEnd);
+    const violParkingFees=paidViolsInRange.reduce((a,v)=>a+(v.parking_fee||0),0);
+    const parkingRev=inRange.reduce((a,s)=>a+(s.pkch||s.paid),0)+violParkingFees;
     const feeRev=inRange.reduce((a,s)=>a+(s.sfee||0),0);
-    const violRev=(S.violations||[]).filter(v=>v.status==='paid'&&v.paid_at&&lotIds.includes(v.lot_id)&&new Date(v.paid_at)>=from&&new Date(v.paid_at)<toEnd).reduce((a,v)=>a+(v.fine_amount-(v.parking_fee||0)),0);
+    const violRev=paidViolsInRange.reduce((a,v)=>a+(v.fine_amount-(v.parking_fee||0)),0);
     const monthlyRev=S.passes.filter(p=>lotIds.includes(p.lotId)).reduce((a,p)=>{const nb=p.nextBillDate?new Date(p.nextBillDate):null;const ba=p.billedAt?new Date(p.billedAt):null;const billedInRange=(nb&&nb>=from&&nb<toEnd)||(ba&&ba>=from&&ba<toEnd);return billedInRange?a+(p.custom_price||p.monthlyAmount||0):a;},0);
     const allSegs=[{k:'parking',label:'Parking',val:parkingRev,color:'#2563eb'},{k:'fees',label:'Service Fees',val:feeRev,color:'#0d0d0d'},{k:'violations',label:'Violations',val:violRev,color:'#d32f2f'},{k:'monthly',label:'Monthly Passes',val:monthlyRev,color:'#7a9e3b'}];
     const visSegs=allSegs.filter(s=>!S.hmPieHidden?.[s.k]);
