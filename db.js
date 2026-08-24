@@ -29,7 +29,7 @@ async function db(table,method='GET',body=null,filters=''){
 }
 
 async function loadFromDB(){
-const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTypes,auditLog,masterAccounts]=await Promise.all([
+const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTypes,auditLog,masterAccounts,warnings]=await Promise.all([
     db('lots','GET',null,'?select=*'),
     db('validations','GET',null,'?select=*'),
     db('passes','GET',null,'?select=*&order=created_at.desc'),
@@ -41,7 +41,9 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTyp
     db('violation_types','GET',null,'?select=*&order=name'),
     db('audit_log','GET',null,'?select=*&order=created_at.desc&limit=300'),
     db('master_accounts','GET',null,'?select=*&order=created_at.desc'),
+    db('warnings','GET',null,'?select=*&order=created_at.desc&limit=200'),
   ]);
+  if(warnings)S.warnings=warnings;
   if(lots){
     S.lots={};
     lots.forEach(l=>{
