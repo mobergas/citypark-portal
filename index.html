@@ -1158,7 +1158,7 @@ function renderHomeCharts(){
     _hmPieChart=new Chart(pieCanvas,{
       type:'pie',
       data:{labels:visSegs.map(s=>s.label),datasets:[{data:visSegs.map(s=>s.val),backgroundColor:visSegs.map(s=>s.color)}]},
-      options:{responsive:true,plugins:{legend:{display:false}}}
+      options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}}}}
     });
   }
 
