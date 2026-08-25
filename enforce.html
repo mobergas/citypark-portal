@@ -644,7 +644,13 @@ async function lookupPlate(){
       }
     }
   } else {
-    html+=`<div class="status-bad"><div class="status-title">❌ No Valid Parking</div><div class="status-detail">No active session or monthly pass found for this plate at ${currentLot.name}</div></div>`;
+    const lastSess=(sessions||[])[0];
+    let expiredNote='';
+    if(lastSess){
+      const exp=new Date(new Date(lastSess.start_time).getTime()+lastSess.duration*3600000);
+      expiredNote=`<br>Last session expired ${exp.toLocaleDateString()} at ${exp.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`;
+    }
+    html+=`<div class="status-bad"><div class="status-title">❌ No Valid Parking</div><div class="status-detail">No active session or monthly pass found for this plate at ${currentLot.name}${expiredNote}</div></div>`;
     html+=`<button class="btn red" onclick="startViolation('${plate}')"><i class="ti ti-alert-triangle"></i> Issue Violation</button><button class="btn outline" onclick="startWarning('${plate}')" style="margin-top:8px"><i class="ti ti-flag"></i> Issue Warning</button>`;
   }
 
