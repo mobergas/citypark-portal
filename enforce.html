@@ -67,7 +67,6 @@ body{font-family:var(--fb);background:#0d0d0d;color:#fff;min-height:100vh;}
   <!-- Lot selection screen -->
   <div id="screen-lot">
     <div style="text-align:center;padding:40px 0 24px">
-      <div style="font-size:48px;margin-bottom:8px">🅿️</div>
       <div style="font-family:var(--fc);font-size:24px;font-weight:900;text-transform:uppercase;margin-bottom:4px">Enforcement App</div>
       <div style="font-size:13px;color:#666">Select your assigned lot to begin</div>
     </div>
@@ -294,7 +293,6 @@ async function sendEnfPasswordReset(){
 function showResetPasswordScreen(recoveryToken){
   document.getElementById('main').innerHTML=`
     <div style="text-align:center;padding:40px 0 24px">
-      <div style="font-size:48px;margin-bottom:8px">🅿️</div>
       <div style="font-family:var(--fc);font-size:24px;font-weight:900;text-transform:uppercase;margin-bottom:4px">Set New Password</div>
       <div style="font-size:13px;color:#666;margin-bottom:24px">Choose a new password for your account</div>
     </div>
@@ -360,7 +358,6 @@ function showLoginScreen(){
   if(_pwResetMode){
     document.getElementById('main').innerHTML=`
       <div style="text-align:center;padding:40px 0 24px">
-        <div style="font-size:48px;margin-bottom:8px">🅿️</div>
         <div style="font-family:var(--fc);font-size:24px;font-weight:900;text-transform:uppercase;margin-bottom:4px">Reset Password</div>
         <div style="font-size:13px;color:#666;margin-bottom:24px">Enter your email and we'll send you a reset link</div>
       </div>
@@ -378,7 +375,6 @@ function showLoginScreen(){
   }
   document.getElementById('main').innerHTML=`
     <div style="text-align:center;padding:40px 0 24px">
-      <div style="font-size:48px;margin-bottom:8px">🅿️</div>
       <div style="font-family:var(--fc);font-size:24px;font-weight:900;text-transform:uppercase;margin-bottom:4px">Enforcement Login</div>
       <div style="font-size:13px;color:#666;margin-bottom:24px">Sign in with your City Park credentials</div>
     </div>
@@ -438,7 +434,6 @@ async function initApp(){
   document.getElementById('main').innerHTML=`
     <div id="screen-lot">
       <div style="text-align:center;padding:40px 0 24px">
-        <div style="font-size:48px;margin-bottom:8px">🅿️</div>
         <div style="font-family:var(--fc);font-size:24px;font-weight:900;text-transform:uppercase;margin-bottom:4px">Enforcement App</div>
         <div style="font-size:13px;color:#666">Select your assigned lot to begin</div>
       </div>
