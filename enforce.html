@@ -426,6 +426,7 @@ async function enfLogin(){
 
   currentUser=profile;
   localStorage.setItem('enforce_token',data.access_token);
+  localStorage.removeItem('enforce_lot');
   initApp();
 }
 
