@@ -1156,11 +1156,32 @@ function renderHomeCharts(){
     const monthlyRev=S.passes.filter(p=>lotIds.includes(p.lotId)).reduce((a,p)=>{const nb=p.nextBillDate?new Date(p.nextBillDate):null;const ba=p.billedAt?new Date(p.billedAt):null;const billedInRange=(nb&&nb>=from&&nb<toEnd)||(ba&&ba>=from&&ba<toEnd);return billedInRange?a+(p.custom_price||p.monthlyAmount||0):a;},0);
     const allSegs=[{k:'parking',label:'Parking',val:parkingRev,color:'#2563eb'},{k:'fees',label:'Service Fees',val:feeRev,color:'#0d0d0d'},{k:'violations',label:'Violations',val:violRev,color:'#d32f2f'},{k:'monthly',label:'Monthly Passes',val:monthlyRev,color:'#7a9e3b'}];
     const visSegs=allSegs.filter(s=>!S.hmPieHidden?.[s.k]);
+    const pieTotal=visSegs.reduce((a,s)=>a+s.val,0);
     if(_hmPieChart)_hmPieChart.destroy();
     _hmPieChart=new Chart(pieCanvas,{
       type:'pie',
       data:{labels:visSegs.map(s=>s.label),datasets:[{data:visSegs.map(s=>s.val),backgroundColor:visSegs.map(s=>s.color)}]},
-      options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}}}}
+      options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}}}},
+      plugins:[{
+        id:'pctLabels',
+        afterDatasetsDraw(chart){
+          const {ctx}=chart;
+          chart.getDatasetMeta(0).data.forEach((arc,i)=>{
+            const val=chart.data.datasets[0].data[i];
+            if(pieTotal<=0||val<=0)return;
+            const pct=Math.round((val/pieTotal)*100);
+            if(pct<4)return;
+            const pos=arc.tooltipPosition();
+            ctx.save();
+            ctx.font='bold 12px sans-serif';
+            ctx.fillStyle='#fff';
+            ctx.textAlign='center';
+            ctx.textBaseline='middle';
+            ctx.fillText(pct+'%',pos.x,pos.y);
+            ctx.restore();
+          });
+        }
+      }]
     });
   }
 
