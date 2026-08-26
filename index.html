@@ -1136,12 +1136,12 @@ function renderHomeCharts(){
 
   // Hourly volume
   const hourly=Array(24).fill(0);
-  inRange.forEach(s=>{const h=new Date(s.start).getHours();hourly[h]++;});
+  inRange.filter(s=>s.type!=='Monthly').forEach(s=>{const h=new Date(s.start).getHours();hourly[h]++;});
   const labels=Array.from({length:24},(_,i)=>{const h=i%12===0?12:i%12;const ap=i<12?'AM':'PM';return h+ap;});
   if(_hmHourlyChart)_hmHourlyChart.destroy();
   _hmHourlyChart=new Chart(canvas,{
     type:'bar',
-    data:{labels,datasets:[{label:'Sessions Started',data:hourly,backgroundColor:'#b5d96e',borderRadius:4}]},
+    data:{labels,datasets:[{label:'Hourly & Event Sessions',data:hourly,backgroundColor:'#b5d96e',borderRadius:4}]},
     options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
   });
 
@@ -1243,7 +1243,7 @@ function renderHomeCharts(){
     const occByDay=days.map(d=>{
       const next=new Date(d);next.setDate(next.getDate()+1);
       const occAtEnd=S.sess.filter(s=>{
-        if(!occLotIds.includes(s.lotId))return false;
+        if(!occLotIds.includes(s.lotId)||s.type==='Monthly')return false;
         const st=new Date(s.start);const en=new Date(s.start+s.duration*3600000);
         return st<next&&en>=d&&en>next;
       }).length;
