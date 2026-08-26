@@ -1256,6 +1256,25 @@ function renderHomeCharts(){
       options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}}}}
     });
   }
+
+  // Recent activity feed
+  const feedEl=document.getElementById('hm-activity-feed');
+  if(feedEl){
+    const events=[];
+    inRange.forEach(s=>{const l=S.lots[s.lotId];events.push({time:new Date(s.start),icon:'ti-car',color:'#2563eb',text:`New session — ${s.plate} at ${l?.name||'?'} · $${s.paid.toFixed(2)}`});});
+    (S.violations||[]).filter(v=>v.lot_id&&lotIds.includes(v.lot_id)&&v.created_at&&new Date(v.created_at)>=from&&new Date(v.created_at)<toEnd).forEach(v=>{events.push({time:new Date(v.created_at),icon:'ti-alert-triangle',color:'#d32f2f',text:`Violation issued — ${v.plate} at ${v.lot_name||'?'} · $${v.fine_amount.toFixed(2)}`});});
+    (S.warnings||[]).filter(w=>w.lot_id&&lotIds.includes(w.lot_id)&&w.created_at&&new Date(w.created_at)>=from&&new Date(w.created_at)<toEnd).forEach(w=>{events.push({time:new Date(w.created_at),icon:'ti-flag',color:'#f0c040',text:`Warning issued — ${w.plate}`});});
+    S.passes.filter(p=>lotIds.includes(p.lotId)&&p.startDate&&new Date(p.startDate)>=from&&new Date(p.startDate)<toEnd).forEach(p=>{events.push({time:new Date(p.startDate),icon:'ti-id-badge',color:'#7a9e3b',text:`New pass — ${p.name} at ${p.lot_name||'?'}`});});
+    (S.compCodes||[]).filter(c=>c.used_at&&new Date(c.used_at)>=from&&new Date(c.used_at)<toEnd).forEach(c=>{events.push({time:new Date(c.used_at),icon:'ti-ticket',color:'#0d0d0d',text:`Comp code redeemed — ${c.code}`});});
+
+    events.sort((a,b)=>b.time-a.time);
+    const top=events.slice(0,20);
+    feedEl.innerHTML=top.length?top.map(e=>{
+      const mins=Math.round((Date.now()-e.time.getTime())/60000);
+      const rel=mins<1?'just now':mins<60?mins+'m ago':mins<1440?Math.floor(mins/60)+'h ago':Math.floor(mins/1440)+'d ago';
+      return`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--g1);font-size:13px"><i class="ti ${e.icon}" style="color:${e.color};font-size:15px;flex-shrink:0"></i><span style="flex:1">${e.text}</span><span style="color:var(--t3);font-size:11px;flex-shrink:0">${rel}</span></div>`;
+    }).join(''):'<div style="text-align:center;padding:20px;color:var(--t3);font-size:13px">No activity in this range.</div>';
+  }
 }
 
 function renderAdmin(){
@@ -1286,6 +1305,7 @@ function renderAdmin(){
     <div class="pn" style="margin-top:10px"><div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center">${[{k:'parking',l:'Parking',c:'#2563eb'},{k:'fees',l:'Service Fees',c:'#0d0d0d'},{k:'violations',l:'Violations',c:'#d32f2f'},{k:'monthly',l:'Monthly Passes',c:'#7a9e3b'}].map(seg=>`<label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer"><input type="checkbox" ${!S.hmPieHidden?.[seg.k]?'checked':''} onchange="S.hmPieHidden=S.hmPieHidden||{};S.hmPieHidden['${seg.k}']=!this.checked;renderHomeCharts()"><span style="width:9px;height:9px;background:${seg.c};border-radius:2px;display:inline-block"></span>${seg.l}</label>`).join('')}</div></div></div><div class="pn"><div class="ph"><h3><i class="ti ti-chart-line"></i>Daily Trend</h3></div><div style="padding:16px"><canvas id="hm-trend-chart" height="140"></canvas></div></div></div>
     <div class="sg" style="margin-top:16px;grid-template-columns:repeat(3,1fr)"><div class="sc"><div class="sl"><i class="ti ti-hourglass" style="font-size:11px"></i>Avg Session Length</div><div class="sv" id="hm-avg-duration">—</div><div class="sd">Selected range</div></div><div class="sc"><div class="sl"><i class="ti ti-discount" style="font-size:11px"></i>Validation Usage</div><div class="sv" id="hm-val-usage" style="color:var(--gold)">—</div><div class="sd">Sessions with a code</div></div><div class="sc"><div class="sl"><i class="ti ti-ticket" style="font-size:11px"></i>Session Types</div><div class="sv" id="hm-type-split" style="font-size:16px">—</div><div class="sd"><span style="color:#2563eb">● Hourly</span> &nbsp;<span style="color:#7a9e3b">● Event</span> &nbsp;<span style="color:#0d0d0d">● Monthly</span></div></div></div>
     <div class="rg2a" style="margin-top:16px"><div class="pn"><div class="ph"><h3><i class="ti ti-chart-bar"></i>Session Type Breakdown</h3></div><div style="padding:16px"><canvas id="hm-type-chart" height="140"></canvas></div></div><div class="pn"><div class="ph"><h3><i class="ti ti-parking" style="font-size:15px"></i>Occupancy Trend</h3></div><div style="padding:16px"><canvas id="hm-occ-chart" height="140"></canvas></div></div></div>
+    <div class="pn" style="margin-top:16px"><div class="ph"><h3><i class="ti ti-activity"></i>Recent Activity</h3></div><div id="hm-activity-feed" style="padding:6px 16px;max-height:340px;overflow-y:auto"></div></div>
     ${(()=>{setTimeout(renderHomeCharts,50);return'';})()}
     </div>`:''}
         ${S.tab==='sessions'?rSessions():''}
