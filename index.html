@@ -1264,7 +1264,7 @@ function renderHomeCharts(){
     inRange.forEach(s=>{const l=S.lots[s.lotId];events.push({time:new Date(s.start),icon:'ti-car',color:'#2563eb',text:`New session — ${s.plate} at ${l?.name||'?'} · $${s.paid.toFixed(2)}`});});
     (S.violations||[]).filter(v=>v.lot_id&&lotIds.includes(v.lot_id)&&v.created_at&&new Date(v.created_at)>=from&&new Date(v.created_at)<toEnd).forEach(v=>{events.push({time:new Date(v.created_at),icon:'ti-alert-triangle',color:'#d32f2f',text:`Violation issued — ${v.plate} at ${v.lot_name||'?'} · $${v.fine_amount.toFixed(2)}`});});
     (S.warnings||[]).filter(w=>w.lot_id&&lotIds.includes(w.lot_id)&&w.created_at&&new Date(w.created_at)>=from&&new Date(w.created_at)<toEnd).forEach(w=>{events.push({time:new Date(w.created_at),icon:'ti-flag',color:'#f0c040',text:`Warning issued — ${w.plate}`});});
-    S.passes.filter(p=>lotIds.includes(p.lotId)&&p.startDate&&new Date(p.startDate)>=from&&new Date(p.startDate)<toEnd).forEach(p=>{events.push({time:new Date(p.startDate),icon:'ti-id-badge',color:'#7a9e3b',text:`New pass — ${p.name} at ${p.lot_name||'?'}`});});
+    S.passes.filter(p=>lotIds.includes(p.lotId)&&p.startDate&&new Date(p.startDate)>=from&&new Date(p.startDate)<toEnd).forEach(p=>{events.push({time:new Date(p.startDate),icon:'ti-id-badge',color:'#7a9e3b',text:`New pass — ${p.name} at ${S.lots[p.lotId]?.name||p.lot_name||'Unknown lot'}`});});
     (S.compCodes||[]).filter(c=>c.used_at&&new Date(c.used_at)>=from&&new Date(c.used_at)<toEnd).forEach(c=>{events.push({time:new Date(c.used_at),icon:'ti-ticket',color:'#0d0d0d',text:`Comp code redeemed — ${c.code}`});});
 
     events.sort((a,b)=>b.time-a.time);
