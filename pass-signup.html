@@ -143,6 +143,7 @@ function showSignup(pass){
           <i class="ti ti-check"></i> Confirm & Activate Pass
         </button>
         <p class="note"><i class="ti ti-info-circle" style="font-size:11px"></i> No payment required · This pass is provided free of charge</p>
+        <div style="background:#fff8e6;border:1.5px solid #f0c040;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:12px;color:#7a5c00;line-height:1.5;text-align:center"><i class="ti ti-alert-triangle" style="font-size:12px"></i> A monthly pass grants access to this lot — it does not guarantee an available space on any given day if the lot is full.</div>
       </div>
     `;
     return;
@@ -177,6 +178,7 @@ function showSignup(pass){
         <i class="ti ti-credit-card"></i> Pay $${dueToday.toFixed(2)} & Activate Pass
       </button>
       <p class="note"><i class="ti ti-lock" style="font-size:11px"></i> Secured payment · Your card will be charged $${(price+serviceFee).toFixed(2)} on the 1st of each month starting ${nextBillStr}</p>
+      <div style="background:#fff8e6;border:1.5px solid #f0c040;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:12px;color:#7a5c00;line-height:1.5;text-align:center"><i class="ti ti-alert-triangle" style="font-size:12px"></i> A monthly pass grants access to this lot — it does not guarantee an available space on any given day if the lot is full.</div>
       <p style="text-align:center;font-size:16px;margin-top:12px"><a href="/monthly-terms" target="_blank" style="color:#7a9e3b;font-weight:700;font-family:var(--fc);text-transform:uppercase;letter-spacing:.04em">Monthly Pass Details</a></p>
     </div>
   `;
