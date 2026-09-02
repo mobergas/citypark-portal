@@ -201,7 +201,8 @@ Deno.serve(async () => {
         const next = new Date(today.getFullYear(), today.getMonth() + 1, 1);
         await supabase.from('passes').update({
           next_bill_date: next.toISOString(),
-          total_billed: (pass.total_billed || 0) + amount
+          total_billed: (pass.total_billed || 0) + amount,
+          billed_at: new Date().toISOString()
         }).eq('id', pass.id);
         if (pass.email) {
           const html = buildMonthlyReceiptEmail(pass, amount, next);
