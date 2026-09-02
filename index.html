@@ -2039,7 +2039,8 @@ function editViolation(id){
   document.getElementById('ivb').innerHTML=`
     <div class="fg"><label class="fl">Plate</label><input class="fi" id="ev-plate" value="${escH(v.plate)}"></div>
     <div class="fg"><label class="fl">Violation Type</label><input class="fi" id="ev-type" value="${escH(v.violation_name||'')}"></div>
-    <div class="fg"><label class="fl">Fine Amount ($)</label><div class="piw" style="max-width:130px"><span>$</span><input type="number" id="ev-fine" min="0" step="0.01" value="${v.fine_amount}"></div></div>
+    <div class="fg"><label class="fl">Unpaid Parking Fee ($)</label><div class="piw" style="max-width:130px"><span>$</span><input type="number" id="ev-parkfee" min="0" step="0.01" value="${(v.parking_fee||0)}"></div><div style="font-size:11px;color:var(--t3);margin-top:4px">What the customer would have paid to park normally.</div></div>
+    <div class="fg"><label class="fl">Violation Fine ($)</label><div class="piw" style="max-width:130px"><span>$</span><input type="number" id="ev-fine" min="0" step="0.01" value="${(v.fine_amount-(v.parking_fee||0))}"></div><div style="font-size:11px;color:var(--t3);margin-top:4px">The penalty for not paying.</div></div>
     <div class="fg"><label class="fl">Notes</label><textarea class="fta" id="ev-notes" style="min-height:60px">${escH(v.notes||'')}</textarea></div>
   `;
   document.getElementById('inv-modal').classList.add('show');
@@ -2053,11 +2054,13 @@ async function saveViolationEdit(id){
   const oldFine=v.fine_amount;
   const plate=document.getElementById('ev-plate')?.value.trim().toUpperCase();
   const type=document.getElementById('ev-type')?.value.trim();
+  const parkingFee=parseFloat(document.getElementById('ev-parkfee')?.value)||0;
   const fine=parseFloat(document.getElementById('ev-fine')?.value)||0;
+  const totalFine=+(parkingFee+fine).toFixed(2);
   const notes=document.getElementById('ev-notes')?.value.trim();
-  Object.assign(v,{plate,violation_name:type,fine_amount:fine,notes});
-  await db('violations','PATCH',{plate,violation_name:type,fine_amount:fine,notes},`?id=eq.${id}`);
-  await logAudit('Edited violation',`${id} — plate ${plate}, fine $${oldFine.toFixed(2)} → $${fine.toFixed(2)}`);
+  Object.assign(v,{plate,violation_name:type,parking_fee:parkingFee,fine_amount:totalFine,notes});
+  await db('violations','PATCH',{plate,violation_name:type,parking_fee:parkingFee,fine_amount:totalFine,notes},`?id=eq.${id}`);
+  await logAudit('Edited violation',`${id} — plate ${plate}, fine $${oldFine.toFixed(2)} → $${totalFine.toFixed(2)} (parking fee $${parkingFee.toFixed(2)} + fine $${fine.toFixed(2)})`);
   closeM('inv-modal');
   render();
 }
@@ -2072,14 +2075,15 @@ function filterViolations(){
   if(S.violLotFilter&&S.violLotFilter!=='all')filtered=filtered.filter(v=>v.lot_id===S.violLotFilter);
   const tbody=document.querySelector('#viol-table tbody');
   if(!tbody)return;
-  tbody.innerHTML=filtered.length===0?`<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--t3)">${q?'No violations match your search.':'No violations yet'}</td></tr>`:
+  tbody.innerHTML=filtered.length===0?`<tr><td colspan="10" style="text-align:center;padding:28px;color:var(--t3)">${q?'No violations match your search.':'No violations yet'}</td></tr>`:
   filtered.map(v=>`<tr>
     <td style="font-family:var(--fc);font-size:11px;font-weight:800;color:var(--t3)">${v.id}</td>
     <td style="font-size:12px;color:var(--t3)">${new Date(v.created_at).toLocaleDateString()}</td>
     <td style="font-family:var(--fc);font-size:15px;font-weight:900;color:var(--t1)">${v.plate}</td>
     <td style="font-size:12px;color:var(--t2)">${v.lot_name||'—'}</td>
     <td style="font-size:13px;font-weight:600;color:var(--t1)">${v.violation_name||'—'}</td>
-    <td style="font-family:var(--fc);font-weight:900;font-size:15px;color:${v.status==='paid'?'var(--grn)':v.status==='waived'?'var(--gold)':'var(--red)'}">$${v.fine_amount.toFixed(2)}</td>
+    <td style="font-family:var(--fc);font-weight:700;font-size:13px;color:var(--t2)">$${(v.parking_fee||0).toFixed(2)}</td>
+    <td style="font-family:var(--fc);font-weight:900;font-size:15px;color:${v.status==='paid'?'var(--grn)':v.status==='waived'?'var(--gold)':'var(--red)'}">$${(v.fine_amount-(v.parking_fee||0)).toFixed(2)}</td>
     <td><span class="sp ${v.status==='paid'?'active':v.status==='waived'?'expired':'pending'}">${v.status==='paid'?'Paid':v.status==='waived'?'Waived':'Unpaid'}</span></td>
     <td>${v.photo_url?`<a href="${v.photo_url}" target="_blank" style="color:#2563eb;font-size:12px">View</a>`:'—'}</td>
     <td><button class="ab" onclick="editViolation('${v.id}')"><i class="ti ti-pencil" style="font-size:11px"></i></button>${v.status!=='waived'?`<button class="ab" onclick="waiveViolation('${v.id}')" style="border-color:var(--gold);color:var(--gold)"><i class="ti ti-x" style="font-size:11px"></i> Waive</button>`:'<span style="font-size:11px;color:var(--gold)">Waived</span>'}</td>
@@ -2121,16 +2125,17 @@ function rViolations(){
     <div class="pn">
       <div class="ph"><h3><i class="ti ti-alert-triangle"></i>All Violations</h3><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="sb2"><i class="ti ti-search"></i><input id="viol-search-inp" placeholder="Search plate or ID..." value="${escH(S.violSearch||'')}" oninput="S.violSearch=this.value;filterViolations()" autocomplete="off"></div><select id="viol-status-filter" onchange="S.violStatusFilter=this.value;filterViolations()" style="background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:8px 12px;font-family:var(--fc);font-size:13px;font-weight:700;color:var(--t1)"><option value="all">All</option><option value="unpaid"${S.violStatusFilter==='unpaid'?' selected':''}>Unpaid</option><option value="paid"${S.violStatusFilter==='paid'?' selected':''}>Paid</option><option value="waived"${S.violStatusFilter==='waived'?' selected':''}>Waived</option></select><select id="viol-lot-filter" onchange="S.violLotFilter=this.value;filterViolations()" style="background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:8px 12px;font-family:var(--fc);font-size:13px;font-weight:700;color:var(--t1)"><option value="all">All Lots</option>${vLots.map(l=>`<option value="${l.id}"${S.violLotFilter===l.id?' selected':''}>${l.name}</option>`).join('')}</select></div></div>
       <div style="overflow-x:auto"><table id="viol-table"><thead><tr>
-        <th>ID</th><th>Date</th><th>Plate</th><th>Lot</th><th>Violation</th><th>Fine</th><th>Status</th><th>Photo</th><th></th>
+        <th>ID</th><th>Date</th><th>Plate</th><th>Lot</th><th>Violation</th><th>Parking Fee</th><th>Fine</th><th>Status</th><th>Photo</th><th></th>
       </tr></thead><tbody>
-      ${filtered.length===0?`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--t3)">${q?'No violations match your search.':'No violations yet'}</td></tr>`:
+      ${filtered.length===0?`<tr><td colspan="10" style="text-align:center;padding:28px;color:var(--t3)">${q?'No violations match your search.':'No violations yet'}</td></tr>`:
       filtered.map(v=>`<tr>
         <td style="font-family:var(--fc);font-size:11px;font-weight:800;color:var(--t3)">${v.id}</td>
         <td style="font-size:12px;color:var(--t3)">${new Date(v.created_at).toLocaleDateString()}</td>
         <td style="font-family:var(--fc);font-size:15px;font-weight:900;color:var(--t1)">${v.plate}</td>
         <td style="font-size:12px;color:var(--t2)">${v.lot_name||'—'}</td>
         <td style="font-size:13px;font-weight:600;color:var(--t1)">${v.violation_name||'—'}</td>
-        <td style="font-family:var(--fc);font-weight:900;font-size:15px;color:${v.status==='paid'?'var(--grn)':'var(--red)'}">$${v.fine_amount.toFixed(2)}</td>
+        <td style="font-family:var(--fc);font-weight:700;font-size:13px;color:var(--t2)">$${(v.parking_fee||0).toFixed(2)}</td>
+        <td style="font-family:var(--fc);font-weight:900;font-size:15px;color:${v.status==='paid'?'var(--grn)':'var(--red)'}">$${(v.fine_amount-(v.parking_fee||0)).toFixed(2)}</td>
         <td><span class="sp ${v.status==='paid'?'active':v.status==='waived'?'expired':'pending'}">${v.status==='paid'?'Paid':v.status==='waived'?'Waived':'Unpaid'}</span></td>
         <td>${(v.photo_urls&&v.photo_urls.length)?v.photo_urls.map((filename,i)=>`<button onclick="viewViolationPhoto('${filename}')" style="background:none;border:none;color:#2563eb;font-size:12px;margin-right:6px;cursor:pointer;text-decoration:underline;padding:0">Photo ${i+1}</button>`).join(''):v.photo_url?`<a href="${v.photo_url}" target="_blank" style="color:#2563eb;font-size:12px">View</a>`:'—'}</td>
         <td><button class="ab" onclick="editViolation('${v.id}')"><i class="ti ti-pencil" style="font-size:11px"></i></button><button class="ab" onclick="promptSendReceipt('violation','${v.id}')" style="border-color:#2563eb;color:#2563eb" title="Send receipt"><i class="ti ti-mail" style="font-size:11px"></i></button>${v.status!=='waived'?`<button class="ab" onclick="waiveViolation('${v.id}')" style="border-color:var(--gold);color:var(--gold)"><i class="ti ti-x" style="font-size:11px"></i> Waive</button>`:'<span style="font-size:11px;color:var(--gold)">Waived</span>'}</td>
