@@ -86,6 +86,7 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTyp
       nextBillDate:p.next_bill_date?new Date(p.next_bill_date):null,
       canceledOn:p.canceled_on?new Date(p.canceled_on):null,
       monthlyAmount:p.monthly_amount,totalBilled:p.total_billed,
+      serviceFee:p.service_fee||0,
       inviteToken:p.invite_token,
       plate:p.plate||null,
       override_restrictions:p.override_restrictions||false,
