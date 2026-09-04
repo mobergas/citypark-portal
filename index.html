@@ -709,6 +709,7 @@ function render(){
   mc.style.maxWidth=S.v==='admin'?'1700px':'600px';
   mc.style.margin='0 auto';
   if(S.v==='pay')mc.innerHTML=S.cstep===2?renderSuccess():renderPay();
+  else if(S.v==='picklot')mc.innerHTML=renderPickLot();
   else if(S.v==='extend')mc.innerHTML=renderExtend();
   else if(S.v==='login')mc.innerHTML=renderLogin();
   else if(S.v==='resetpw')mc.innerHTML=renderResetPassword();
@@ -721,6 +722,18 @@ function render(){
   updateA2HSBanner();
 }
 
+function renderPickLot(){
+  const lots=Object.values(S.lots).filter(l=>l.open!==false).sort((a,b)=>a.name.localeCompare(b.name));
+  return`<div class="cw">
+    <div class="ccard">
+      <div class="cchd"><h1 style="font-size:26px">Select Your Lot</h1><p style="font-size:16px;color:#fff;margin-top:6px">Choose the lot you're parked at to continue.</p></div>
+      <div class="ccbd" style="padding-top:16px">
+        ${lots.length===0?`<p style="text-align:center;color:var(--t3);padding:20px 0">No lots are currently available.</p>`:lots.map(l=>`<button onclick="pickHomeLot('${l.id}')" style="width:100%;text-align:left;background:var(--g1);border:1.5px solid var(--g2);border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px"><div><div style="font-family:var(--fc);font-weight:800;font-size:16px;color:var(--t1)">${escH(l.name)}</div><div style="font-size:12px;color:var(--t3);margin-top:2px">${escH(l.address||'')} · Zone ${escH(l.zone||'—')}</div></div><i class="ti ti-chevron-right" style="font-size:18px;color:var(--t3)"></i></button>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+function pickHomeLot(lotId){S.lotId=lotId;localStorage.setItem('cpm_home_lot',lotId);S.v='pay';render();}
 function renderPay(){
   const l=lot(),p=l.pricing;
   const rates=[];
@@ -2604,7 +2617,7 @@ function attachEv(){
     const confirmed=confirm(`Are you sure you want to switch to ${newLot.name}? Make sure you are actually parked at this lot before continuing.`);
     if(!confirmed){e.target.value=S.lotId;return;}
   }
-  S.lotId=newLotId;S.val=null;render();
+  S.lotId=newLotId;S.val=null;localStorage.setItem('cpm_home_lot',newLotId);render();
 });
   const vs=document.getElementById('veh-sel');if(vs)vs.addEventListener('change',e=>S.vehicle=e.target.value);
   const pi=document.getElementById('phone-inp');if(pi)pi.addEventListener('input',e=>S.phone=e.target.value);
@@ -2727,6 +2740,12 @@ if(!S.lots[S.lotId]){
   if(lotParam && S.lots[lotParam]){
     S.lotId = lotParam;
     S.v = 'pay';
+  } else if(S.v==='pay'&&!S.payData&&isA2HSStandalone()){
+    // Opened from a home-screen install with no lot in the URL — no QR code or texted
+    // link to tell us where they're parked, so ask instead of silently guessing.
+    const rememberedLot = localStorage.getItem('cpm_home_lot');
+    if(rememberedLot && S.lots[rememberedLot]) S.lotId = rememberedLot;
+    else S.v = 'picklot';
   }
   if(codeParam){
     const v = Object.values(S.vals).find(x=>x.code===codeParam.toUpperCase()&&x.active);
