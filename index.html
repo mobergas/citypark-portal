@@ -504,15 +504,20 @@ function updateA2HSBanner(){
   if(!el)return;
   const isAdmin=isA2HSAdminPage();
   const relevantView=isAdmin?(S.v==='login'||S.v==='admin'):S.v==='pay';
-  const show=relevantView&&isA2HSMobile()&&!isA2HSStandalone()&&!localStorage.getItem(a2hsDismissKey())&&(_a2hsDeferred||isA2HSiOS());
+  const show=relevantView&&isA2HSMobile()&&!isA2HSStandalone()&&!localStorage.getItem(a2hsDismissKey());
   if(!show){el.style.display='none';el.innerHTML='';return;}
   const icon=isAdmin?'favicon_io/admin-icon-192.png':'favicon_io/android-chrome-192x192.png';
   const label=isAdmin?'Add CP Admin to your home screen':'Add City Park to your home screen';
   const sub=isAdmin?'Get to the dashboard faster next time — one tap, no need to open a browser.':'Pay for parking faster next time — one tap, no need to scan the QR code again.';
   el.style.display='flex';
+  // _a2hsDeferred (a real beforeinstallprompt) only exists once Chrome's own engagement
+  // heuristics are satisfied, which rarely happens on a first visit — fall back to manual
+  // instructions so the banner still tells people how to install, on any mobile browser.
   el.innerHTML=_a2hsDeferred?
     `<img class="a2hs-ic" src="${icon}" alt=""><div class="a2hs-tx"><div class="a2hs-tt">${label}</div><div class="a2hs-sb">${sub}</div></div><button class="a2hs-btn" onclick="triggerA2HSInstall()">Install</button><button class="a2hs-x" onclick="dismissA2HS()" aria-label="Dismiss">&times;</button>`:
-    `<img class="a2hs-ic" src="${icon}" alt=""><div class="a2hs-tx"><div class="a2hs-tt">${label}</div><div class="a2hs-sb">Tap <i class="ti ti-share-2" style="font-size:12px"></i> Share, then "Add to Home Screen"</div></div><button class="a2hs-x" onclick="dismissA2HS()" aria-label="Dismiss">&times;</button>`;
+    isA2HSiOS()?
+    `<img class="a2hs-ic" src="${icon}" alt=""><div class="a2hs-tx"><div class="a2hs-tt">${label}</div><div class="a2hs-sb">Tap <i class="ti ti-share-2" style="font-size:12px"></i> Share, then "Add to Home Screen"</div></div><button class="a2hs-x" onclick="dismissA2HS()" aria-label="Dismiss">&times;</button>`:
+    `<img class="a2hs-ic" src="${icon}" alt=""><div class="a2hs-tx"><div class="a2hs-tt">${label}</div><div class="a2hs-sb">Tap <i class="ti ti-dots-vertical" style="font-size:12px"></i> the menu, then "Add to Home Screen" or "Install app"</div></div><button class="a2hs-x" onclick="dismissA2HS()" aria-label="Dismiss">&times;</button>`;
 }
 
 const DEFAULT_INVITE_TMPL=`Hi {FIRST_NAME},
