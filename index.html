@@ -722,18 +722,31 @@ function render(){
   updateA2HSBanner();
 }
 
+function pickLotList(){
+  const q=(S.pickLotSearch||'').toUpperCase().trim();
+  let lots=Object.values(S.lots).filter(l=>l.open!==false);
+  if(q)lots=lots.filter(l=>l.name.toUpperCase().includes(q)||String(l.zone||'').toUpperCase().includes(q));
+  lots=lots.sort((a,b)=>a.name.localeCompare(b.name));
+  if(lots.length===0)return`<p style="text-align:center;color:var(--t3);padding:20px 0">${q?'No lots match your search.':'No lots are currently available.'}</p>`;
+  return lots.map(l=>`<button onclick="pickHomeLot('${l.id}')" style="width:100%;text-align:left;background:var(--g1);border:1.5px solid var(--g2);border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px"><div><div style="font-family:var(--fc);font-weight:800;font-size:16px;color:var(--t1)">${escH(l.name)}</div><div style="font-size:12px;color:var(--t3);margin-top:2px">${escH(l.address||'')} · Zone ${escH(l.zone||'—')}</div></div><i class="ti ti-chevron-right" style="font-size:18px;color:var(--t3)"></i></button>`).join('');
+}
+function filterPickLotList(){
+  S.pickLotSearch=document.getElementById('picklot-search-inp')?.value||'';
+  const list=document.getElementById('picklot-list');
+  if(list)list.innerHTML=pickLotList();
+}
 function renderPickLot(){
-  const lots=Object.values(S.lots).filter(l=>l.open!==false).sort((a,b)=>a.name.localeCompare(b.name));
   return`<div class="cw">
     <div class="ccard">
       <div class="cchd"><h1 style="font-size:26px">Select Your Lot</h1><p style="font-size:16px;color:#fff;margin-top:6px">Choose the lot you're parked at to continue.</p></div>
       <div class="ccbd" style="padding-top:16px">
-        ${lots.length===0?`<p style="text-align:center;color:var(--t3);padding:20px 0">No lots are currently available.</p>`:lots.map(l=>`<button onclick="pickHomeLot('${l.id}')" style="width:100%;text-align:left;background:var(--g1);border:1.5px solid var(--g2);border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px"><div><div style="font-family:var(--fc);font-weight:800;font-size:16px;color:var(--t1)">${escH(l.name)}</div><div style="font-size:12px;color:var(--t3);margin-top:2px">${escH(l.address||'')} · Zone ${escH(l.zone||'—')}</div></div><i class="ti ti-chevron-right" style="font-size:18px;color:var(--t3)"></i></button>`).join('')}
+        <div class="fg"><div class="sb2" style="margin-bottom:14px"><i class="ti ti-search"></i><input id="picklot-search-inp" placeholder="Search by name or zone..." value="${escH(S.pickLotSearch||'')}" oninput="filterPickLotList()" autocomplete="off"></div></div>
+        <div id="picklot-list">${pickLotList()}</div>
       </div>
     </div>
   </div>`;
 }
-function pickHomeLot(lotId){S.lotId=lotId;localStorage.setItem('cpm_home_lot',lotId);S.v='pay';render();}
+function pickHomeLot(lotId){S.lotId=lotId;localStorage.setItem('cpm_home_lot',lotId);S.pickLotSearch='';S.v='pay';render();}
 function renderPay(){
   const l=lot(),p=l.pricing;
   const rates=[];
