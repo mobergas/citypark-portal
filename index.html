@@ -9,6 +9,11 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon_io/favicon-16x16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
 <link rel="manifest" href="favicon_io/site.webmanifest">
+<meta name="theme-color" content="#0d0d0d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="City Park">
 <title>City Park Management</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
@@ -23,6 +28,14 @@
 :root{--lime:#b5d96e;--lime-dark:#8fb84a;--lime-bg:#f0f8e0;--blk:#0d0d0d;--wht:#fff;--g1:#f5f5f5;--g2:#ebebeb;--g3:#c8c8c8;--t1:#0d0d0d;--t2:#444;--t3:#888;--red:#d32f2f;--grn:#2e7d32;--gold:#f59e0b;--gold-bg:#fffbeb;--gold-bd:#fde68a;--blue:#1d4ed8;--f:'Barlow',sans-serif;--fc:'Barlow Condensed',sans-serif}
 body{background:var(--g1);color:var(--t1);font-family:var(--f);min-height:100vh;font-size:15px}
 .tb-out{background:var(--blk)}.tb{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;align-items:stretch;justify-content:space-between;height:64px}
+.a2hs{position:fixed;left:0;right:0;bottom:0;z-index:500;background:var(--blk);border-top:3px solid var(--lime);padding:12px 16px calc(12px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:12px;box-shadow:0 -4px 16px rgba(0,0,0,.25);animation:a2hsUp .25s ease}
+@keyframes a2hsUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.a2hs .a2hs-ic{width:40px;height:40px;border-radius:9px;flex-shrink:0}
+.a2hs .a2hs-tx{flex:1;min-width:0}
+.a2hs .a2hs-tt{font-family:var(--fc);font-weight:800;font-size:14px;color:#fff;text-transform:uppercase;letter-spacing:.02em}
+.a2hs .a2hs-sb{font-size:12px;color:#aaa;margin-top:2px;line-height:1.4}
+.a2hs .a2hs-btn{background:var(--lime);color:var(--blk);border:none;border-radius:8px;padding:9px 16px;font-family:var(--fc);font-size:13px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.a2hs .a2hs-x{background:none;border:none;color:#888;font-size:20px;line-height:1;padding:4px 2px;cursor:pointer;flex-shrink:0}
 .logo-a{display:flex;align-items:center}.logo-box{background:transparent;border-radius:6px;padding:5px 12px;display:flex;flex-direction:column;align-items:flex-start;gap:1px;cursor:pointer}
 .lcp{font-family:var(--fc);font-weight:900;font-size:22px;color:#0d0d0d;letter-spacing:-.5px}
 .lmg{font-family:var(--fc);font-weight:900;font-size:11px;color:#b5d96e;letter-spacing:.12em;text-transform:uppercase}
@@ -451,6 +464,7 @@ tfoot td{padding:10px;font-size:13px;background:var(--lime-bg);font-weight:600}
   <div class="ls"></div>
 </div>
 <div id="mc" class="pg"></div>
+<div id="a2hs-banner" class="a2hs" style="display:none"></div>
 
 <script>
 const NOW=new Date();NOW.setHours(0,0,0,0);
@@ -459,6 +473,32 @@ function fromDS(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d
 function addMonths(d,n){const r=new Date(d);r.setMonth(r.getMonth()+n);return r}
 function fmtDate(d){if(!d)return'—';try{return new Date(d).toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'})}catch(e){return'—'}}
 function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+let _a2hsDeferred=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();_a2hsDeferred=e;updateA2HSBanner();});
+window.addEventListener('appinstalled',()=>{_a2hsDeferred=null;localStorage.setItem('cpm_a2hs_dismissed','1');updateA2HSBanner();});
+function isA2HSStandalone(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;}
+function isA2HSiOS(){return /iPhone|iPad|iPod/.test(navigator.userAgent);}
+function isA2HSMobile(){return /Android|iPhone|iPad|iPod/.test(navigator.userAgent);}
+function dismissA2HS(){localStorage.setItem('cpm_a2hs_dismissed','1');updateA2HSBanner();}
+async function triggerA2HSInstall(){
+  if(!_a2hsDeferred)return;
+  _a2hsDeferred.prompt();
+  const{outcome}=await _a2hsDeferred.userChoice;
+  if(outcome==='accepted')localStorage.setItem('cpm_a2hs_dismissed','1');
+  _a2hsDeferred=null;
+  updateA2HSBanner();
+}
+function updateA2HSBanner(){
+  const el=document.getElementById('a2hs-banner');
+  if(!el)return;
+  const show=S.v==='pay'&&isA2HSMobile()&&!isA2HSStandalone()&&!localStorage.getItem('cpm_a2hs_dismissed')&&(_a2hsDeferred||isA2HSiOS());
+  if(!show){el.style.display='none';el.innerHTML='';return;}
+  el.style.display='flex';
+  el.innerHTML=_a2hsDeferred?
+    `<img class="a2hs-ic" src="favicon_io/android-chrome-192x192.png" alt=""><div class="a2hs-tx"><div class="a2hs-tt">Add City Park to your home screen</div><div class="a2hs-sb">Pay for parking faster next time — no browser, no typing the address.</div></div><button class="a2hs-btn" onclick="triggerA2HSInstall()">Install</button><button class="a2hs-x" onclick="dismissA2HS()" aria-label="Dismiss">&times;</button>`:
+    `<img class="a2hs-ic" src="favicon_io/android-chrome-192x192.png" alt=""><div class="a2hs-tx"><div class="a2hs-tt">Add City Park to your home screen</div><div class="a2hs-sb">Tap <i class="ti ti-share-2" style="font-size:12px"></i> Share, then "Add to Home Screen"</div></div><button class="a2hs-x" onclick="dismissA2HS()" aria-label="Dismiss">&times;</button>`;
+}
 
 const DEFAULT_INVITE_TMPL=`Hi {FIRST_NAME},
 
@@ -678,6 +718,7 @@ function render(){
   if(S.v==='pay'&&S.cstep===2)startTimer();
   if(S.v==='admin')startAdminTimer();
   if(S.v==='pay'&&S.cstep===1)updatePayBtn();
+  updateA2HSBanner();
 }
 
 function renderPay(){
