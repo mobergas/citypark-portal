@@ -271,6 +271,18 @@ async function capturePayment(paymentIntentId, amount, originalAmount){
   return res.json();
 }
 
+async function manageEmployee(action, employeeId, extra){
+  const res = await fetch(`${SUPA_URL}/functions/v1/manage-employee`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + (getAuthToken() || SUPA_KEY),
+    },
+    body: JSON.stringify({ action, employeeId, ...(extra||{}) })
+  });
+  return res.json();
+}
+
 async function createStaffAccount(email, password, name, role){
   const res = await fetch(`${SUPA_URL}/functions/v1/create-employee`, {
     method: 'POST',
