@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
 
       // If they're past due, retry the charge now instead of waiting for next month
       if (pass.status === 'past_due') {
-        const amount = pass.custom_price || pass.monthly_amount || 0;
+        const amount = (pass.custom_price || pass.monthly_amount || 0) + (pass.service_fee || 0);
         const piBody = new URLSearchParams({
           amount: Math.round(amount * 100).toString(),
           currency: 'usd',

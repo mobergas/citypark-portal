@@ -16,13 +16,18 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { passId, customerId, paymentMethodId, amount, token } = await req.json();
+    const { passId, customerId, paymentMethodId, token } = await req.json();
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
 
     // Verify token
     const { data: passes } = await supabase.from('passes').select('*').eq('id', passId).eq('card_update_token', token);
     if (!passes || !passes.length) throw new Error('Invalid token');
     const pass = passes[0];
+
+    // Recompute the amount from the pass record itself — never trust a client-supplied
+    // dollar amount for something that generates a real Stripe charge.
+    const amount = (pass.custom_price || pass.monthly_amount || 0) + (pass.service_fee || 0);
+    if (amount <= 0) throw new Error('Nothing due on this pass');
 
     // Attach new payment method to customer
     const attachBody = new URLSearchParams({ customer: customerId });

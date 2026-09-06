@@ -1713,7 +1713,7 @@ async function confirmSendInvoice(valId){
   const res=await fetch(`${SUPA_URL}/functions/v1/send-val-invoice`,{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+(getAuthToken()||SUPA_KEY)},
-    body:JSON.stringify({valId,valName:val.name,billingEmail:val.billingEmail,billingContact:val.billingContact||val.name,amount,sessions:sessions.map(s=>({id:s.id,date:new Date(s.start).toLocaleDateString(),plate:s.plate,type:s.type,discount:+(s.pkch-s.paid+s.sfee).toFixed(2)})),periodStart:start.toLocaleDateString(),periodEnd:end.toLocaleDateString()})
+    body:JSON.stringify({valId,periodStartMs:start.getTime(),periodEndMs:end.getTime(),periodStartLabel:start.toLocaleDateString(),periodEndLabel:end.toLocaleDateString()})
   });
   const data=await res.json();
   document.querySelector('.inv-picker-modal')?.remove();
@@ -2094,12 +2094,7 @@ async function resendInvoice(invId){
   const res=await fetch(`${SUPA_URL}/functions/v1/send-val-invoice`,{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+(getAuthToken()||SUPA_KEY)},
-    body:JSON.stringify({
-      valId:val.id,valName:val.name,billingEmail:val.billingEmail,
-      billingContact:val.billingContact||val.name,
-      amount:inv.amount_due,sessions:[],
-      periodStart:inv.period_start||'',periodEnd:inv.period_end||''
-    })
+    body:JSON.stringify({action:'resend',invoiceId:inv.id})
   });
   const data=await res.json();
   if(data.error){alert('Error: '+data.error);return;}

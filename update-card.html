@@ -90,7 +90,7 @@ function showForm(){
       <div style="background:#f5f5f5;border-radius:10px;padding:14px;margin-bottom:20px">
         <div class="info-row"><span style="color:#888">Pass holder</span><span style="font-weight:600">${p.holder_name||p.name}</span></div>
         <div class="info-row"><span style="color:#888">Lot</span><span style="font-weight:600">${p.lot_name||'—'}</span></div>
-        <div class="info-row"><span style="color:#888">Monthly rate</span><span style="font-weight:600">$${(p.custom_price||p.monthly_amount||0).toFixed(2)}/mo</span></div>
+        <div class="info-row"><span style="color:#888">Monthly rate</span><span style="font-weight:600">$${((p.custom_price||p.monthly_amount||0)+(p.service_fee||0)).toFixed(2)}/mo</span></div>
       </div>
       <div class="fg">
         <label class="fl">New card details</label>
@@ -138,7 +138,6 @@ async function submitCardUpdate(){
       passId:passData.id,
       customerId:passData.stripe_customer_id,
       paymentMethodId:paymentMethod.id,
-      amount:passData.custom_price||passData.monthly_amount,
       token:new URLSearchParams(window.location.search).get('token')
     })
   });

@@ -8,20 +8,20 @@ const supabase = createClient(
 async function sendEmail(to: string, subject: string, html: string, attachments?: any[]) {
   await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}` },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
     body: JSON.stringify({ to, subject, html, attachments })
   });
 }
 
 async function createStripePaymentLink(amount: number, description: string, invoiceId: string) {
   const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
-  
+
   const priceBody = new URLSearchParams({
     'unit_amount': Math.round(amount * 100).toString(),
     'currency': 'usd',
     'product_data[name]': description,
   });
-  
+
   const priceRes = await fetch('https://api.stripe.com/v1/prices', {
     method: 'POST',
     headers: {
@@ -50,43 +50,13 @@ async function createStripePaymentLink(amount: number, description: string, invo
   });
   const link = await linkRes.json();
   if (!linkRes.ok) throw new Error(link.error?.message || 'Failed to create payment link');
-  
+
   return { url: link.url, id: link.id };
 }
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-      }
-    });
-  }
-
-  try {
-    const { valId, valName, billingEmail, billingContact, amount, sessions, periodStart, periodEnd } = await req.json();
-
-    const invoiceId = 'INV-' + Date.now();
-    const description = `Parking Validation Invoice - ${valName} - ${periodStart} to ${periodEnd}`;
-    const { url: paymentLink, id: paymentLinkId } = await createStripePaymentLink(amount, description, invoiceId);
-
-    await supabase.from('invoices').insert({
-      id: invoiceId,
-      validation_id: valId,
-      period_start: periodStart,
-      period_end: periodEnd,
-      sessions_count: sessions.length,
-      total_discount: sessions.reduce((a: number, s: any) => a + s.discount, 0),
-      amount_due: amount,
-      status: 'unpaid',
-      stripe_payment_link: paymentLink,
-      stripe_payment_link_id: paymentLinkId,
-    });
-
-    const sessionsTable = `<p style="font-size:13px;color:#666;">A detailed breakdown of all ${sessions.length} validated sessions is attached as a CSV file.</p>`;
-
-    const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
+function invoiceEmailHtml(opts: { invoiceId: string; billingContact: string; valName: string; periodStart: string; periodEnd: string; sessionCount: number; amount: number; paymentLink: string; sessionsNote: string; }) {
+  const { invoiceId, billingContact, valName, periodStart, periodEnd, sessionCount, amount, paymentLink, sessionsNote } = opts;
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:30px 0;">
         <tr><td align="center">
           <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;">
@@ -101,11 +71,11 @@ Deno.serve(async (req) => {
                 <tr><td style="color:#888;font-size:13px;">Bill To</td><td style="font-weight:700;">${billingContact}</td></tr>
                 <tr><td style="color:#888;font-size:13px;">Validation</td><td style="font-weight:700;">${valName}</td></tr>
                 <tr><td style="color:#888;font-size:13px;">Period</td><td style="font-weight:700;">${periodStart} – ${periodEnd}</td></tr>
-                <tr><td style="color:#888;font-size:13px;">Sessions</td><td style="font-weight:700;">${sessions.length}</td></tr>
+                <tr><td style="color:#888;font-size:13px;">Sessions</td><td style="font-weight:700;">${sessionCount}</td></tr>
                 <tr><td style="color:#888;font-size:13px;">Amount Due</td><td style="font-weight:700;font-size:18px;color:#2e7d32;">$${amount.toFixed(2)}</td></tr>
               </table>
               <h3 style="font-size:15px;margin-bottom:12px;">Session Details</h3>
-              ${sessionsTable}
+              <p style="font-size:13px;color:#666;">${sessionsNote}</p>
               <div style="text-align:center;margin:28px 0;">
                 <a href="${paymentLink}" style="background:#b5d96e;color:#0d0d0d;font-weight:900;font-size:16px;padding:16px 32px;border-radius:10px;text-decoration:none;display:inline-block;letter-spacing:.04em;text-transform:uppercase;">Pay Now — $${amount.toFixed(2)}</a>
               </div>
@@ -116,13 +86,118 @@ Deno.serve(async (req) => {
         </td></tr>
       </table>
     </body></html>`;
+}
 
-    // Generate CSV attachment
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      }
+    });
+  }
+
+  try {
+    const authHeader = req.headers.get('authorization') || '';
+    const token = authHeader.replace('Bearer ', '');
+    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: 'Not authenticated' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
+    const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', userData.user.id).single();
+    if (!callerProfile || !['admin', 'manager'].includes(callerProfile.role)) {
+      return new Response(JSON.stringify({ error: 'Only managers and admins can send validation invoices' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
+
+    const body = await req.json();
+
+    if (body.action === 'resend') {
+      // Re-send notice for an invoice that already exists — reuse its stored amount and
+      // payment link rather than creating a new Stripe price/link/invoice row each time.
+      const { invoiceId } = body;
+      if (!invoiceId) throw new Error('Invoice ID required');
+      const { data: inv, error: invErr } = await supabase.from('invoices').select('*').eq('id', invoiceId).single();
+      if (invErr || !inv) throw new Error('Invoice not found');
+      const { data: val, error: valErr } = await supabase.from('validations').select('*').eq('id', inv.validation_id).single();
+      if (valErr || !val || !val.billing_email) throw new Error('No billing email on file for this validation');
+
+      const html = invoiceEmailHtml({
+        invoiceId: inv.id,
+        billingContact: val.billing_contact || val.name,
+        valName: val.name,
+        periodStart: inv.period_start || '',
+        periodEnd: inv.period_end || '',
+        sessionCount: inv.sessions_count || 0,
+        amount: inv.amount_due,
+        paymentLink: inv.stripe_payment_link,
+        sessionsNote: 'A detailed breakdown was included with the original invoice email.',
+      });
+      await sendEmail(val.billing_email, `Parking Validation Invoice - ${val.name} - ${inv.period_start} to ${inv.period_end}`, html);
+
+      return new Response(JSON.stringify({ success: true, invoiceId: inv.id, paymentLink: inv.stripe_payment_link }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
+    // Create + send a new invoice for a billing period. Recompute everything from trusted
+    // server-side data — never trust a client-supplied amount, billing email, or session
+    // list for something that generates a real Stripe charge.
+    const { valId, periodStartMs, periodEndMs, periodStartLabel, periodEndLabel } = body;
+    if (!valId || !Number.isFinite(periodStartMs) || !Number.isFinite(periodEndMs)) throw new Error('Missing required fields');
+
+    const { data: val, error: valErr } = await supabase.from('validations').select('*').eq('id', valId).single();
+    if (valErr || !val) throw new Error('Validation not found');
+    if (!val.billing_email) throw new Error('This validation has no billing email on file');
+
+    const { data: sessions, error: sessErr } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('val_id', valId)
+      .gte('start_time', periodStartMs)
+      .lte('start_time', periodEndMs);
+    if (sessErr) throw sessErr;
+    const sess = sessions || [];
+
+    const totalDiscount = val.dont_bill ? 0 : sess.reduce((a: number, s: any) => a + (s.disc || 0), 0);
+    const amount = val.dont_bill ? 0 : (val.billing_method === 'actual' ? +totalDiscount.toFixed(2) : (val.monthly_rate || 0));
+    if (amount <= 0) throw new Error('Amount due is $0. Nothing to invoice.');
+
+    const valName = val.name;
+    const billingEmail = val.billing_email;
+    const billingContact = val.billing_contact || val.name;
+    const periodStart = periodStartLabel || new Date(periodStartMs).toLocaleDateString();
+    const periodEnd = periodEndLabel || new Date(periodEndMs).toLocaleDateString();
+
+    const invoiceId = 'INV-' + Date.now();
+    const description = `Parking Validation Invoice - ${valName} - ${periodStart} to ${periodEnd}`;
+    const { url: paymentLink, id: paymentLinkId } = await createStripePaymentLink(amount, description, invoiceId);
+
+    await supabase.from('invoices').insert({
+      id: invoiceId,
+      validation_id: valId,
+      period_start: periodStart,
+      period_end: periodEnd,
+      sessions_count: sess.length,
+      total_discount: totalDiscount,
+      amount_due: amount,
+      status: 'unpaid',
+      stripe_payment_link: paymentLink,
+      stripe_payment_link_id: paymentLinkId,
+    });
+
+    const html = invoiceEmailHtml({
+      invoiceId, billingContact, valName, periodStart, periodEnd,
+      sessionCount: sess.length, amount, paymentLink,
+      sessionsNote: `A detailed breakdown of all ${sess.length} validated sessions is attached as a CSV file.`,
+    });
+
+    // Generate CSV attachment from the server-fetched sessions, not client input
     const csvRows = [
       ['Date', 'Ticket ID', 'Plate', 'Type', 'Discount Given'],
-      ...sessions.map((s: any) => [s.date, s.id, s.plate, s.type, `$${s.discount.toFixed(2)}`]),
+      ...sess.map((s: any) => [new Date(s.start_time).toLocaleDateString(), s.id, s.plate, s.type, `$${(s.pkch - s.paid + s.sfee).toFixed(2)}`]),
       [],
-      ['', '', '', 'TOTAL DISCOUNT', `$${sessions.reduce((a: number, s: any) => a + s.discount, 0).toFixed(2)}`],
+      ['', '', '', 'TOTAL DISCOUNT', `$${totalDiscount.toFixed(2)}`],
       ['', '', '', 'AMOUNT DUE', `$${amount.toFixed(2)}`],
     ];
     const csv = csvRows.map(r => r.map((c: any) => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');

@@ -8,7 +8,7 @@ const supabase = createClient(
 async function sendEmail(to: string, subject: string, html: string) {
   await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}` },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
     body: JSON.stringify({ to, subject, html })
   });
 }
@@ -43,6 +43,33 @@ Deno.serve(async (req) => {
       const amount = p.custom_price || p.monthly_amount || 0;
       const html = wrapEmail(`<h2 style="font-size:20px;font-weight:900;margin:0 0 4px;color:#0d0d0d;">Monthly Pass Receipt</h2><p style="margin:0 0 20px;font-size:13px;color:#888;">Here is a copy of your monthly pass details.</p><table width="100%" cellpadding="10" cellspacing="0" style="background:#f5f5f5;border-radius:8px;margin-bottom:20px;"><tr><td style="color:#888;font-size:13px;border-bottom:1px solid #e0e0e0">Pass ID</td><td style="font-weight:700;border-bottom:1px solid #e0e0e0">${p.id}</td></tr><tr><td style="color:#888;font-size:13px;border-bottom:1px solid #e0e0e0">Name</td><td style="font-weight:700;border-bottom:1px solid #e0e0e0">${p.holder_name||p.name}</td></tr><tr><td style="color:#888;font-size:13px;border-bottom:1px solid #e0e0e0">Lot</td><td style="font-weight:700;border-bottom:1px solid #e0e0e0">${p.lot_name||'—'}</td></tr><tr><td style="color:#888;font-size:13px;border-bottom:1px solid #e0e0e0">Plate</td><td style="font-weight:700;border-bottom:1px solid #e0e0e0">${p.plate||'—'}</td></tr><tr><td style="color:#888;font-size:13px;">Monthly Rate</td><td style="font-weight:900;font-size:18px;color:#2e7d32;">${amount>0?'$'+amount.toFixed(2):'FREE'}</td></tr></table>`);
       await sendEmail(email, 'Your City Park Monthly Pass Receipt', html);
+    } else if (type === 'pass_activated') {
+      // Sent right after a customer completes pass signup (free or paid). Everything is
+      // read from the pass record itself — no client-supplied content — since this is
+      // reachable without a login (the customer just finished a public signup flow).
+      const { data: p } = await supabase.from('passes').select('*').eq('id', id).single();
+      if (!p) throw new Error('Pass not found');
+      const { data: lot } = await supabase.from('lots').select('address').eq('id', p.lot_id).single();
+      const amount = p.custom_price || p.monthly_amount || 0;
+      const isFree = amount <= 0;
+      const rows = [
+        ['Lot', p.lot_name || '—'],
+        ['Address', lot?.address || '—'],
+        ['Plate', p.plate || '—'],
+      ];
+      if (isFree) {
+        rows.push(['Rate', 'FREE']);
+      } else {
+        rows.push(['Monthly Rate', `$${(amount + (p.service_fee || 0)).toFixed(2)}/mo`]);
+        if (p.next_bill_date) rows.push(['Next Bill Date', new Date(p.next_bill_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })]);
+      }
+      const rowsHtml = rows.map(([label, val]) => `<tr><td style="color:#888;font-size:13px;">${label}</td><td style="font-weight:700;">${val}</td></tr>`).join('');
+      const cta = isFree ? '' : `<div style="text-align:center;margin:0 0 20px"><a href="https://cityparkmanagement.app/manage-pass" style="background:#b5d96e;color:#0d0d0d;font-weight:900;font-size:14px;padding:13px 26px;border-radius:10px;text-decoration:none;display:inline-block;text-transform:uppercase;">Manage My Pass</a></div>`;
+      const note = isFree
+        ? `<p style="font-size:13px;color:#888;">Questions? Contact us at <a href="mailto:info@cityparkmanagement.com">info@cityparkmanagement.com</a></p>`
+        : `<p style="font-size:13px;color:#888;">Your card will be charged automatically on the 1st of each month. Update your email, plate, or card, or cancel anytime at the link above, or contact us at <a href="mailto:info@cityparkmanagement.com">info@cityparkmanagement.com</a></p>`;
+      const html = wrapEmail(`<h2 style="margin-bottom:4px;">Welcome, ${p.holder_name || p.name}!</h2><p style="color:#888;font-size:13px;margin-bottom:24px;">Your ${isFree ? 'free' : 'monthly'} parking pass is now active.</p><table width="100%" cellpadding="8" cellspacing="0" style="background:#f5f5f5;border-radius:8px;margin-bottom:24px;">${rowsHtml}</table>${cta}${note}`);
+      await sendEmail(email, isFree ? 'Your City Park Free Parking Pass is Active' : 'Welcome to City Park Monthly Parking — Receipt', html);
     } else if (type === 'violation') {
       const { data: v } = await supabase.from('violations').select('*').eq('id', id).single();
       if (!v) throw new Error('Violation not found');

@@ -8,7 +8,7 @@ const supabase = createClient(
 async function sendEmail(to: string, subject: string, html: string, attachments?: any[]) {
   await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}` },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
     body: JSON.stringify({ to, subject, html, attachments })
   });
 }
@@ -16,7 +16,7 @@ async function sendEmail(to: string, subject: string, html: string, attachments?
 async function sendSMS(to: string, message: string) {
   const res = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-sms`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}` },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
     body: JSON.stringify({ to: '+1' + to.replace(/\D/g, ''), message })
   });
   const data = await res.json();
