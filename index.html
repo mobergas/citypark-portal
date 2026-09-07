@@ -788,7 +788,7 @@ function renderPay(){
   const{base,fee,disc,discLabel,total}=getTotal();
   const isFree=parseFloat(total)===0;
   const cols=rates.length===1?'1fr':rates.length===2?'1fr 1fr':'1fr 1fr 1fr';
-  const lotOpts=Object.values(S.lots).map(lo=>`<option value="${lo.id}"${lo.id===S.lotId?' selected':''}>${lo.name} — Zone ${lo.zone}</option>`).join('');
+  const lotOpts=Object.values(S.lots).filter(lo=>lo.open!==false||lo.id===S.lotId).map(lo=>`<option value="${lo.id}"${lo.id===S.lotId?' selected':''}>${lo.name} — Zone ${lo.zone}${lo.open===false?' (Closed)':''}</option>`).join('');
   return`<div class="cw">
     ${S.val?`<div class="valbanner"><div class="valicon">🎟️</div><div class="valinfo"><h4>Validation Applied</h4><p>${S.val.name}</p><span class="valbadge">${S.val.type==='free'?'FREE PARKING':S.val.type==='percent'?S.val.discountPct+'% OFF':'$'+S.val.discountAmt.toFixed(2)+' OFF'}</span></div><button onclick="S.val=null;render()" aria-label="Remove validation code" style="background:none;border:none;color:#aaa;cursor:pointer;font-size:20px;margin-left:auto;padding:4px">×</button></div>`:''}
     <div class="ccard">
@@ -2732,6 +2732,7 @@ function attachEv(){
   const ls=document.getElementById('lot-sel');if(ls)ls.addEventListener('change',e=>{
   const newLotId=e.target.value;
   const newLot=S.lots[newLotId];
+  if(newLot&&newLot.open===false){alert(`${newLot.name} is no longer accepting parkers.`);e.target.value=S.lotId;return;}
   if(newLotId!==S.lotId&&newLot){
     const confirmed=confirm(`Are you sure you want to switch to ${newLot.name}? Make sure you are actually parked at this lot before continuing.`);
     if(!confirmed){e.target.value=S.lotId;return;}
