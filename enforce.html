@@ -293,6 +293,7 @@ async function db(table,method,body,query=''){
   const token=localStorage.getItem('enforce_token')||SUPA_KEY;
   const res=await fetch(`${SUPA_URL}/rest/v1/${table}${query}`,{
     method,
+    cache:'no-store', // never let this installed app's own storage serve stale lot/session data
     headers:{'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+token,'Prefer':'return=representation'},
     body:body?JSON.stringify(body):undefined
   });
@@ -1039,6 +1040,9 @@ function getRestrictionText(r){
 
 init();
 updateA2HSBanner();
+// Force a real reload if this installed app resumes a frozen, already-loaded instance
+// instead of navigating fresh — otherwise stale in-memory lot/session data can stick around.
+window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
 </script>
 </body>
 </html>

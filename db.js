@@ -12,6 +12,8 @@ const _supabaseRT = window.supabase ? window.supabase.createClient(SUPA_URL, SUP
 async function db(table,method='GET',body=null,filters=''){
   const res=await fetch(`${SUPA_URL}/rest/v1/${table}${filters}`,{
     method,
+    cache:'no-store', // never let a browser (or an installed PWA's isolated storage) serve
+                       // stale lot/session/pass data instead of hitting the network fresh
     headers:{
       'Content-Type':'application/json',
       'apikey':SUPA_KEY,

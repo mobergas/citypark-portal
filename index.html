@@ -2842,6 +2842,13 @@ if(!S.lots[S.lotId]){
 }
 init();
 
+// An installed home-screen app can resume a frozen, already-loaded instance of this page
+// instead of doing a fresh navigation — meaning a new deep link's query string (a texted
+// lot link, a QR code) never gets processed and stale in-memory lot/session data sticks
+// around. event.persisted is true specifically for that bfcache-restore case; force a real
+// reload so the resumed app always re-reads the current URL against fresh server data.
+window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
+
 </script>
 </body>
 </html>
