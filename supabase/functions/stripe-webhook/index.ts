@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
             // Generate card update token
             const updateToken = 'cu_' + crypto.randomUUID().replace(/-/g,'').slice(0,16);
             await supabase.from('passes').update({ card_update_token: updateToken }).eq('id', pass.id);
-            const updateLink = `https://cityparkmanagement.app/update-card?token=${updateToken}`;
+            const updateLink = `https://www.cityparkmanagement.app/update-card?token=${updateToken}`;
             
             await sendEmail(
               pass.email,

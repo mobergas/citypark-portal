@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
       const targetEmail = data.user?.email;
       if (!targetEmail) throw new Error('This account has no email on file');
       const { error: resetErr } = await supabase.auth.resetPasswordForEmail(targetEmail, {
-        redirectTo: 'https://cityparkmanagement.app/admin'
+        redirectTo: 'https://www.cityparkmanagement.app/admin'
       });
       if (resetErr) throw resetErr;
       return new Response(JSON.stringify({ success: true, email: targetEmail }), {

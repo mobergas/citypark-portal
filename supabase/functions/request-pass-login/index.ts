@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
           .update({ login_token: token, login_token_expires: expires })
           .in('id', ids);
 
-        const link = `https://cityparkmanagement.app/manage-pass?token=${token}`;
+        const link = `https://www.cityparkmanagement.app/manage-pass?token=${token}`;
         await sendEmail(
           cleanEmail,
           'Manage Your City Park Monthly Pass',
