@@ -16,8 +16,46 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { passId, customerId, paymentMethodId, token } = await req.json();
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
+    const body = await req.json();
+
+    if (body.action === 'finalize') {
+      const { passId, token, paymentIntentId } = body;
+
+      // Re-checking id+token together means a second call with the same (now-cleared)
+      // token can't credit the pass twice.
+      const { data: passes } = await supabase.from('passes').select('*').eq('id', passId).eq('card_update_token', token);
+      if (!passes || !passes.length) throw new Error('Invalid token');
+      const pass = passes[0];
+
+      const piRes = await fetch(`https://api.stripe.com/v1/payment_intents/${paymentIntentId}`, {
+        headers: { 'Authorization': 'Basic ' + btoa(stripeKey + ':') },
+      });
+      const pi = await piRes.json();
+      if (!piRes.ok) throw new Error(pi.error?.message || 'Could not verify payment');
+      if (pi.status !== 'succeeded') throw new Error('Payment has not completed');
+      if (pi.customer !== pass.stripe_customer_id) throw new Error('Payment does not match this pass');
+
+      const amount = (pass.custom_price || pass.monthly_amount || 0) + (pass.service_fee || 0);
+      const next = new Date();
+      next.setMonth(next.getMonth() + 1);
+      next.setDate(1);
+      next.setHours(0, 0, 0, 0);
+
+      await supabase.from('passes').update({
+        status: 'active',
+        stripe_payment_method_id: pi.payment_method,
+        card_update_token: null,
+        next_bill_date: next.toISOString(),
+        total_billed: (pass.total_billed || 0) + amount
+      }).eq('id', passId);
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
+    const { passId, customerId, paymentMethodId, token } = body;
 
     // Verify token
     const { data: passes } = await supabase.from('passes').select('*').eq('id', passId).eq('card_update_token', token);
@@ -45,7 +83,11 @@ Deno.serve(async (req) => {
       body: updateBody.toString(),
     });
 
-    // Retry the charge
+    // Create and confirm the retry charge. The customer is actively present on this page,
+    // so this is NOT off_session — that flag made Stripe hard-fail with authentication_required
+    // instead of returning requires_action, meaning a card needing 3D Secure could never
+    // recover here. Without it, Stripe returns requires_action + a client_secret when a
+    // challenge is needed, and the client completes it with stripe.confirmCardPayment().
     const piBody = new URLSearchParams({
       amount: Math.round(amount * 100).toString(),
       currency: 'usd',
@@ -53,7 +95,8 @@ Deno.serve(async (req) => {
       payment_method: paymentMethodId,
       description: `Monthly parking pass retry - ${pass.lot_name||'Lot'} - ${pass.holder_name||pass.name}`,
       confirm: 'true',
-      off_session: 'true',
+      // Same convention as manage-pass's retry charge — deterministic per past-due
+      // episode, so this and that other entry point can't double-charge the same one.
     });
 
     const piRes = await fetch('https://api.stripe.com/v1/payment_intents', {
@@ -61,8 +104,6 @@ Deno.serve(async (req) => {
       headers: {
         'Authorization': 'Basic ' + btoa(stripeKey + ':'),
         'Content-Type': 'application/x-www-form-urlencoded',
-        // Same convention as manage-pass's retry charge — deterministic per past-due
-        // episode, so this and that other entry point can't double-charge the same one.
         'Idempotency-Key': `retry-${pass.id}-${pass.past_due_since}`,
       },
       body: piBody.toString(),
@@ -71,21 +112,7 @@ Deno.serve(async (req) => {
 
     if (!piRes.ok || pi.error) throw new Error(pi.error?.message || 'Payment failed');
 
-    // Update pass - reactivate and clear token
-    const next = new Date();
-    next.setMonth(next.getMonth() + 1);
-    next.setDate(1);
-    next.setHours(0,0,0,0);
-
-    await supabase.from('passes').update({
-      status: 'active',
-      stripe_payment_method_id: paymentMethodId,
-      card_update_token: null,
-      next_bill_date: next.toISOString(),
-      total_billed: (pass.total_billed || 0) + amount
-    }).eq('id', passId);
-
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ clientSecret: pi.client_secret, paymentIntentId: pi.id, status: pi.status }), {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
 

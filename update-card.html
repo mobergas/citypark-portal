@@ -131,6 +131,7 @@ async function submitCardUpdate(){
     return;
   }
 
+  const token=new URLSearchParams(window.location.search).get('token');
   const res=await fetch(`${SUPA_URL}/functions/v1/update-card`,{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
@@ -138,7 +139,7 @@ async function submitCardUpdate(){
       passId:passData.id,
       customerId:passData.stripe_customer_id,
       paymentMethodId:paymentMethod.id,
-      token:new URLSearchParams(window.location.search).get('token')
+      token
     })
   });
   const data=await res.json();
@@ -146,6 +147,29 @@ async function submitCardUpdate(){
   if(data.error){
     const el=document.getElementById('card-errors');
     if(el)el.textContent=data.error;
+    if(btn){btn.textContent='Update & Retry Payment';btn.disabled=false;}
+    return;
+  }
+
+  // If the card needs 3D Secure, this shows the challenge and resolves once it's done;
+  // if it already succeeded server-side, this resolves immediately with no prompt.
+  const {error:confirmError}=await stripe.confirmCardPayment(data.clientSecret);
+  if(confirmError){
+    const el=document.getElementById('card-errors');
+    if(el)el.textContent=confirmError.message;
+    if(btn){btn.textContent='Update & Retry Payment';btn.disabled=false;}
+    return;
+  }
+
+  const finRes=await fetch(`${SUPA_URL}/functions/v1/update-card`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+    body:JSON.stringify({action:'finalize',passId:passData.id,token,paymentIntentId:data.paymentIntentId})
+  });
+  const finData=await finRes.json();
+  if(finData.error){
+    const el=document.getElementById('card-errors');
+    if(el)el.textContent=finData.error;
     if(btn){btn.textContent='Update & Retry Payment';btn.disabled=false;}
     return;
   }

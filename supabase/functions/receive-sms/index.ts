@@ -10,9 +10,32 @@ function twiml(message: string) {
   return `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escaped}</Message></Response>`;
 }
 
+// Twilio signs each webhook request with HMAC-SHA1 over the exact request URL plus
+// every POST param (sorted by key, concatenated as key+value with no separator),
+// keyed with the account's auth token. See: twilio.com/docs/usage/webhooks/webhooks-security
+async function validTwilioSignature(url: string, params: Record<string, string>, signature: string, authToken: string) {
+  if (!signature) return false;
+  const sortedKeys = Object.keys(params).sort();
+  let data = url;
+  for (const key of sortedKeys) data += key + params[key];
+  const cryptoKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(authToken), { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']);
+  const sigBuf = await crypto.subtle.sign('HMAC', cryptoKey, new TextEncoder().encode(data));
+  const computed = btoa(String.fromCharCode(...new Uint8Array(sigBuf)));
+  return computed === signature;
+}
+
 Deno.serve(async (req) => {
   try {
     const formData = await req.formData();
+    const params: Record<string, string> = {};
+    for (const [k, v] of formData.entries()) params[k] = String(v);
+
+    const signature = req.headers.get('x-twilio-signature') || '';
+    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN')!;
+    if (!(await validTwilioSignature(req.url, params, signature, authToken))) {
+      return new Response(twiml('Unauthorized'), { status: 403, headers: { 'Content-Type': 'text/xml' } });
+    }
+
     const body = (formData.get('Body') as string || '').trim();
     const zone = body.replace(/\D/g, ''); // keep only digits
 
