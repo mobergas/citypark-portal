@@ -673,10 +673,13 @@ function getTotal(){
   const fee=f.enabled?f.amount:0;
   let disc=0,discLabel='';
   if(S.val&&S.val.active){const v=S.val;
-    if(v.dontBill){disc=base+fee;discLabel='Free Parking ('+v.name+')';}
-    else if(v.type==='free'){disc=base+fee;discLabel='Free Parking ('+v.name+')';}
-    else if(v.type==='percent'){disc=+(base*(v.discountPct/100)).toFixed(2);discLabel=v.discountPct+'% off ('+v.name+')';}
-    else{disc=Math.min(v.discountAmt,base);discLabel='$'+v.discountAmt.toFixed(2)+' off ('+v.name+')';}
+    // A code's max hours caps how much of the charge the discount applies to — hours
+    // beyond that are billed normally, instead of the whole selection riding along for free.
+    const discBase=(S.rate==='hourly'&&v.maxHours>0)?p.hourly*Math.min(S.hours,v.maxHours):base;
+    if(v.dontBill){disc=discBase+fee;discLabel='Free Parking ('+v.name+')';}
+    else if(v.type==='free'){disc=discBase+fee;discLabel='Free Parking ('+v.name+')';}
+    else if(v.type==='percent'){disc=+(discBase*(v.discountPct/100)).toFixed(2);discLabel=v.discountPct+'% off ('+v.name+')';}
+    else{disc=Math.min(v.discountAmt,discBase);discLabel='$'+v.discountAmt.toFixed(2)+' off ('+v.name+')';}
   }
   return{base:base.toFixed(2),fee:fee.toFixed(2),disc:disc.toFixed(2),discLabel,total:Math.max(0,base+fee-disc).toFixed(2)};
 }
@@ -997,11 +1000,16 @@ async function applyPostVal(){
   const comp=S.compCodes.find(x=>x.code===code&&!x.used_at&&new Date(x.expires_at)>new Date());
   const matched=v||(comp?{id:comp.id,name:'Comp Code',code:comp.code,type:'free',discountPct:0,discountAmt:0,maxHours:0,active:true,isComp:true}:null);
   if(!matched){const el=document.getElementById('post-val-err');if(el)el.textContent='Invalid or inactive code.';return;}
-  let newAmount=d.paid;
-  if(matched.dontBill)newAmount=0;
-  else if(matched.type==='free')newAmount=0;
-  else if(matched.type==='percent')newAmount=Math.max(0,+(d.pkch*(1-matched.discountPct/100)+d.sfee).toFixed(2));
-  else if(matched.type==='flat')newAmount=Math.max(0,+(d.paid-matched.discountAmt).toFixed(2));
+  // Same shape as getTotal(): cap the discount to the code's max hours (hours beyond that
+  // bill normally) and always protect the service fee, regardless of discount type — this
+  // used to only hold true before payment; a flat-dollar code applied after payment could
+  // eat into the fee too, and no code type respected max hours here at all.
+  const discBase=(d.rate==='hourly'&&matched.maxHours>0)?+(d.pkch/d.duration*Math.min(d.duration,matched.maxHours)).toFixed(2):d.pkch;
+  let disc=0;
+  if(matched.dontBill||matched.type==='free')disc=discBase;
+  else if(matched.type==='percent')disc=+(discBase*(matched.discountPct/100)).toFixed(2);
+  else if(matched.type==='flat')disc=Math.min(matched.discountAmt,discBase);
+  const newAmount=Math.max(0,+(d.pkch-disc+d.sfee).toFixed(2));
   const btn=document.querySelector('#post-val-inp+button');
   if(btn){btn.textContent='Applying...';btn.disabled=true;}
   if(newAmount===0){
@@ -2103,9 +2111,10 @@ async function resendInvoice(invId){
   setTimeout(()=>document.getElementById('smsalert').classList.remove('show'),4000);
 }
 async function waiveViolation(id){
-  if(!confirm('Waive this violation? The fine will be forgiven.'))return;
   const v=S.violations.find(x=>x.id===id);
   if(!v)return;
+  if(v.status==='paid'){alert('This violation has already been paid — it can\'t be waived. If a refund is needed, issue it directly in Stripe, then update the record.');return;}
+  if(!confirm('Waive this violation? The fine will be forgiven.'))return;
   v.status='waived';
   await db('violations','PATCH',{status:'waived'},`?id=eq.${id}`);
   await logAudit('Waived violation',`${id} — plate ${v.plate}, fine $${v.fine_amount.toFixed(2)}`);
@@ -2118,12 +2127,14 @@ async function waiveViolation(id){
 function editViolation(id){
   const v=S.violations.find(x=>x.id===id);
   if(!v)return;
+  const paid=v.status==='paid';
   document.getElementById('ivt').textContent=`Edit Violation — ${v.plate}`;
   document.getElementById('ivb').innerHTML=`
     <div class="fg"><label class="fl">Plate</label><input class="fi" id="ev-plate" value="${escH(v.plate)}"></div>
     <div class="fg"><label class="fl">Violation Type</label><input class="fi" id="ev-type" value="${escH(v.violation_name||'')}"></div>
+    ${paid?`<div class="fg"><div style="font-size:12px;color:var(--t3);background:var(--g1);border-radius:8px;padding:10px 12px"><i class="ti ti-lock" style="font-size:11px;margin-right:4px"></i>This violation has been paid — the fee and fine are locked to match what was actually collected ($${(v.parking_fee||0).toFixed(2)} + $${(v.fine_amount-(v.parking_fee||0)).toFixed(2)}). To change the amount, issue a refund in Stripe first.</div></div>`:`
     <div class="fg"><label class="fl">Unpaid Parking Fee ($)</label><div class="piw" style="max-width:130px"><span>$</span><input type="number" id="ev-parkfee" min="0" step="0.01" value="${(v.parking_fee||0)}"></div><div style="font-size:11px;color:var(--t3);margin-top:4px">What the customer would have paid to park normally.</div></div>
-    <div class="fg"><label class="fl">Violation Fine ($)</label><div class="piw" style="max-width:130px"><span>$</span><input type="number" id="ev-fine" min="0" step="0.01" value="${(v.fine_amount-(v.parking_fee||0))}"></div><div style="font-size:11px;color:var(--t3);margin-top:4px">The penalty for not paying.</div></div>
+    <div class="fg"><label class="fl">Violation Fine ($)</label><div class="piw" style="max-width:130px"><span>$</span><input type="number" id="ev-fine" min="0" step="0.01" value="${(v.fine_amount-(v.parking_fee||0))}"></div><div style="font-size:11px;color:var(--t3);margin-top:4px">The penalty for not paying.</div></div>`}
     <div class="fg"><label class="fl">Notes</label><textarea class="fta" id="ev-notes" style="min-height:60px">${escH(v.notes||'')}</textarea></div>
   `;
   document.getElementById('inv-modal').classList.add('show');
@@ -2137,10 +2148,13 @@ async function saveViolationEdit(id){
   const oldFine=v.fine_amount;
   const plate=document.getElementById('ev-plate')?.value.trim().toUpperCase();
   const type=document.getElementById('ev-type')?.value.trim();
-  const parkingFee=parseFloat(document.getElementById('ev-parkfee')?.value)||0;
-  const fine=parseFloat(document.getElementById('ev-fine')?.value)||0;
-  const totalFine=+(parkingFee+fine).toFixed(2);
   const notes=document.getElementById('ev-notes')?.value.trim();
+  // Paid violations don't render the fee/fine inputs at all — keep whatever was actually
+  // collected rather than trusting anything that might be present in the DOM for them.
+  const feeFineEditable=v.status!=='paid';
+  const parkingFee=feeFineEditable?(parseFloat(document.getElementById('ev-parkfee')?.value)||0):(v.parking_fee||0);
+  const fine=feeFineEditable?(parseFloat(document.getElementById('ev-fine')?.value)||0):(v.fine_amount-(v.parking_fee||0));
+  const totalFine=+(parkingFee+fine).toFixed(2);
   Object.assign(v,{plate,violation_name:type,parking_fee:parkingFee,fine_amount:totalFine,notes});
   await db('violations','PATCH',{plate,violation_name:type,parking_fee:parkingFee,fine_amount:totalFine,notes},`?id=eq.${id}`);
   await logAudit('Edited violation',`${id} — plate ${plate}, fine $${oldFine.toFixed(2)} → $${totalFine.toFixed(2)} (parking fee $${parkingFee.toFixed(2)} + fine $${fine.toFixed(2)})`);
@@ -2220,7 +2234,7 @@ function rViolations(){
         <td style="font-family:var(--fc);font-weight:700;font-size:13px;color:var(--t2)">$${(v.parking_fee||0).toFixed(2)}</td>
         <td style="font-family:var(--fc);font-weight:900;font-size:15px;color:${v.status==='paid'?'var(--grn)':'var(--red)'}">$${(v.fine_amount-(v.parking_fee||0)).toFixed(2)}</td>
         <td><span class="sp ${v.status==='paid'?'active':v.status==='waived'?'expired':'pending'}">${v.status==='paid'?'Paid':v.status==='waived'?'Waived':'Unpaid'}</span></td>
-        <td>${(v.photo_urls&&v.photo_urls.length)?v.photo_urls.map((filename,i)=>`<button onclick="viewViolationPhoto('${filename}')" style="background:none;border:none;color:#2563eb;font-size:12px;margin-right:6px;cursor:pointer;text-decoration:underline;padding:0">Photo ${i+1}</button>`).join(''):v.photo_url?`<a href="${v.photo_url}" target="_blank" style="color:#2563eb;font-size:12px">View</a>`:'—'}</td>
+        <td>${(v.photo_urls&&v.photo_urls.length)?v.photo_urls.map((filename,i)=>`<button onclick="viewViolationPhoto('${v.id}','${filename}')" style="background:none;border:none;color:#2563eb;font-size:12px;margin-right:6px;cursor:pointer;text-decoration:underline;padding:0">Photo ${i+1}</button>`).join(''):v.photo_url?`<button onclick="viewViolationPhoto('${v.id}','${v.photo_url}')" style="background:none;border:none;color:#2563eb;font-size:12px;cursor:pointer;text-decoration:underline;padding:0">View</button>`:'—'}</td>
         <td><button class="ab" onclick="editViolation('${v.id}')"><i class="ti ti-pencil" style="font-size:11px"></i></button><button class="ab" onclick="promptSendReceipt('violation','${v.id}')" style="border-color:#2563eb;color:#2563eb" title="Send receipt"><i class="ti ti-mail" style="font-size:11px"></i></button>${v.status!=='waived'?`<button class="ab" onclick="waiveViolation('${v.id}')" style="border-color:var(--gold);color:var(--gold)"><i class="ti ti-x" style="font-size:11px"></i> Waive</button>`:'<span style="font-size:11px;color:var(--gold)">Waived</span>'}</td>
       </tr>`).join('')}
       </tbody></table></div>
@@ -2228,11 +2242,11 @@ function rViolations(){
   </div>`;
 }
 
-async function viewViolationPhoto(filename){
+async function viewViolationPhoto(violationId,filename){
   const res=await fetch(`${SUPA_URL}/functions/v1/get-photo-url`,{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+(getAuthToken()||SUPA_KEY)},
-    body:JSON.stringify({filename})
+    body:JSON.stringify({violationId,filename})
   });
   const data=await res.json();
   if(data.error){alert('Error loading photo: '+data.error);return;}

@@ -21,8 +21,21 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Not authenticated' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     }
 
-    const { filename } = await req.json();
-    if (!filename) throw new Error('Filename required');
+    const { violationId, filename } = await req.json();
+    if (!violationId || !filename) throw new Error('violationId and filename required');
+
+    // Confirm this filename actually belongs to the named violation, and that the caller
+    // is allowed to see that violation's lot, before minting a signed URL for it — a
+    // logged-in filename lookup alone let any staff member view any lot's photos.
+    const { data: violation, error: violErr } = await supabase.from('violations').select('lot_id, photo_url, photo_urls').eq('id', violationId).single();
+    if (violErr || !violation) throw new Error('Violation not found');
+    const belongsToViolation = violation.photo_url === filename || (violation.photo_urls || []).includes(filename);
+    if (!belongsToViolation) throw new Error('That photo does not belong to this violation');
+
+    const { data: profile } = await supabase.from('profiles').select('allowed_lot_ids').eq('id', userData.user.id).single();
+    if (profile?.allowed_lot_ids && !profile.allowed_lot_ids.includes(violation.lot_id)) {
+      return new Response(JSON.stringify({ error: 'Not authorized for this lot' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
 
     const { data, error } = await supabase.storage.from('violation-photos').createSignedUrl(filename, 300); // link valid for 5 minutes
     if (error) throw error;

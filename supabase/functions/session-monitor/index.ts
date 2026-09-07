@@ -251,11 +251,15 @@ Deno.serve(async () => {
 
   // Auto-generate validation invoices on the 1st of each month
   if (isFirstOfMonth) {
+    // Deliberately not pre-filtering on monthly_rate here — a validation billed on
+    // "actual discount given" has no monthly_rate at all (that field is flat-rate-only),
+    // so that filter was silently excluding every actual-billing validation before the
+    // real amount calculation below ever ran. The amount<=0 check further down is what
+    // actually decides whether there's anything to invoice.
     const { data: validations } = await supabase
       .from('validations')
       .select('*')
-      .not('billing_email', 'is', null)
-      .gt('monthly_rate', 0);
+      .not('billing_email', 'is', null);
 
     const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
     const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
@@ -264,6 +268,8 @@ Deno.serve(async () => {
 
     for (const val of validations || []) {
       try {
+        if (val.dont_bill) continue;
+
         // Check for duplicate invoice
         const { data: existing } = await supabase
           .from('invoices')

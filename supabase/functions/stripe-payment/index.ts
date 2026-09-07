@@ -17,9 +17,12 @@ function calcSessionTotal(lot: any, rate: string, hours: number, val: any) {
   const fee = f.enabled ? f.amount : 0;
   let disc = 0;
   if (val) {
-    if (val.type === 'free') disc = base + fee;
-    else if (val.type === 'percent') disc = +(base * (val.discount_pct / 100)).toFixed(2);
-    else disc = Math.min(val.discount_amt, base);
+    // A code's max hours caps how much of the charge the discount applies to — hours
+    // beyond that are billed normally, instead of the whole selection riding along for free.
+    const discBase = (rate === 'hourly' && val.max_hours > 0) ? p.hourly * Math.min(hours, val.max_hours) : base;
+    if (val.type === 'free') disc = discBase + fee;
+    else if (val.type === 'percent') disc = +(discBase * (val.discount_pct / 100)).toFixed(2);
+    else disc = Math.min(val.discount_amt, discBase);
   }
   const total = Math.max(0, base + fee - disc);
   return { base: +base.toFixed(2), fee: +fee.toFixed(2), disc: +disc.toFixed(2), total: +total.toFixed(2) };
