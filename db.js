@@ -18,7 +18,10 @@ async function db(table,method='GET',body=null,filters=''){
       'Content-Type':'application/json',
       'apikey':SUPA_KEY,
       'Authorization':'Bearer '+(getAuthToken()||SUPA_KEY),
-      'Prefer':method==='POST'?'return=representation':''
+      // return=representation on DELETE too, so a caller can tell an actual deletion
+      // (rows come back) apart from an RLS-blocked no-op (204/200 with nothing deleted) —
+      // PostgREST reports both the same way otherwise, which let deletes silently fail.
+      'Prefer':(method==='POST'||method==='DELETE')?'return=representation':''
     },
     body:body?JSON.stringify(body):null
   });

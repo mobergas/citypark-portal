@@ -43,8 +43,10 @@ Deno.serve(async (req) => {
     const body = (formData.get('Body') as string || '').trim();
     const zone = body.replace(/\D/g, ''); // keep only digits
 
+    // Match the client's own open/closed semantics (missing/null "open" counts as open) —
+    // a SQL neq('open', false) filter would incorrectly exclude that null case.
     const { data: lots } = await supabase.from('lots').select('*').eq('zone', zone);
-    const lot = lots && lots.length ? lots[0] : null;
+    const lot = (lots || []).find((l: any) => l.open !== false) || null;
 
     let reply: string;
     if (lot) {
