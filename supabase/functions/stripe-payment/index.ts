@@ -39,6 +39,15 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { mode, sessionId, description } = body;
     let amount, base = 0, fee = 0, disc = 0;
+    // New sessions can still get a validation code applied within a grace window after
+    // payment (see applyPostVal / stripe-capture), so authorize now and capture later
+    // instead of capturing immediately. Extensions and violations don't have a
+    // post-payment validation step (an extension's payment intent id isn't even tracked
+    // on the session afterward, so nothing would ever capture it) — those stay auto-capture.
+    const captureLater = !mode;
+    // Deterministic per attempt where set, so a retried/duplicated request (two tabs, a
+    // network-timeout retry) gets back the same PaymentIntent instead of charging twice.
+    let idempotencyKey: string | undefined;
 
     if (mode === 'extend') {
       const { data: sess } = await supabase.from('sessions').select('*').eq('id', body.existingSessionId).single();
@@ -55,6 +64,7 @@ Deno.serve(async (req) => {
       if (!violation) throw new Error('Violation not found');
       if (violation.status === 'paid') throw new Error('This violation has already been paid');
       amount = +violation.fine_amount.toFixed(2);
+      idempotencyKey = `violation-${body.violationId}`;
     } else {
       const { data: lot } = await supabase.from('lots').select('*').eq('id', body.lotId).single();
       if (!lot) throw new Error('Lot not found');
@@ -69,6 +79,7 @@ Deno.serve(async (req) => {
 
       const calc = calcSessionTotal(lot, rate, hours, val);
       amount = calc.total; base = calc.base; fee = calc.fee; disc = calc.disc;
+      if (sessionId) idempotencyKey = `session-${sessionId}`;
     }
 
     if (amount <= 0) throw new Error('Amount must be greater than zero for a card payment');
@@ -78,7 +89,8 @@ Deno.serve(async (req) => {
       currency: 'usd',
       description,
       metadata: { sessionId: sessionId || '' },
-    });
+      ...(captureLater ? { capture_method: 'manual' as const } : {}),
+    }, idempotencyKey ? { idempotencyKey } : undefined);
 
     return new Response(JSON.stringify({
       clientSecret: paymentIntent.client_secret,

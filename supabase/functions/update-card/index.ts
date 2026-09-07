@@ -58,7 +58,13 @@ Deno.serve(async (req) => {
 
     const piRes = await fetch('https://api.stripe.com/v1/payment_intents', {
       method: 'POST',
-      headers: { 'Authorization': 'Basic ' + btoa(stripeKey + ':'), 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: {
+        'Authorization': 'Basic ' + btoa(stripeKey + ':'),
+        'Content-Type': 'application/x-www-form-urlencoded',
+        // Same convention as manage-pass's retry charge — deterministic per past-due
+        // episode, so this and that other entry point can't double-charge the same one.
+        'Idempotency-Key': `retry-${pass.id}-${pass.past_due_since}`,
+      },
       body: piBody.toString(),
     });
     const pi = await piRes.json();

@@ -1775,8 +1775,8 @@ async function savePassEdit(){
   if(!name){alert('Name required.');return;}
   if(!email||!email.includes('@')){alert('Valid email required.');return;}
   const oldRate=p.monthlyAmount;
-  Object.assign(p,{name,email,plate:plate||null,monthlyAmount:rate});
-  await db('passes','PATCH',{name,email,plate:plate||null,monthly_amount:rate},`?id=eq.${p.id}`);
+  Object.assign(p,{name,email,plate:plate||null,monthlyAmount:rate,custom_price:rate});
+  await db('passes','PATCH',{name,email,plate:plate||null,monthly_amount:rate,custom_price:rate},`?id=eq.${p.id}`);
   logAudit('Edited monthly pass',`${name} — ${oldRate!==rate?`rate $${oldRate.toFixed(2)} → $${rate.toFixed(2)}`:'info updated'}`);
   closeM('pass-edit-modal');
   render();

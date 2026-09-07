@@ -53,11 +53,15 @@ async function chargeMonthlyPass(pass: any) {
     confirm: 'true',
     off_session: 'true',
   });
+  // Deterministic per billing cycle (pass id + the bill date being charged), so an
+  // overlapping cron run or a retry can't charge the same cycle twice.
+  const idempotencyKey = `monthly-${pass.id}-${pass.next_bill_date}`;
   const res = await fetch('https://api.stripe.com/v1/payment_intents', {
     method: 'POST',
     headers: {
       'Authorization': 'Basic ' + btoa(stripeKey + ':'),
       'Content-Type': 'application/x-www-form-urlencoded',
+      'Idempotency-Key': idempotencyKey,
     },
     body: body.toString(),
   });
@@ -191,6 +195,18 @@ Deno.serve(async () => {
     nextBill.setHours(0, 0, 0, 0);
     if (nextBill.getTime() <= today.getTime()) {
       try {
+        // Atomically claim this billing cycle before charging it — if the update affects
+        // zero rows, another (overlapping) run already claimed it, so skip. This also
+        // guards the idempotency key in chargeMonthlyPass, which is keyed on next_bill_date.
+        const next = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        const { data: claimed, error: claimErr } = await supabase
+          .from('passes')
+          .update({ next_bill_date: next.toISOString() })
+          .eq('id', pass.id)
+          .eq('next_bill_date', pass.next_bill_date)
+          .select();
+        if (claimErr || !claimed || claimed.length === 0) continue;
+
         const amount = (pass.custom_price || pass.monthly_amount) + (pass.service_fee || 0);
         const result = await chargeMonthlyPass(pass);
         if (result.error) {
@@ -198,9 +214,7 @@ Deno.serve(async () => {
           await supabase.from('passes').update({ status: 'past_due', past_due_since: new Date().toISOString() }).eq('id', pass.id);
           continue;
         }
-        const next = new Date(today.getFullYear(), today.getMonth() + 1, 1);
         await supabase.from('passes').update({
-          next_bill_date: next.toISOString(),
           total_billed: (pass.total_billed || 0) + amount,
           billed_at: new Date().toISOString()
         }).eq('id', pass.id);

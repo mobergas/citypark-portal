@@ -102,7 +102,13 @@ Deno.serve(async (req) => {
         });
         const piRes = await fetch('https://api.stripe.com/v1/payment_intents', {
           method: 'POST',
-          headers: { 'Authorization': 'Basic ' + btoa(stripeKey + ':'), 'Content-Type': 'application/x-www-form-urlencoded' },
+          headers: {
+            'Authorization': 'Basic ' + btoa(stripeKey + ':'),
+            'Content-Type': 'application/x-www-form-urlencoded',
+            // Deterministic per past-due episode, so a double-click or a duplicate retry
+            // from another entry point can't charge the same episode twice.
+            'Idempotency-Key': `retry-${pass.id}-${pass.past_due_since}`,
+          },
           body: piBody.toString(),
         });
         const pi = await piRes.json();
