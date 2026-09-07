@@ -661,8 +661,14 @@ const violParking=viols.reduce((a,v)=>a+(v.parking_fee||0),0);
 const monthlyPasses=(S.passes||[]).filter(p=>{if(p.status!=='active'||!inScope(p.lotId))return false;const nb=p.nextBillDate?new Date(p.nextBillDate):null;const ba=p.billedAt?new Date(p.billedAt):null;return(nb&&nb>=d&&nb<next)||(ba&&ba>=d&&ba<next);});
 const monthlyTot=monthlyPasses.reduce((a,p)=>a+(p.custom_price||p.monthlyAmount||0),0);
 const monthlyFeeTot=monthlyPasses.reduce((a,p)=>a+(p.serviceFee||0),0);
-const pkTot=+ss.reduce((a,s)=>a+(s.pkch||s.paid),0).toFixed(2)+violParking;
-const feTot=+(ss.reduce((a,s)=>a+(s.sfee||0),0)+monthlyFeeTot).toFixed(2);
+// Count what was actually collected (paid), not the pre-discount base charge — a
+// validation's discount isn't revenue yet. It only becomes revenue if/when the business's
+// invoice for it is paid, which the separate invTot bucket above already tracks (paid
+// invoices only). Split each session's paid amount into a fee portion and a parking
+// portion using paid = pkch + sfee - disc, so pk+fee always sums back to exactly paid.
+const sessFee=s=>Math.min(s.sfee||0,s.paid||0);
+const pkTot=+(ss.reduce((a,s)=>a+Math.max(0,(s.paid||0)-sessFee(s)),0)).toFixed(2)+violParking;
+const feTot=+(ss.reduce((a,s)=>a+sessFee(s),0)+monthlyFeeTot).toFixed(2);
 return{label:d.toLocaleDateString([],{month:'short',day:'numeric'}),pk:+pkTot.toFixed(2),fe:+feTot.toFixed(2),inv:+invTot.toFixed(2),viol:+violFines.toFixed(2),mo:+monthlyTot.toFixed(2),tot:+(pkTot+feTot+invTot+violFines+monthlyTot).toFixed(2),n:ss.length,ni:invs.length};});}
 function vtPill(v){if(!v.active)return`<span class="cpi" style="background:var(--g2);color:var(--t3)">Inactive</span>`;if(v.type==='free')return`<span class="cpi cpi-f">Free</span>`;if(v.type==='percent')return`<span class="cpi cpi-p">${v.discountPct}% Off</span>`;return`<span class="cpi cpi-fl">$${v.discountAmt.toFixed(2)} Off</span>`;}
 function vtLabel(v){if(v.type==='free')return`Free (${v.maxHours?v.maxHours+'hr max':'any'})`;if(v.type==='percent')return`${v.discountPct}% off`;return`$${v.discountAmt.toFixed(2)} off`}
@@ -1264,9 +1270,12 @@ function renderHomeCharts(){
   if(pieCanvas){
     const paidViolsInRange=(S.violations||[]).filter(v=>v.status==='paid'&&v.paid_at&&lotIds.includes(v.lot_id)&&new Date(v.paid_at)>=from&&new Date(v.paid_at)<toEnd);
     const violParkingFees=paidViolsInRange.reduce((a,v)=>a+(v.parking_fee||0),0);
-    const parkingRev=inRange.reduce((a,s)=>a+(s.pkch||s.paid),0)+violParkingFees;
+    // Count what was actually collected (paid), not the pre-discount base charge — a
+    // validation's discount isn't revenue until (if) the business's invoice for it is paid.
+    const pieSessFee=s=>Math.min(s.sfee||0,s.paid||0);
+    const parkingRev=inRange.reduce((a,s)=>a+Math.max(0,(s.paid||0)-pieSessFee(s)),0)+violParkingFees;
     const monthlyPassesInRange=S.passes.filter(p=>{if(!lotIds.includes(p.lotId))return false;const nb=p.nextBillDate?new Date(p.nextBillDate):null;const ba=p.billedAt?new Date(p.billedAt):null;return(nb&&nb>=from&&nb<toEnd)||(ba&&ba>=from&&ba<toEnd);});
-    const feeRev=inRange.reduce((a,s)=>a+(s.sfee||0),0)+monthlyPassesInRange.reduce((a,p)=>a+(p.serviceFee||0),0);
+    const feeRev=inRange.reduce((a,s)=>a+pieSessFee(s),0)+monthlyPassesInRange.reduce((a,p)=>a+(p.serviceFee||0),0);
     const violRev=paidViolsInRange.reduce((a,v)=>a+(v.fine_amount-(v.parking_fee||0)),0);
     const monthlyRev=monthlyPassesInRange.reduce((a,p)=>a+(p.custom_price||p.monthlyAmount||0),0);
     const allSegs=[{k:'parking',label:'Parking',val:parkingRev,color:'#2563eb'},{k:'fees',label:'Service Fees',val:feeRev,color:'#0d0d0d'},{k:'violations',label:'Violations',val:violRev,color:'#d32f2f'},{k:'monthly',label:'Monthly Passes',val:monthlyRev,color:'#7a9e3b'}];
