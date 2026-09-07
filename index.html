@@ -893,10 +893,16 @@ async function handlePay(){
 
   if(isFree){
     const wasComp=S.val?.isComp,compId=S.val?.id;
+    // Claim the comp code before granting free parking, not after — otherwise two people
+    // submitting the same single-use code within moments of each other could both get in
+    // before either claim is recorded.
+    if(wasComp){
+      const claimed=await useCompCode(compId,S.plate.trim());
+      if(!claimed){alert('This code has already been used. Please enter a different code or pay normally.');return;}
+    }
     const sess={id:'CPM-'+S.tic++,plate:S.plate.trim(),type,start:Date.now(),duration:dur,rate:S.rate,paid:0,pkch:+base,sfee:+fee,disc:+disc,vehicle:S.vehicle,phone:S.phone,email:emailVal,smsSent:false,lotId:S.lotId,valId:S.val?S.val.id:null,valWindowMin};
     S.sess.unshift(sess);S.payData=sess;S.cstep=2;S.val=null;render();
     await saveSession(sess);
-    if(wasComp) await useCompCode(compId, sess.plate);
     return;
   }
 
@@ -969,7 +975,10 @@ async function submitCardPayment(){
   S.sess.unshift(sess);S.payData=sess;S.cstep=2;S.val=null;render();
   localStorage.setItem('cpm_active_session', sess.id);
   await saveSession(sess);
-  if(wasComp) await useCompCode(compId, sess.plate);
+  if(wasComp){
+    const claimed=await useCompCode(compId, sess.plate);
+    if(!claimed)logAudit('Comp code redemption race detected',`${compId} was already used elsewhere when session ${sess.id} tried to redeem it`);
+  }
 }
 
 function renderSuccess(){
@@ -1021,7 +1030,10 @@ async function applyPostVal(){
   const discAmt=Math.max(0,+(d.pkch+d.sfee-newAmount).toFixed(2));
   d.paid=newAmount;d.captured=true;d.valId=matched.id;d.disc=discAmt;S.val=matched;
   if(matched.maxHours>0&&matched.maxHours>d.duration){d.duration=matched.maxHours;}
-  if(matched.isComp)await useCompCode(matched.id,d.plate);
+  if(matched.isComp){
+    const claimed=await useCompCode(matched.id,d.plate);
+    if(!claimed)logAudit('Comp code redemption race detected',`${matched.id} was already used elsewhere when session ${d.id} tried to redeem it`);
+  }
   await updateSessionValDB(d);
   render();
 }

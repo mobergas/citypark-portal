@@ -297,43 +297,22 @@ async function createStaffAccount(email, password, name, role){
   return data;
 }
 
-const _loginState={
-  get attempts(){return parseInt(localStorage.getItem('_la')||'0');},
-  set attempts(v){localStorage.setItem('_la',v);},
-  get lockedUntil(){return parseInt(localStorage.getItem('_ll')||'0')||null;},
-  set lockedUntil(v){v?localStorage.setItem('_ll',v):localStorage.removeItem('_ll');}
-};
-
 async function supabaseLogin(email, password){
-  // Check lockout
-  if(_loginState.lockedUntil&&Date.now()<_loginState.lockedUntil){
-    const remaining=Math.ceil((_loginState.lockedUntil-Date.now())/60000);
-    throw new Error(`Too many failed attempts. Try again in ${remaining} minute${remaining===1?'':'s'}.`);
-  }
-
-  const res = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=password`, {
+  // Rate limiting is enforced server-side in the staff-login function (per-email,
+  // 5 failed attempts / 10 min) since a client-only lockout can be bypassed by
+  // clearing localStorage or hitting the auth endpoint directly.
+  const res = await fetch(`${SUPA_URL}/functions/v1/staff-login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'apikey': SUPA_KEY
+      'Authorization': 'Bearer ' + SUPA_KEY
     },
     body: JSON.stringify({ email, password })
   });
 
-  if(!res.ok){
-    _loginState.attempts++;
-    if(_loginState.attempts>=5){
-      _loginState.lockedUntil=Date.now()+10*60*1000;
-      _loginState.attempts=0;
-      throw new Error('Too many failed attempts. Login locked for 10 minutes.');
-    }
-    const remaining=5-_loginState.attempts;
-    throw new Error(`Invalid email or password. ${remaining} attempt${remaining===1?'':'s'} remaining.`);
-  }
-
-  _loginState.attempts=0;
-  _loginState.lockedUntil=null;
-  return res.json();
+  const data = await res.json();
+  if(!res.ok) throw new Error(data.message || data.error || 'Login failed.');
+  return data;
 }
 
 async function refreshAuthToken(){
@@ -448,7 +427,21 @@ async function deleteSessionDB(id){
 }
 
 async function useCompCode(id, plate){
-  return db('comp_codes','PATCH',{used_at:new Date().toISOString(),used_by_plate:plate},`?id=eq.${id}`);
+  // Atomic claim: the used_at=is.null filter means this only succeeds if no one else has
+  // already redeemed the code. Returns the updated row on success, null if it was already used.
+  const res = await fetch(`${SUPA_URL}/rest/v1/comp_codes?id=eq.${id}&used_at=is.null`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + (getAuthToken() || SUPA_KEY),
+      'Prefer': 'return=representation'
+    },
+    body: JSON.stringify({ used_at: new Date().toISOString(), used_by_plate: plate })
+  });
+  if (!res.ok) return null;
+  const rows = await res.json();
+  return rows && rows.length > 0 ? rows[0] : null;
 }
 
 async function logAudit(action, details){
