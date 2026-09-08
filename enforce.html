@@ -1043,6 +1043,33 @@ updateA2HSBanner();
 // Force a real reload if this installed app resumes a frozen, already-loaded instance
 // instead of navigating fresh — otherwise stale in-memory lot/session data can stick around.
 window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
+
+async function refreshLotSelect(){
+  const allLots=await db('lots','GET',null,'?select=*&order=name');
+  const allowedIds=currentUser?.allowed_lot_ids;
+  const lots=(allowedIds&&allowedIds.length)?(allLots||[]).filter(l=>allowedIds.includes(l.id)):allLots;
+  window._enforceLots=lots||[];
+  const sel=document.getElementById('lot-select');
+  if(!sel)return;
+  sel.innerHTML='<option value="">— Choose a lot —</option>';
+  (lots||[]).forEach(l=>{
+    const opt=document.createElement('option');
+    opt.value=l.id;
+    opt.textContent=l.name+' · Zone '+l.zone;
+    sel.appendChild(opt);
+  });
+}
+// Android bringing a backgrounded home-screen app back to the foreground doesn't fire
+// pageshow at all, so the reload above never triggers for a plain app-switch — the lot
+// list built once in initApp() can go stale (a lot closed or deleted while backgrounded).
+// Only refresh while the lot-selection screen itself is showing, so this can't disrupt an
+// officer mid-lookup or mid-issuing a violation.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  if (!currentUser) return;
+  const lotScreen = document.getElementById('screen-lot');
+  if (lotScreen && lotScreen.style.display !== 'none') refreshLotSelect();
+});
 </script>
 </body>
 </html>

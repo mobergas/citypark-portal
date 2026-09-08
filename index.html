@@ -2897,6 +2897,24 @@ init();
 // reload so the resumed app always re-reads the current URL against fresh server data.
 window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
 
+// Android bringing a backgrounded home-screen app back to the foreground doesn't fire
+// pageshow at all — no navigation happens, the JS heap just resumes exactly where it left
+// off — so the reload above never triggers for a plain app-switch, and stale in-memory
+// lot data (a lot closed or deleted while this instance sat backgrounded) sticks around
+// indefinitely. Refetch on every resume instead, and re-validate the pay screen's
+// selected lot against the fresh data. Skip while a modal (e.g. card entry) is open so
+// this can't yank the payment form out from under someone mid-entry.
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState !== 'visible') return;
+  if (document.querySelector('.show')) return;
+  await loadFromDB();
+  if (S.v === 'pay' && S.lotId && (!S.lots[S.lotId] || S.lots[S.lotId].open === false)) {
+    S.closedLotName = S.lots[S.lotId] ? S.lots[S.lotId].name : null;
+    S.v = 'picklot';
+  }
+  render();
+});
+
 </script>
 </body>
 </html>
