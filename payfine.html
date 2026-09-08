@@ -73,6 +73,20 @@ async function db(table,method,body,query=''){
   return res.json();
 }
 
+// Lookups (by guessable VIO- id or by plate) go through a rate-limited edge function
+// instead of querying the table directly with the public anon key — an unthrottled direct
+// query let anyone brute-force IDs or repeatedly scan a plate.
+async function lookupViolationAPI(query){
+  const res=await fetch(`${SUPA_URL}/functions/v1/lookup-violation`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+    body:JSON.stringify({query})
+  });
+  const data=await res.json();
+  if(!res.ok)throw new Error(data.message||data.error||'Lookup failed.');
+  return data.violations||[];
+}
+
 async function init(){
   const params=new URLSearchParams(window.location.search);
   const id=params.get('id');
@@ -115,8 +129,15 @@ async function lookupViolation(){
     await loadViolation(input);
   } else {
     // Search by plate
-    const violations=await db('violations','GET',null,`?plate=eq.${encodeURIComponent(input)}&status=eq.unpaid&order=created_at.desc&select=*`);
-    if(!violations||!violations.length){
+    let violations;
+    try{ violations=await lookupViolationAPI(input); }
+    catch(e){
+      const err=document.getElementById('lookup-err');
+      if(err)err.textContent=e.message;
+      if(btn){btn.textContent='Find My Ticket';btn.disabled=false;}
+      return;
+    }
+    if(!violations.length){
       const err=document.getElementById('lookup-err');
       if(err)err.textContent='No unpaid violations found for that plate.';
       if(btn){btn.textContent='Find My Ticket';btn.disabled=false;}
@@ -158,8 +179,17 @@ async function selectViolation(id){
 }
 
 async function loadViolation(id){
-  const violations=await db('violations','GET',null,`?id=eq.${encodeURIComponent(id)}&select=*`);
-  if(!violations||!violations.length){
+  let violations;
+  try{ violations=await lookupViolationAPI(id); }
+  catch(e){
+    const err=document.getElementById('lookup-err');
+    if(err){err.textContent=e.message;}
+    else{showError(e.message);}
+    const btn=document.querySelector('.btn');
+    if(btn){btn.textContent='Find My Ticket';btn.disabled=false;}
+    return;
+  }
+  if(!violations.length){
     const err=document.getElementById('lookup-err');
     if(err){err.textContent='Violation not found. Please check your ID and try again.';}
     else{showError('Violation not found. Please check your ID and try again.');}
