@@ -61,6 +61,7 @@ let stripe=null;
 let cardElement=null;
 let passList=[];
 let token=null;
+let STRIPE_PK=null;
 
 async function db(table,method,body,query=''){
   const res=await fetch(`${SUPA_URL}/rest/v1/${table}${query}`,{
@@ -72,9 +73,20 @@ async function db(table,method,body,query=''){
   return res.json();
 }
 
+// Fetch the publishable key from the same source as the server's secret key, instead of
+// hardcoding a copy here that could drift out of sync at a live-mode cutover.
+async function loadStripeKey(){
+  const res=await fetch(`${SUPA_URL}/functions/v1/stripe-config`,{headers:{'Authorization':'Bearer '+SUPA_KEY}});
+  const data=await res.json();
+  if(data.error)throw new Error(data.error);
+  STRIPE_PK=data.publishableKey;
+}
+
 function wrap(){return document.getElementById('wrap');}
 
 async function init(){
+  try{ await loadStripeKey(); }
+  catch(e){ wrap().innerHTML=`<div class="card" style="padding:24px;text-align:center;color:#666">${e.message}</div>`; return; }
   const params=new URLSearchParams(window.location.search);
   token=params.get('token');
   if(!token){showEmailForm();return;}
@@ -188,7 +200,7 @@ function passCard(p){
 
 // Mount a Stripe card element for every pass once the DOM is in place
 function mountCardElements(){
-  if(!stripe)stripe=Stripe('pk_test_51ToAC1CRGT2uMGb0UnwvpT7KnbgRAzPjoMlnFGt1qWsOOnWQfqc8xOM9gjTQ5GEU360rWLIClQNXKo1v3WhA0zwb00siXv5x5V');
+  if(!stripe)stripe=Stripe(STRIPE_PK);
   const elements=stripe.elements();
   passList.forEach(p=>{
     const mountPoint=document.getElementById(`card-element-${p.id}`);

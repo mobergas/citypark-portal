@@ -923,13 +923,27 @@ async function handlePay(){
 
 if(window._stripeCard){try{window._stripeCard.destroy();}catch(e){}}
   window._stripeCard=null;window._stripe=null;
+// Fetch the publishable key from the same source as the server's secret key, instead of
+// hardcoding a copy here that could drift out of sync at a live-mode cutover.
+let STRIPE_PK=null;
+async function loadStripeKey(){
+  if(STRIPE_PK)return STRIPE_PK;
+  const res=await fetch(`${SUPA_URL}/functions/v1/stripe-config`,{headers:{'Authorization':'Bearer '+SUPA_KEY}});
+  const data=await res.json();
+  if(data.error)throw new Error(data.error);
+  STRIPE_PK=data.publishableKey;
+  return STRIPE_PK;
+}
 async function mountStripeCard(total){
   if(window._stripeCard){try{window._stripeCard.destroy();}catch(e){}}
   if(window._stripeExpiry){try{window._stripeExpiry.destroy();}catch(e){}}
   if(window._stripeCvc){try{window._stripeCvc.destroy();}catch(e){}}
   if(window._stripeZip){try{window._stripeZip.destroy();}catch(e){}}
   window._stripeCard=null;window._stripe=null;
-  const stripe=Stripe('pk_test_51ToAC1CRGT2uMGb0UnwvpT7KnbgRAzPjoMlnFGt1qWsOOnWQfqc8xOM9gjTQ5GEU360rWLIClQNXKo1v3WhA0zwb00siXv5x5V');
+  let pk;
+  try{ pk=await loadStripeKey(); }
+  catch(e){ const el=document.getElementById('card-errors');if(el)el.textContent=e.message; return; }
+  const stripe=Stripe(pk);
   window._stripe=stripe;
   const elements=stripe.elements();
   const style={base:{fontFamily:'Barlow, sans-serif',fontSize:'16px',color:'#0d0d0d','::placeholder':{color:'#888'}},invalid:{color:'#d32f2f'}};

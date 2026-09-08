@@ -5,6 +5,9 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
+const MAX_REQUESTS = 3;
+const WINDOW_MS = 15 * 60 * 1000;
+
 async function sendEmail(to: string, subject: string, html: string) {
   await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
     method: 'POST',
@@ -28,6 +31,23 @@ Deno.serve(async (req) => {
     const cleanEmail = (email || '').trim().toLowerCase();
 
     if (cleanEmail) {
+      // Throttle per email so this can't be used to spam one address with login links,
+      // regardless of what IP the requests come from.
+      const windowStart = new Date(Date.now() - WINDOW_MS).toISOString();
+      await supabase.from('pass_login_requests').delete().eq('email', cleanEmail).lt('created_at', windowStart);
+      const { count } = await supabase
+        .from('pass_login_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('email', cleanEmail)
+        .gte('created_at', windowStart);
+      if ((count || 0) >= MAX_REQUESTS) {
+        return new Response(JSON.stringify({ error: 'rate_limited', message: 'Too many requests for this email. Please wait 15 minutes and try again.' }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+      await supabase.from('pass_login_requests').insert({ email: cleanEmail });
+
       const { data: passes } = await supabase
         .from('passes')
         .select('*')

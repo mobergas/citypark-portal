@@ -87,7 +87,19 @@ async function lookupViolationAPI(query){
   return data.violations||[];
 }
 
+// Fetch the publishable key from the same source as the server's secret key, instead of
+// hardcoding a copy here that could drift out of sync at a live-mode cutover.
+let STRIPE_PK=null;
+async function loadStripeKey(){
+  const res=await fetch(`${SUPA_URL}/functions/v1/stripe-config`,{headers:{'Authorization':'Bearer '+SUPA_KEY}});
+  const data=await res.json();
+  if(data.error)throw new Error(data.error);
+  STRIPE_PK=data.publishableKey;
+}
+
 async function init(){
+  try{ await loadStripeKey(); }
+  catch(e){ showError(e.message); return; }
   const params=new URLSearchParams(window.location.search);
   const id=params.get('id');
   if(id){
@@ -236,7 +248,7 @@ function showPayment(){
     </div>
   `;
 
-  stripe=Stripe('pk_test_51ToAC1CRGT2uMGb0UnwvpT7KnbgRAzPjoMlnFGt1qWsOOnWQfqc8xOM9gjTQ5GEU360rWLIClQNXKo1v3WhA0zwb00siXv5x5V');
+  stripe=Stripe(STRIPE_PK);
   const elements=stripe.elements();
   cardElement=elements.create('card',{
     style:{base:{fontFamily:'Barlow,sans-serif',fontSize:'16px',color:'#0d0d0d','::placeholder':{color:'#888'}},invalid:{color:'#d32f2f'}}

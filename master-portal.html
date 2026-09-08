@@ -188,7 +188,13 @@ async function sendInvite(){
 
 async function cancelInvite(passId,name){
   if(!confirm(`Cancel the pass for ${name}? This can't be undone from here — contact City Park Management to reinstate.`))return;
-  await db('passes','PATCH',{status:'canceled',next_bill_date:null},`?id=eq.${passId}`);
+  const res=await fetch(`${SUPA_URL}/functions/v1/master-cancel-pass`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+    body:JSON.stringify({businessToken:acctData.business_token,passId})
+  });
+  const data=await res.json();
+  if(data.error){alert('Error: '+data.error);return;}
   passesData=await db('passes','GET',null,`?master_account_id=eq.${acctData.id}&order=created_at.desc&select=*`)||[];
   render();
 }

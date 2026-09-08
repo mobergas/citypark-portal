@@ -66,6 +66,7 @@ const SUPA_KEY='sb_publishable_ZGELlV5vw7QFvva8_8NGcA_pQplXd46';
 let passData=null;
 let stripe=null;
 let cardElement=null;
+let STRIPE_PK=null;
 
 async function db(table,method,body,query=''){
   const res=await fetch(`${SUPA_URL}/rest/v1/${table}${query}`,{
@@ -82,8 +83,19 @@ async function db(table,method,body,query=''){
   return res.json();
 }
 
+// Fetch the publishable key from the same source as the server's secret key, instead of
+// hardcoding a copy here that could drift out of sync at a live-mode cutover.
+async function loadStripeKey(){
+  const res=await fetch(`${SUPA_URL}/functions/v1/stripe-config`,{headers:{'Authorization':'Bearer '+SUPA_KEY}});
+  const data=await res.json();
+  if(data.error)throw new Error(data.error);
+  STRIPE_PK=data.publishableKey;
+}
+
 let prefilledPlate='';
 async function init(){
+  try{ await loadStripeKey(); }
+  catch(e){ showError(e.message); return; }
   const params=new URLSearchParams(window.location.search);
   const token=params.get('token');
   prefilledPlate=(params.get('plate')||'').toUpperCase();
@@ -188,7 +200,7 @@ function showSignup(pass){
     </div>
   `;
 
-  stripe=Stripe('pk_test_51ToAC1CRGT2uMGb0UnwvpT7KnbgRAzPjoMlnFGt1qWsOOnWQfqc8xOM9gjTQ5GEU360rWLIClQNXKo1v3WhA0zwb00siXv5x5V');
+  stripe=Stripe(STRIPE_PK);
   const elements=stripe.elements();
   cardElement=elements.create('card',{
     style:{

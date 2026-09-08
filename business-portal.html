@@ -129,12 +129,19 @@ function confirmRegen(){
 
 async function regenCode(){
   const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let newCode='';for(let i=0;i<6;i++)newCode+=chars[Math.floor(Math.random()*chars.length)];
-  
+  const genCode=()=>{let c='';for(let i=0;i<6;i++)c+=chars[Math.floor(Math.random()*chars.length)];return c;};
+
   const prev=valData.previous_codes||[];
   prev.push({code:valData.code,generated_at:new Date().toISOString(),expires_at:new Date().toISOString()});
 
-  const res=await db('validations','PATCH',{code:newCode,previous_codes:prev},`?business_token=eq.${valData.business_token}`);
+  // The code column has a database-level UNIQUE constraint, so a collision can't actually
+  // corrupt anything — the write just gets rejected. Retry with a fresh random code a few
+  // times instead of making the business owner manually hit the button again themselves.
+  let res=null,newCode='';
+  for(let attempt=0;attempt<5&&!res;attempt++){
+    newCode=genCode();
+    res=await db('validations','PATCH',{code:newCode,previous_codes:prev},`?business_token=eq.${valData.business_token}`);
+  }
   if(res){
     valData.previous_codes=prev;
     valData.code=newCode;

@@ -214,6 +214,7 @@ async function issueWarning(){
   const photoUrls=[];
   if(warningPhotoFiles.length){
     const authToken=localStorage.getItem('enforce_token')||SUPA_KEY;
+    let failCount=0;
     for(let i=0;i<warningPhotoFiles.length;i++){
       const file=warningPhotoFiles[i];
       const fileName=`${Date.now()}_${i}_${currentPlate}.jpg`;
@@ -224,8 +225,11 @@ async function issueWarning(){
       });
       if(uploadRes.ok){
         photoUrls.push(fileName);
+      } else {
+        failCount++;
       }
     }
+    if(failCount>0)alert(`${failCount} of ${warningPhotoFiles.length} photo${warningPhotoFiles.length===1?'':'s'} failed to upload.`);
   }
 
   const warningId='WARN-'+Date.now();
@@ -867,6 +871,11 @@ function removePhoto(index){
 
 async function issueViolation(){
   if(!selectedViolationType)return;
+
+  if(!photoFiles.length){
+    if(!confirm('No photo attached to this violation. Issue it anyway?'))return;
+  }
+
   const btn=document.getElementById('issue-btn');
   btn.textContent='Issuing...';btn.disabled=true;
 
@@ -876,6 +885,7 @@ async function issueViolation(){
   // Upload all photos if provided
   if(photoFiles.length){
     const authToken=localStorage.getItem('enforce_token')||SUPA_KEY;
+    let failCount=0;
     for(let i=0;i<photoFiles.length;i++){
       const file=photoFiles[i];
       const fileName=`${Date.now()}_${i}_${currentPlate}.jpg`;
@@ -886,12 +896,20 @@ async function issueViolation(){
       });
       if(uploadRes.ok){
         photoUrls.push(fileName);
+      } else {
+        failCount++;
       }
     }
     photoUrl=photoUrls[0]||null;
+    // A failed upload used to just silently vanish from the evidence list — tell the
+    // officer instead so they know to retry or issue knowing the photo didn't save.
+    if(failCount>0&&!confirm(`${failCount} of ${photoFiles.length} photo${photoFiles.length===1?'':'s'} failed to upload. Issue this violation anyway?`)){
+      btn.textContent='Issue Violation';btn.disabled=false;
+      return;
+    }
   }
 
-  
+
   const violationId='VIO-'+Date.now().toString().slice(-10);
   const notes=document.getElementById('violation-notes').value.trim();
   const selectedPF=document.querySelector('input[name="parking-fee"]:checked');
