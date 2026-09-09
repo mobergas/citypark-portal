@@ -27,8 +27,21 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { token } = await req.json();
+    const body = await req.json();
+    const { token } = body;
     if (!token) throw new Error('Invalid portal link');
+
+    // business-portal.html used to load its own data with a direct, unscoped public read of
+    // the validations table — the ?business_token=eq.X filter was never actually enforced by
+    // RLS, so a request with no filter at all returned every business's discount code and
+    // business_token. This checks the token server-side and returns only the display fields.
+    if (body.action === 'lookup') {
+      const { data: val } = await supabase.from('validations').select('name,code,previous_codes').eq('business_token', token).single();
+      if (!val) throw new Error('Portal not found. Please contact City Park Management.');
+      return new Response(JSON.stringify({ success: true, ...val }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
+      });
+    }
 
     const { data: val } = await supabase.from('validations').select('*').eq('business_token', token).single();
     if (!val) throw new Error('Portal not found. Please contact City Park Management.');

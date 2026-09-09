@@ -69,9 +69,14 @@ async function init(){
   const params=new URLSearchParams(window.location.search);
   const token=params.get('token');
   if(!token){showError('Invalid portal link.');return;}
-  const vals=await db('validations','GET',null,`?business_token=eq.${token}&select=*`);
-  if(!vals||!vals.length){showError('Portal not found. Please contact City Park Management.');return;}
-  valData=vals[0];
+  const res=await fetch(`${SUPA_URL}/functions/v1/regen-business-code`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+    body:JSON.stringify({action:'lookup',token})
+  });
+  const data=await res.json();
+  if(!data.success){showError(data.error||'Portal not found. Please contact City Park Management.');return;}
+  valData={...data,business_token:token};
   render();
 }
 
