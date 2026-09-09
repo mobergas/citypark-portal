@@ -1191,16 +1191,16 @@ async function sendPasswordReset(){
   if(!email||!email.includes('@')){S.loginErr=true;S.loginErrMsg='Please enter a valid email address.';render();return;}
   const btn=document.querySelector('.lbtn');
   if(btn){btn.textContent='Sending...';btn.disabled=true;}
-  const redirectUrl=encodeURIComponent(window.location.origin+'/admin');
-  const res=await fetch(`${SUPA_URL}/auth/v1/recover?redirect_to=${redirectUrl}`,{
+  const res=await fetch(`${SUPA_URL}/functions/v1/staff-password-reset`,{
     method:'POST',
-    headers:{'Content-Type':'application/json','apikey':SUPA_KEY},
-    body:JSON.stringify({email})
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+    body:JSON.stringify({email,app:'admin'})
   });
+  const data=await res.json();
   const msgEl=document.getElementById('pwresetmsg');
   if(msgEl){
     msgEl.style.display='block';
-    msgEl.textContent=res.ok?'If an account exists for that email, a reset link has been sent. Check your inbox.':'Something went wrong. Please try again.';
+    msgEl.textContent=res.ok?'If an account exists for that email, a reset link has been sent. Check your inbox.':(data.message||'Something went wrong. Please try again.');
   }
   if(btn){btn.textContent='Send Reset Link';btn.disabled=false;}
 }

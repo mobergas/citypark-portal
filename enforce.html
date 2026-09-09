@@ -293,14 +293,14 @@ async function sendEnfPasswordReset(){
   if(!email||!email.includes('@')){if(errEl)errEl.textContent='Please enter a valid email address.';return;}
   const btn=document.querySelector('.btn');
   if(btn){btn.textContent='Sending...';btn.disabled=true;}
-  const redirectUrl=encodeURIComponent(window.location.origin+'/enforce');
-  await fetch(`${SUPA_URL}/auth/v1/recover?redirect_to=${redirectUrl}`,{
+  const res=await fetch(`${SUPA_URL}/functions/v1/staff-password-reset`,{
     method:'POST',
-    headers:{'Content-Type':'application/json','apikey':SUPA_KEY},
-    body:JSON.stringify({email})
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+    body:JSON.stringify({email,app:'enforce'})
   });
+  const data=await res.json();
   const msgEl=document.getElementById('reset-msg');
-  if(msgEl){msgEl.style.display='block';msgEl.textContent='If an account exists for that email, a reset link has been sent. Check your inbox.';}
+  if(msgEl){msgEl.style.display='block';msgEl.textContent=res.ok?'If an account exists for that email, a reset link has been sent. Check your inbox.':(data.message||'Something went wrong. Please try again.');}
   if(btn){btn.textContent='Send Reset Link';btn.disabled=false;}
 }
 
