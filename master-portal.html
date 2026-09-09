@@ -73,19 +73,26 @@ async function db(table,method,body,query=''){
   return res.json();
 }
 
+let businessToken=null;
+async function loadPortalData(){
+  const res=await fetch(`${SUPA_URL}/functions/v1/master-portal-data`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+    body:JSON.stringify({businessToken})
+  });
+  return res.json();
+}
+
 async function init(){
   const params=new URLSearchParams(window.location.search);
-  const token=params.get('token');
-  if(!token){showError('Invalid portal link.');return;}
-  const accts=await db('master_accounts','GET',null,`?business_token=eq.${token}&select=*`);
-  if(!accts||!accts.length){showError('Portal not found. Please contact City Park Management.');return;}
-  acctData=accts[0];
-  if(!acctData.active){showError('This account is currently inactive. Please contact City Park Management.');return;}
+  businessToken=params.get('token');
+  if(!businessToken){showError('Invalid portal link.');return;}
+  const data=await loadPortalData();
+  if(data.error){showError(data.error);return;}
 
-  const allLots=await db('lots','GET',null,'?select=*');
-  lotsData=(allLots||[]).filter(l=>(acctData.lot_ids||[]).includes(l.id));
-
-  passesData=await db('passes','GET',null,`?master_account_id=eq.${acctData.id}&order=created_at.desc&select=*`)||[];
+  acctData=data.account;
+  lotsData=data.lots;
+  passesData=data.passes;
 
   render();
 }
@@ -163,13 +170,10 @@ async function sendInvite(){
   const btn=document.getElementById('inv-btn');
   btn.textContent='Sending...';btn.disabled=true;
 
-  const params=new URLSearchParams(window.location.search);
-  const token=params.get('token');
-
   const res=await fetch(`${SUPA_URL}/functions/v1/send-master-invite`,{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
-    body:JSON.stringify({businessToken:token,name,email,lotId})
+    body:JSON.stringify({businessToken,name,email,lotId})
   });
   const data=await res.json();
 
@@ -181,7 +185,7 @@ async function sendInvite(){
   document.getElementById('inv-name').value='';
   document.getElementById('inv-email').value='';
 
-  passesData=await db('passes','GET',null,`?master_account_id=eq.${acctData.id}&order=created_at.desc&select=*`)||[];
+  passesData=(await loadPortalData()).passes||[];
   setTimeout(()=>render(),1200);
 }
 
@@ -190,11 +194,11 @@ async function cancelInvite(passId,name){
   const res=await fetch(`${SUPA_URL}/functions/v1/master-cancel-pass`,{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
-    body:JSON.stringify({businessToken:acctData.business_token,passId})
+    body:JSON.stringify({businessToken,passId})
   });
   const data=await res.json();
   if(data.error){alert('Error: '+data.error);return;}
-  passesData=await db('passes','GET',null,`?master_account_id=eq.${acctData.id}&order=created_at.desc&select=*`)||[];
+  passesData=(await loadPortalData()).passes||[];
   render();
 }
 

@@ -80,9 +80,14 @@ async function init(){
   const params=new URLSearchParams(window.location.search);
   const token=params.get('token');
   if(!token){showError('Invalid link.');return;}
-  const passes=await db('passes','GET',null,`?card_update_token=eq.${token}&select=*`);
-  if(!passes||!passes.length){showError('This link is invalid or has expired.');return;}
-  passData=passes[0];
+  const res=await fetch(`${SUPA_URL}/functions/v1/update-card`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+    body:JSON.stringify({action:'lookup',token})
+  });
+  const pass=await res.json();
+  if(pass.error){showError(pass.error);return;}
+  passData=pass;
   if(passData.status==='active'){
     showSuccess('Your payment method is already up to date and your pass is active!');
     return;

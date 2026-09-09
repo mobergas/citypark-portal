@@ -66,6 +66,7 @@ let passData=null;
 let stripe=null;
 let cardElement=null;
 let STRIPE_PK=null;
+let signupToken=null;
 
 async function db(table,method,body,query=''){
   const res=await fetch(`${SUPA_URL}/rest/v1/${table}${query}`,{
@@ -96,23 +97,18 @@ async function init(){
   try{ await loadStripeKey(); }
   catch(e){ showError(e.message); return; }
   const params=new URLSearchParams(window.location.search);
-  const token=params.get('token');
+  signupToken=params.get('token');
   prefilledPlate=(params.get('plate')||'').toUpperCase();
-  if(!token){showError('Invalid invitation link.');return;}
+  if(!signupToken){showError('Invalid invitation link.');return;}
 
-  const passes=await db('passes','GET',null,`?signup_token=eq.${token}&select=*`);
-  if(passes&&passes.length>0){
-    const lotInfo=await db('lots','GET',null,`?id=eq.${passes[0].lot_id}&select=pass_restrictions,address,fees`);
-    if(lotInfo&&lotInfo.length>0){
-      passes[0].pass_restrictions=lotInfo[0].pass_restrictions;
-      passes[0].lot_address=lotInfo[0].address||'';
-      const monthlyFee=lotInfo[0].fees?.monthly;
-      passes[0].service_fee=monthlyFee?.enabled?(monthlyFee.amount||0):0;
-    }
-  }
-  if(!passes||!passes.length){showError('This invitation link is invalid or has expired.');return;}
-  
-  const pass=passes[0];
+  const res=await fetch(`${SUPA_URL}/functions/v1/stripe-setup`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+    body:JSON.stringify({action:'lookup',signupToken})
+  });
+  const pass=await res.json();
+  if(pass.error){showError(pass.error);return;}
+
   if(pass.token_used){showError('This invitation has already been used. Please contact us if you need assistance.');return;}
   if(pass.status==='canceled'){showError('This invitation has been canceled. Please contact us for a new invitation.');return;}
 
@@ -233,7 +229,7 @@ async function submitFreeSignup(){
   const res=await fetch(`${SUPA_URL}/functions/v1/stripe-setup`,{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
-    body:JSON.stringify({signupToken:passData.signup_token,plate})
+    body:JSON.stringify({signupToken,plate})
   });
   const data=await res.json();
   if(data.error){
@@ -266,7 +262,7 @@ async function submitSignup(prorated){
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
     body:JSON.stringify({
-      signupToken:passData.signup_token,
+      signupToken,
       paymentMethodId:paymentMethod.id,
       plate
     })

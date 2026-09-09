@@ -19,6 +19,22 @@ Deno.serve(async (req) => {
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
     const body = await req.json();
 
+    // The card-update link's token is the only thing gating this page, so the initial lookup
+    // that populates it has to be server-side too — passes used to be readable by anyone via
+    // the public REST API with no token check at all. Returns only what the page displays,
+    // plus stripe_customer_id which the follow-up update call needs.
+    if (body.action === 'lookup') {
+      const { token } = body;
+      const { data: passes } = await supabase
+        .from('passes')
+        .select('id,status,stripe_customer_id,holder_name,name,lot_name,custom_price,monthly_amount,service_fee')
+        .eq('card_update_token', token);
+      if (!passes || !passes.length) throw new Error('This link is invalid or has expired.');
+      return new Response(JSON.stringify(passes[0]), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
+      });
+    }
+
     if (body.action === 'finalize') {
       const { passId, token, paymentIntentId } = body;
 

@@ -33,6 +33,21 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action, passId, token } = body;
 
+    // Listing a customer's own passes by login_token used to be a direct, unscoped public
+    // REST read of the whole passes table — anyone could dump every pass's login_token,
+    // card_update_token, and Stripe ids with no token of their own. This does the same
+    // lookup server-side and returns only what the pass-management page displays.
+    if (action === 'list') {
+      const { data: passes } = await supabase
+        .from('passes')
+        .select('id,status,email,plate,lot_name,custom_price,monthly_amount,service_fee,login_token_expires')
+        .eq('login_token', token);
+      const valid = (passes || []).filter((p: any) => p.login_token_expires && new Date(p.login_token_expires) > new Date());
+      return new Response(JSON.stringify({ passes: valid }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
+      });
+    }
+
     if (action === 'update_info') {
       const pass = await getValidPass(passId, token);
       const updates: Record<string, unknown> = {};

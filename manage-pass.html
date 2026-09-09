@@ -90,13 +90,15 @@ async function init(){
   token=params.get('token');
   if(!token){showEmailForm();return;}
 
-  const passes=await db('passes','GET',null,`?login_token=eq.${token}&select=*`);
-  if(!passes||!passes.length){showEmailForm('That link is invalid. Enter your email below to get a new one.');return;}
+  const res=await fetch(`${SUPA_URL}/functions/v1/manage-pass`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+    body:JSON.stringify({action:'list',token})
+  });
+  const data=await res.json();
+  if(!data.passes||!data.passes.length){showEmailForm('That link is invalid or has expired. Enter your email below to get a new one.');return;}
 
-  const valid=passes.filter(p=>p.login_token_expires && new Date(p.login_token_expires)>new Date());
-  if(!valid.length){showEmailForm('That link has expired. Enter your email below to get a new one.');return;}
-
-  passList=valid;
+  passList=data.passes;
   showPassList();
 }
 

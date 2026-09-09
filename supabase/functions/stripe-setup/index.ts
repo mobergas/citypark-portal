@@ -35,8 +35,31 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { signupToken, paymentMethodId, plate } = await req.json();
+    const body = await req.json();
+    const { signupToken, paymentMethodId, plate } = body;
     if (!signupToken) throw new Error('Invalid signup link');
+
+    // The signup link is the only credential here (there's no login), so the lookup that
+    // populates the signup page has to be server-side too — passes used to be readable by
+    // anyone via the public REST API, which leaked every pass's tokens/Stripe ids to whoever
+    // asked. This returns only what the signup page actually displays.
+    if (body.action === 'lookup') {
+      const { data: pass } = await supabase.from('passes').select('*').eq('signup_token', signupToken).single();
+      if (!pass) throw new Error('This invitation link is invalid or has expired.');
+      const { data: lot } = await supabase.from('lots').select('pass_restrictions,address,fees').eq('id', pass.lot_id).single();
+      const monthlyFee = lot?.fees?.monthly;
+      return new Response(JSON.stringify({
+        holder_name: pass.holder_name,
+        lot_name: pass.lot_name,
+        lot_address: lot?.address || '',
+        custom_price: pass.custom_price,
+        service_fee: monthlyFee?.enabled ? (monthlyFee.amount || 0) : 0,
+        status: pass.status,
+        token_used: pass.token_used,
+        pass_restrictions: lot?.pass_restrictions || null,
+        override_restrictions: pass.override_restrictions || false,
+      }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' } });
+    }
 
     const { data: pass } = await supabase.from('passes').select('*').eq('signup_token', signupToken).single();
     if (!pass) throw new Error('This invitation link is invalid or has expired.');
