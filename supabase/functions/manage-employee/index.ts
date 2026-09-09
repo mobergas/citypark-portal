@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Only admins can manage staff accounts' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' } });
     }
 
-    const { action, employeeId, email } = await req.json();
+    const { action, employeeId, email, name, role, active, allowed_lot_ids } = await req.json();
     if (!employeeId) throw new Error('Employee ID required');
 
     if (action === 'get_email') {
@@ -39,6 +39,16 @@ Deno.serve(async (req) => {
     if (action === 'update_email') {
       if (!email || !email.includes('@')) throw new Error('Valid email required');
       const { error } = await supabase.auth.admin.updateUserById(employeeId, { email, email_confirm: true });
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
+      });
+    }
+
+    if (action === 'update_profile') {
+      if (!name) throw new Error('Name required');
+      if (!['admin', 'manager', 'employee'].includes(role)) throw new Error('Invalid role');
+      const { error } = await supabase.from('profiles').update({ name, role, active: !!active, allowed_lot_ids: allowed_lot_ids || null }).eq('id', employeeId);
       if (error) throw error;
       return new Response(JSON.stringify({ success: true }), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }

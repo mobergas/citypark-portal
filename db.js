@@ -241,17 +241,6 @@ async function updatePassDB(id,updates){
   return db('passes','PATCH',updates,`?id=eq.${id}`);
 }
 
-async function saveUserDB(user){
-  const exists=await db('profiles','GET',null,`?id=eq.${user.id}&select=id`);
-  const body={id:user.id,name:user.name,role:user.role,active:user.active,allowed_lot_ids:user.allowed_lot_ids||null};
-  if(exists&&exists.length>0)return db('profiles','PATCH',body,`?id=eq.${user.id}`);
-  return db('profiles','POST',body);
-}
-
-async function deleteUserDB(id){
-  return db('profiles','DELETE',null,`?id=eq.${id}`);
-}
-
 async function createPaymentIntent(payload, description, sessionId){
   const res = await fetch(`${SUPA_URL}/functions/v1/stripe-payment`, {
     method: 'POST',

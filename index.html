@@ -2619,8 +2619,9 @@ async function saveUser(){
       if(!emailRes||emailRes.error){alert('Failed to update email: '+(emailRes?.error||'unknown error'));return;}
       S._eUsrOrigEmail=newEmail;
     }
+    const profRes=await manageEmployee('update_profile',u.id,{name,role,active,allowed_lot_ids:allowedLotIds});
+    if(!profRes||profRes.error){alert('Failed to save: '+(profRes?.error||'unknown error'));return;}
     Object.assign(u,{name,role,active,allowed_lot_ids:allowedLotIds});
-    await saveUserDB({id:u.id,name,role,active,allowed_lot_ids:allowedLotIds});
     closeM('usr-modal');
     render();
   } else {
