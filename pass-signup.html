@@ -230,20 +230,16 @@ async function submitFreeSignup(){
 
   const plate=(document.getElementById('plate-inp')?.value||'').toUpperCase().trim();
 
-  await db('passes','PATCH',{
-    status:'active',
-    token_used:true,
-    next_bill_date:null,
-    start_date:new Date().toISOString(),
-    plate:plate||null,
-    billed_at:new Date().toISOString()
-  },`?signup_token=eq.${passData.signup_token}`);
-
-  await fetch(`${SUPA_URL}/functions/v1/send-receipt`,{
+  const res=await fetch(`${SUPA_URL}/functions/v1/stripe-setup`,{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
-    body:JSON.stringify({type:'pass_activated',id:passData.id,email:passData.email})
+    body:JSON.stringify({signupToken:passData.signup_token,plate})
   });
+  const data=await res.json();
+  if(data.error){
+    showError(data.error);
+    return;
+  }
 
   showSuccess(passData,0,null);
 }
@@ -264,20 +260,15 @@ async function submitSignup(prorated){
     return;
   }
 
-  const price=passData.custom_price||passData.monthly_price||0;
-  const serviceFee=passData.service_fee||0;
-  const {prorated:baseProrated,nextBill}=calcProrate(price);
-  const amount=+(baseProrated+serviceFee).toFixed(2);
+  const plate=(document.getElementById('plate-inp')?.value||'').toUpperCase().trim();
 
   const res=await fetch(`${SUPA_URL}/functions/v1/stripe-setup`,{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
     body:JSON.stringify({
+      signupToken:passData.signup_token,
       paymentMethodId:paymentMethod.id,
-      email:passData.email||'',
-      name:passData.holder_name||'',
-      amount,
-      description:`Monthly parking pass - ${passData.lot_name} - ${passData.holder_name}`
+      plate
     })
   });
   const data=await res.json();
@@ -289,27 +280,7 @@ async function submitSignup(prorated){
     return;
   }
 
-  // Update pass in database
-  const plate=(document.getElementById('plate-inp')?.value||'').toUpperCase().trim();
-  await db('passes','PATCH',{
-    status:'active',
-    token_used:true,
-    stripe_customer_id:data.customerId,
-    stripe_payment_method_id:data.paymentMethodId,
-    next_bill_date:nextBill.toISOString(),
-    start_date:new Date().toISOString(),
-    plate:plate||null,
-    billed_at:new Date().toISOString(),
-    service_fee:serviceFee
-  },`?signup_token=eq.${passData.signup_token}`);
-
-  // Send receipt email — built server-side from the pass record, not from client input
-  await fetch(`${SUPA_URL}/functions/v1/send-receipt`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
-    body:JSON.stringify({type:'pass_activated',id:passData.id,email:passData.email})
-  });
-  showSuccess(passData,price,nextBill);
+  showSuccess(passData,data.price,data.nextBill?new Date(data.nextBill):null);
 }
 
 function showSuccess(pass,price,nextBill){

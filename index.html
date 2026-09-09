@@ -844,17 +844,14 @@ async function handlePay(){
   }
 
   if(isFree){
-    const wasComp=S.val?.isComp,compId=S.val?.id;
-    // Claim the comp code before granting free parking, not after — otherwise two people
-    // submitting the same single-use code within moments of each other could both get in
-    // before either claim is recorded.
-    if(wasComp){
-      const claimed=await useCompCode(compId,S.plate.trim());
-      if(!claimed){alert('This code has already been used. Please enter a different code or pay normally.');return;}
-    }
-    const sess={id:'CPM-'+S.tic++,plate:S.plate.trim(),type,start:Date.now(),duration:dur,rate:S.rate,paid:0,pkch:+base,sfee:+fee,disc:+disc,vehicle:S.vehicle,phone:S.phone,email:emailVal,smsSent:false,lotId:S.lotId,valId:S.val?S.val.id:null,valWindowMin};
+    // Session creation now happens server-side — it re-validates any code and, for a real
+    // charge, verifies the Stripe payment before ever writing a "paid" row. The client just
+    // asks for it and renders whatever comes back.
+    const sessId='CPM-'+S.tic++;
+    const data=await finalizePayment({mode:'session',sessionId:sessId,lotId:S.lotId,rate:S.rate,hours:S.hours,valCode:S.val?S.val.code:null,plate:S.plate.trim(),vehicle:S.vehicle,phone:S.phone,email:emailVal});
+    if(data.error){alert(data.error);return;}
+    const sess=mapSessRow(data.session);
     S.sess.unshift(sess);S.payData=sess;S.cstep=2;S.val=null;render();
-    await saveSession(sess);
     return;
   }
 
@@ -936,15 +933,20 @@ async function submitCardPayment(){
   }
 
   document.getElementById('card-modal').classList.remove('show');
-  const wasComp=S.val?.isComp,compId=S.val?.id;
-  const sess={id:sessId,plate:S.plate.trim(),type,start:Date.now(),duration:dur,rate:S.rate,paid:+amount,pkch:+base,sfee:+fee,disc:+disc,vehicle:S.vehicle,phone:S.phone,email:emailVal,smsSent:false,lotId:S.lotId,valId:S.val?S.val.id:null,paymentIntentId:paymentIntent.id,captured:false,valWindowMin};
+  // The card is confirmed with Stripe now, but the session row itself only gets written
+  // once the server re-verifies that PaymentIntent — the browser reporting success here
+  // isn't enough on its own.
+  const data=await finalizePayment({mode:'session',sessionId:sessId,paymentIntentId:paymentIntent.id,lotId:S.lotId,rate:S.rate,hours:S.hours,valCode:S.val?S.val.code:null,plate:S.plate.trim(),vehicle:S.vehicle,phone:S.phone,email:emailVal});
+  if(data.error){
+    // The card was already charged at this point — don't invite a second attempt, which
+    // would charge again. This should be rare (finalize recomputes the same amount the
+    // charge was created for); if it happens, it needs a human, not a retry button.
+    alert('Your payment went through, but we could not finish recording your session. Please contact info@cityparkmanagement.com with your confirmation and we will sort it out — do not pay again.');
+    return;
+  }
+  const sess=mapSessRow(data.session);
   S.sess.unshift(sess);S.payData=sess;S.cstep=2;S.val=null;render();
   localStorage.setItem('cpm_active_session', sess.id);
-  await saveSession(sess);
-  if(wasComp){
-    const claimed=await useCompCode(compId, sess.plate);
-    if(!claimed)logAudit('Comp code redemption race detected',`${compId} was already used elsewhere when session ${sess.id} tried to redeem it`);
-  }
 }
 
 function renderSuccess(){
@@ -971,36 +973,19 @@ async function applyPostVal(){
   const code=(document.getElementById('post-val-inp')?.value||'').toUpperCase().trim();
   const d=S.payData;
   if(!code||!d)return;
-  const v=Object.values(S.vals).find(x=>x.code===code&&(x.lotIds||[x.lotId]).includes(d.lotId)&&x.active);
-  const comp=S.compCodes.find(x=>x.code===code&&!x.used_at&&new Date(x.expires_at)>new Date());
-  const matched=v||(comp?{id:comp.id,name:'Comp Code',code:comp.code,type:'free',discountPct:0,discountAmt:0,maxHours:0,active:true,isComp:true}:null);
-  if(!matched){const el=document.getElementById('post-val-err');if(el)el.textContent='Invalid or inactive code.';return;}
-  // Same shape as getTotal(): cap the discount to the code's max hours (hours beyond that
-  // bill normally) and always protect the service fee, regardless of discount type — this
-  // used to only hold true before payment; a flat-dollar code applied after payment could
-  // eat into the fee too, and no code type respected max hours here at all.
-  const discBase=(d.rate==='hourly'&&matched.maxHours>0)?+(d.pkch/d.duration*Math.min(d.duration,matched.maxHours)).toFixed(2):d.pkch;
-  let disc=0;
-  if(matched.dontBill||matched.type==='free')disc=discBase;
-  else if(matched.type==='percent')disc=+(discBase*(matched.discountPct/100)).toFixed(2);
-  else if(matched.type==='flat')disc=Math.min(matched.discountAmt,discBase);
-  const newAmount=Math.max(0,+(d.pkch-disc+d.sfee).toFixed(2));
   const btn=document.querySelector('#post-val-inp+button');
   if(btn){btn.textContent='Applying...';btn.disabled=true;}
-  if(newAmount===0){
-    await fetch(`${SUPA_URL}/functions/v1/stripe-capture`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(getAuthToken()||SUPA_KEY)},body:JSON.stringify({paymentIntentId:d.paymentIntentId,cancel:true})});
-  } else {
-    const originalAmount=d.pkch+d.sfee;
-    await capturePayment(d.paymentIntentId,newAmount,originalAmount);
+  // The server re-validates the code from scratch, does the actual Stripe
+  // capture/cancel/refund, and only then updates the session — the discount math it applies
+  // is never trusted from here.
+  const data=await finalizePayment({mode:'apply-val',sessionId:d.id,code});
+  if(data.error){
+    const el=document.getElementById('post-val-err');if(el)el.textContent=data.error;
+    if(btn){btn.textContent='Apply';btn.disabled=false;}
+    return;
   }
-  const discAmt=Math.max(0,+(d.pkch+d.sfee-newAmount).toFixed(2));
-  d.paid=newAmount;d.captured=true;d.valId=matched.id;d.disc=discAmt;S.val=matched;
-  if(matched.maxHours>0&&matched.maxHours>d.duration){d.duration=matched.maxHours;}
-  if(matched.isComp){
-    const claimed=await useCompCode(matched.id,d.plate);
-    if(!claimed)logAudit('Comp code redemption race detected',`${matched.id} was already used elsewhere when session ${d.id} tried to redeem it`);
-  }
-  await updateSessionValDB(d);
+  d.paid=data.paid;d.captured=true;d.valId=data.valId;d.disc=data.disc;d.duration=data.duration;
+  S.val=data.isComp?{id:data.valId,name:'Comp Code',type:'free',discountPct:0,discountAmt:0,isComp:true}:S.vals[data.valId];
   render();
 }
 async function handleExtendPay(hrs, total){
@@ -1036,9 +1021,13 @@ async function submitExtendPayment(){
     return;
   }
   document.getElementById('card-modal').classList.remove('show');
-  s.duration+=hrs;
-  s.paid=+(s.paid+amount).toFixed(2);
-  await updateSessionDB(s.id,{duration:s.duration,paid:s.paid});
+  const data=await finalizePayment({mode:'extend',sessionId:s.id,paymentIntentId:paymentIntent.id,hours:hrs});
+  if(data.error){
+    alert('Your payment went through, but we could not finish recording the extension. Please contact info@cityparkmanagement.com with your confirmation and we will sort it out — do not pay again.');
+    return;
+  }
+  s.duration=data.duration;
+  s.paid=data.paid;
   S.extDone=true;
   render();
 }

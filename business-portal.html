@@ -127,27 +127,19 @@ function confirmRegen(){
 }
 
 async function regenCode(){
-  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const genCode=()=>{let c='';for(let i=0;i<6;i++)c+=chars[Math.floor(Math.random()*chars.length)];return c;};
-
-  const prev=valData.previous_codes||[];
-  prev.push({code:valData.code,generated_at:new Date().toISOString(),expires_at:new Date().toISOString()});
-
-  // The code column has a database-level UNIQUE constraint, so a collision can't actually
-  // corrupt anything — the write just gets rejected. Retry with a fresh random code a few
-  // times instead of making the business owner manually hit the button again themselves.
-  let res=null,newCode='';
-  for(let attempt=0;attempt<5&&!res;attempt++){
-    newCode=genCode();
-    res=await db('validations','PATCH',{code:newCode,previous_codes:prev},`?business_token=eq.${valData.business_token}`);
-  }
-  if(res){
-    valData.previous_codes=prev;
-    valData.code=newCode;
+  const res=await fetch(`${SUPA_URL}/functions/v1/regen-business-code`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+    body:JSON.stringify({token:valData.business_token})
+  });
+  const data=await res.json();
+  if(data.success){
+    valData.previous_codes=data.previous_codes;
+    valData.code=data.code;
     document.getElementById('confirm-area').innerHTML='';
     render();
   } else {
-    alert('Error updating code. Please try again.');
+    alert(data.error||'Error updating code. Please try again.');
   }
 }
 

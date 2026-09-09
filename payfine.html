@@ -292,7 +292,7 @@ async function submitPayment(){
     return;
   }
 
-  const {error:confirmError}=await stripe.confirmCardPayment(piData.clientSecret,{
+  const {error:confirmError,paymentIntent}=await stripe.confirmCardPayment(piData.clientSecret,{
     payment_method:{card:cardElement}
   });
 
@@ -303,12 +303,19 @@ async function submitPayment(){
     return;
   }
 
-  // Mark violation as paid
-  await db('violations','PATCH',{
-    status:'paid',
-    paid_at:new Date().toISOString(),
-    paid_amount:violationData.fine_amount
-  },`?id=eq.${violationData.id}`);
+  // The card is confirmed with Stripe now, but the violation only gets marked paid once the
+  // server re-verifies that PaymentIntent — the browser reporting success isn't enough on
+  // its own to waive a fine.
+  const finRes=await fetch(`${SUPA_URL}/functions/v1/stripe-finalize`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+    body:JSON.stringify({mode:'violation',violationId:violationData.id,paymentIntentId:paymentIntent.id})
+  });
+  const finData=await finRes.json();
+  if(finData.error){
+    alert('Your payment went through, but we could not finish recording it. Please contact info@cityparkmanagement.com with your confirmation — do not pay again.');
+    return;
+  }
   showSuccess();
 }
 

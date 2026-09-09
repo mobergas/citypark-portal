@@ -118,33 +118,28 @@ const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTyp
   if(auditLog){S.auditLog=auditLog;}
   if(masterAccounts){S.masterAccounts=masterAccounts.map(a=>({...a,lot_ids:a.lot_ids||[]}));}
   if(sess){
-    S.sess=sess.map(s=>({
-      id:s.id,plate:s.plate,type:s.type,rate:s.rate,
-      start:s.start_time,duration:s.duration,paid:s.paid,
-      pkch:s.pkch,sfee:s.sfee,disc:s.disc||0,vehicle:s.vehicle,phone:s.phone,
-      smsSent:s.sms_sent,receiptSent:s.receipt_sent,
-      lotId:s.lot_id,valId:s.val_id,
-      paymentIntentId:s.payment_intent_id||null,
-      captured:s.captured||false,
-      valWindowMin:s.val_window_min??15
-    }));
+    S.sess=sess.map(mapSessRow);
   }
+}
+
+function mapSessRow(s){
+  return{
+    id:s.id,plate:s.plate,type:s.type,rate:s.rate,
+    start:s.start_time,duration:s.duration,paid:s.paid,
+    pkch:s.pkch,sfee:s.sfee,disc:s.disc||0,vehicle:s.vehicle,phone:s.phone,
+    smsSent:s.sms_sent,receiptSent:s.receipt_sent,email:s.email||'',
+    lotId:s.lot_id,valId:s.val_id,
+    paymentIntentId:s.payment_intent_id||null,
+    captured:s.captured||false,
+    valWindowMin:s.val_window_min??15
+  };
 }
 
 async function loadMoreSessions(){
   const oldest=S.sess.length>0?Math.min(...S.sess.map(s=>s.start)):Date.now();
   const more=await db('sessions','GET',null,`?select=*&order=created_at.desc&limit=100&start_time=lt.${oldest}`);
   if(more&&more.length>0){
-    const mapped=more.map(s=>({
-      id:s.id,plate:s.plate,type:s.type,rate:s.rate,
-      start:s.start_time,duration:s.duration,paid:s.paid,
-      pkch:s.pkch,sfee:s.sfee,disc:s.disc||0,vehicle:s.vehicle,phone:s.phone,
-      smsSent:s.sms_sent,receiptSent:s.receipt_sent,
-      lotId:s.lot_id,valId:s.val_id,
-      paymentIntentId:s.payment_intent_id||null,
-      captured:s.captured||false,
-      valWindowMin:s.val_window_min??15
-    }));
+    const mapped=more.map(mapSessRow);
     S.sess=[...S.sess,...mapped];
     render();
   } else {
@@ -155,28 +150,6 @@ async function loadMoreSessions(){
 async function loginUser(username,password){
   const res=await db('users','GET',null,`?username=eq.${username}&password=eq.${password}&active=eq.true&select=*`);
   return res&&res.length>0?res[0]:null;
-}
-
-async function saveSession(sess){
-  return db('sessions','POST',{
-    id:sess.id,plate:sess.plate,type:sess.type,rate:sess.rate,
-    start_time:sess.start,duration:sess.duration,paid:sess.paid,
-    pkch:sess.pkch,sfee:sess.sfee,disc:sess.disc||0,vehicle:sess.vehicle,phone:sess.phone,
-    sms_sent:sess.smsSent,receipt_sent:sess.receiptSent||false,
-    email:sess.email||'',lot_id:sess.lotId,val_id:sess.valId||null,
-    payment_intent_id:sess.paymentIntentId||null,captured:sess.captured||false,
-    val_window_min:sess.valWindowMin??15
-  });
-}
-
-async function updateSessionValDB(sess){
-  return db('sessions','PATCH',{
-    paid:sess.paid,disc:sess.disc||0,val_id:sess.valId||null,captured:sess.captured||false,duration:sess.duration
-  },`?id=eq.${sess.id}`);
-}
-
-async function updateSessionDB(id, fields){
-  return db('sessions','PATCH',fields,`?id=eq.${id}`);
 }
 
 async function saveLotDB(lot){
@@ -251,6 +224,21 @@ async function createPaymentIntent(payload, description, sessionId){
     body: JSON.stringify({ ...payload, description, sessionId })
   });
 return res.json();
+}
+
+// The one place a session/extension/violation actually gets written as "paid" — verifies
+// against Stripe (or a freshly re-checked discount code) server-side first. Never write
+// paid/captured/status directly to these tables from the client.
+async function finalizePayment(payload){
+  const res = await fetch(`${SUPA_URL}/functions/v1/stripe-finalize`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + (getAuthToken() || SUPA_KEY),
+    },
+    body: JSON.stringify(payload)
+  });
+  return res.json();
 }
 
 async function capturePayment(paymentIntentId, amount, originalAmount){
@@ -418,24 +406,6 @@ async function deleteCompCode(id){
 
 async function deleteSessionDB(id){
   return db('sessions','DELETE',null,`?id=eq.${id}`);
-}
-
-async function useCompCode(id, plate){
-  // Atomic claim: the used_at=is.null filter means this only succeeds if no one else has
-  // already redeemed the code. Returns the updated row on success, null if it was already used.
-  const res = await fetch(`${SUPA_URL}/rest/v1/comp_codes?id=eq.${id}&used_at=is.null`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': SUPA_KEY,
-      'Authorization': 'Bearer ' + (getAuthToken() || SUPA_KEY),
-      'Prefer': 'return=representation'
-    },
-    body: JSON.stringify({ used_at: new Date().toISOString(), used_by_plate: plate })
-  });
-  if (!res.ok) return null;
-  const rows = await res.json();
-  return rows && rows.length > 0 ? rows[0] : null;
 }
 
 async function logAudit(action, details){
