@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
       headers: {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app',
         'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
       }
     });
@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     if ((count || 0) >= MAX_ATTEMPTS) {
       return new Response(JSON.stringify({ error: 'rate_limited', message: 'Too many failed attempts. Login locked for 10 minutes.' }), {
         status: 429,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
       });
     }
 
@@ -62,19 +62,19 @@ Deno.serve(async (req) => {
         : 'Too many failed attempts. Login locked for 10 minutes.';
       return new Response(JSON.stringify({ error: 'invalid_credentials', message }), {
         status: 401,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
       });
     }
 
     const data = await tokenRes.json();
     return new Response(JSON.stringify(data), {
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
     });
 
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
     });
   }
 });

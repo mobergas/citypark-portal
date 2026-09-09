@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
       headers: {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app',
         'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
       }
     });
@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     if ((count || 0) >= MAX_ATTEMPTS) {
       return new Response(JSON.stringify({ error: 'rate_limited', message: 'Too many invalid attempts. Please wait 10 minutes.' }), {
         status: 429,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
       });
     }
 
@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
         valid: true,
         val: { id: val.id, name: val.name, code: val.code, type: val.type, discountPct: val.discount_pct, discountAmt: val.discount_amt, maxHours: val.max_hours, active: val.active }
       }), {
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
       });
     }
 
@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
         valid: true,
         val: { id: comp.id, name: 'Comp Code', code: comp.code, type: 'free', discountPct: 0, discountAmt: 0, maxHours: 0, active: true, isComp: true }
       }), {
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
       });
     }
 
@@ -80,13 +80,13 @@ Deno.serve(async (req) => {
       remaining: Math.max(0, remaining),
       message: remaining > 0 ? `Invalid code. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.` : 'Too many invalid attempts. Please wait 10 minutes.'
     }), {
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
     });
 
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
     });
   }
 });

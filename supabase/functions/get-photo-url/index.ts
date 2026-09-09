@@ -8,7 +8,7 @@ const supabase = createClient(
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
-      headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' }
+      headers: { 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' }
     });
   }
 
@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data: userData, error: userErr } = await supabase.auth.getUser(token);
     if (userErr || !userData?.user) {
-      return new Response(JSON.stringify({ error: 'Not authenticated' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      return new Response(JSON.stringify({ error: 'Not authenticated' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' } });
     }
 
     const { violationId, filename } = await req.json();
@@ -34,14 +34,14 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await supabase.from('profiles').select('allowed_lot_ids').eq('id', userData.user.id).single();
     if (profile?.allowed_lot_ids && !profile.allowed_lot_ids.includes(violation.lot_id)) {
-      return new Response(JSON.stringify({ error: 'Not authorized for this lot' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      return new Response(JSON.stringify({ error: 'Not authorized for this lot' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' } });
     }
 
     const { data, error } = await supabase.storage.from('violation-photos').createSignedUrl(filename, 300); // link valid for 5 minutes
     if (error) throw error;
 
-    return new Response(JSON.stringify({ url: data.signedUrl }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    return new Response(JSON.stringify({ url: data.signedUrl }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' } });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    return new Response(JSON.stringify({ error: err.message }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' } });
   }
 });

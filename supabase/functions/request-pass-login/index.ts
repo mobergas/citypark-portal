@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
       headers: {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app',
         'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
       }
     });
@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
       if ((count || 0) >= MAX_REQUESTS) {
         return new Response(JSON.stringify({ error: 'rate_limited', message: 'Too many requests for this email. Please wait 15 minutes and try again.' }), {
           status: 429,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
         });
       }
       await supabase.from('pass_login_requests').insert({ email: cleanEmail });
@@ -75,13 +75,13 @@ Deno.serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ success: true }), {
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
     });
 
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
     });
   }
 });

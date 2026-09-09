@@ -8,7 +8,7 @@ const supabase = createClient(
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
-      headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' }
+      headers: { 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' }
     });
   }
 
@@ -17,12 +17,12 @@ Deno.serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data: userData, error: userErr } = await supabase.auth.getUser(token);
     if (userErr || !userData?.user) {
-      return new Response(JSON.stringify({ error: 'Not authenticated' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      return new Response(JSON.stringify({ error: 'Not authenticated' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' } });
     }
 
     const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', userData.user.id).single();
     if (!callerProfile || callerProfile.role !== 'admin') {
-      return new Response(JSON.stringify({ error: 'Only admins can create staff accounts' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      return new Response(JSON.stringify({ error: 'Only admins can create staff accounts' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' } });
     }
 
     const { email, password, name, role } = await req.json();
@@ -39,8 +39,8 @@ Deno.serve(async (req) => {
       throw profileErr;
     }
 
-    return new Response(JSON.stringify({ success: true, id: newUser.user.id }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    return new Response(JSON.stringify({ success: true, id: newUser.user.id }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' } });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    return new Response(JSON.stringify({ error: err.message }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' } });
   }
 });

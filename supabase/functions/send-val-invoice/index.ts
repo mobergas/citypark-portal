@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
       headers: {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app',
         'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
       }
     });
@@ -103,11 +103,11 @@ Deno.serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data: userData, error: userErr } = await supabase.auth.getUser(token);
     if (userErr || !userData?.user) {
-      return new Response(JSON.stringify({ error: 'Not authenticated' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      return new Response(JSON.stringify({ error: 'Not authenticated' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' } });
     }
     const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', userData.user.id).single();
     if (!callerProfile || !['admin', 'manager'].includes(callerProfile.role)) {
-      return new Response(JSON.stringify({ error: 'Only managers and admins can send validation invoices' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      return new Response(JSON.stringify({ error: 'Only managers and admins can send validation invoices' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' } });
     }
 
     const body = await req.json();
@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
       await sendEmail(val.billing_email, `Parking Validation Invoice - ${val.name} - ${inv.period_start} to ${inv.period_end}`, html);
 
       return new Response(JSON.stringify({ success: true, invoiceId: inv.id, paymentLink: inv.stripe_payment_link }), {
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
       });
     }
 
@@ -210,13 +210,13 @@ Deno.serve(async (req) => {
     await sendEmail(billingEmail, `Parking Validation Invoice - ${valName} - ${periodStart} to ${periodEnd}`, html, attachments);
 
     return new Response(JSON.stringify({ success: true, invoiceId, paymentLink }), {
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
     });
 
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
     });
   }
 });

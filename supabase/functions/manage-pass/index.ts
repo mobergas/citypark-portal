@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
       headers: {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app',
         'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
       }
     });
@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
           if (currentCount >= 2) {
             return new Response(JSON.stringify({ error: 'You have reached the limit of 2 plate changes this month. Please contact us at info@cityparkmanagement.com if you need further assistance.' }), {
               status: 400,
-              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
             });
           }
 
@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
 
       await supabase.from('passes').update(updates).eq('id', pass.id);
       return new Response(JSON.stringify({ success: true }), {
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
       });
     }
 
@@ -128,7 +128,7 @@ Deno.serve(async (req) => {
       await supabase.from('passes').update(passUpdates).eq('id', pass.id);
 
       return new Response(JSON.stringify({ success: true, retried: pass.status === 'past_due' }), {
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
       });
     }
 
@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
         next_bill_date: null,
       }).eq('id', pass.id);
       return new Response(JSON.stringify({ success: true }), {
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
       });
     }
 
@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
     });
   }
 });

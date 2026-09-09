@@ -16,7 +16,7 @@ async function sendEmail(to: string, subject: string, html: string) {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
-      headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' }
+      headers: { 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' }
     });
   }
 
@@ -25,20 +25,20 @@ Deno.serve(async (req) => {
 
     const { data: accts } = await supabase.from('master_accounts').select('*').eq('business_token', businessToken).eq('active', true);
     const acct = accts && accts.length ? accts[0] : null;
-    if (!acct) return new Response(JSON.stringify({ error: 'Invalid or inactive account.' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    if (!acct) return new Response(JSON.stringify({ error: 'Invalid or inactive account.' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' } });
 
     if (!(acct.lot_ids || []).includes(lotId)) {
-      return new Response(JSON.stringify({ error: 'That lot is not available for this account.' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      return new Response(JSON.stringify({ error: 'That lot is not available for this account.' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' } });
     }
 
     const { count } = await supabase.from('passes').select('*', { count: 'exact', head: true }).eq('master_account_id', acct.id).neq('status', 'canceled');
     if ((count || 0) >= acct.pass_cap) {
-      return new Response(JSON.stringify({ error: 'Pass cap reached. Contact City Park Management to increase your limit.' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      return new Response(JSON.stringify({ error: 'Pass cap reached. Contact City Park Management to increase your limit.' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' } });
     }
 
     const { data: lots } = await supabase.from('lots').select('*').eq('id', lotId);
     const lot = lots && lots.length ? lots[0] : null;
-    if (!lot) return new Response(JSON.stringify({ error: 'Lot not found.' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    if (!lot) return new Response(JSON.stringify({ error: 'Lot not found.' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' } });
 
     const tok = 'tok_' + Math.random().toString(36).slice(2, 18);
     const passId = 'MP-' + Date.now();
@@ -55,8 +55,8 @@ Deno.serve(async (req) => {
 
     await sendEmail(email, `You're invited to activate a free parking pass at ${lot.name}`, html);
 
-    return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' } });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    return new Response(JSON.stringify({ error: err.message }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' } });
   }
 });
