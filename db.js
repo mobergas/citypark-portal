@@ -33,7 +33,32 @@ async function db(table,method='GET',body=null,filters=''){
   return text?JSON.parse(text):null;
 }
 
-async function loadFromDB(){
+// Every visitor — including an anonymous customer on the public pay page — calls this on
+// load and again on tab-resume, so it only fetches what's actually meant to be public (lot
+// info). Sessions, violations, and everything else are staff-only data and belong in
+// loadStaffData(), which the caller only invokes once someone is actually logged in.
+async function loadPublicData(){
+  const lots=await db('lots','GET',null,'?select=*');
+  if(lots){
+    S.lots={};
+    lots.forEach(l=>{
+      S.lots[l.id]={
+        ...l,
+        rates:l.rates||{},
+        fees:l.fees||{},
+        pricing:l.pricing||{},
+        monthlyselfsrv:l.monthlyselfsrv,
+        total_spaces:l.total_spaces||0,
+        max_monthly_passes:l.max_monthly_passes||0,
+        lot_notes:l.lot_notes||'',
+        pass_restrictions:l.pass_restrictions||{type:'none'},
+        val_window_minutes:l.val_window_minutes??15
+      };
+    });
+  }
+}
+
+async function loadStaffData(){
 const [lots,vals,passes,sess,profiles,compCodes,invoices,violations,violationTypes,auditLog,masterAccounts,warnings]=await Promise.all([
     db('lots','GET',null,'?select=*'),
     db('validations','GET',null,'?select=*'),
@@ -239,6 +264,31 @@ async function finalizePayment(payload){
     body: JSON.stringify(payload)
   });
   return res.json();
+}
+
+// Looks up one session by its own ticket id — used to restore an active session on refresh
+// or from a texted extend link, without downloading every other customer's session to do it.
+async function lookupSessionById(id){
+  const res = await fetch(`${SUPA_URL}/functions/v1/lookup-session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPA_KEY },
+    body: JSON.stringify({ action: 'by_id', id })
+  });
+  const data = await res.json();
+  return data.session ? mapSessRow(data.session) : null;
+}
+
+// Find My Ticket — plate-or-phone search. Returns reduced fields (no contact info) since
+// this is searchable by anyone who knows or guesses the value, not just the ticket holder.
+async function lookupSessionsByContact(query){
+  const res = await fetch(`${SUPA_URL}/functions/v1/lookup-session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPA_KEY },
+    body: JSON.stringify({ action: 'by_contact', query })
+  });
+  const data = await res.json();
+  if(data.error)return {error:data.message||data.error};
+  return {sessions:(data.sessions||[]).map(mapSessRow)};
 }
 
 async function capturePayment(paymentIntentId, amount, originalAmount){

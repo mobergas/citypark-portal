@@ -989,7 +989,7 @@ async function applyPostVal(){
   render();
 }
 async function handleExtendPay(hrs, total){
-  const s=S.sess.find(x=>x.id===S.extId);
+  const s=S.payData&&S.payData.id===S.extId?S.payData:null;
   if(!s)return;
   const l=S.lots[s.lotId];
   S._extPending={hrs,total:+total,s};
@@ -1032,7 +1032,7 @@ async function submitExtendPayment(){
   render();
 }
 function renderExtend(){
-  const s=S.sess.find(x=>x.id===S.extId);if(!s)return`<p style="text-align:center;padding:40px;color:var(--t3)">Session not found.</p>`;
+  const s=S.payData&&S.payData.id===S.extId?S.payData:null;if(!s)return`<p style="text-align:center;padding:40px;color:var(--t3)">Session not found.</p>`;
   const l=S.lots[s.lotId],p=l.pricing,f=l.fees.hourly,fee=f.enabled?f.amount:0;
   const ec=p.hourly*S.extHrs,et=(ec+fee).toFixed(2);
   if(S.extDone){const ne=new Date(s.start+s.duration*3600000);return`<div class="cw"><div class="ext-pnl"><div class="ext-hd"><h2>Session Extended!</h2><p>${l.name} · Zone ${l.zone}</p></div><div class="ext-bd"><div style="background:var(--lime-bg);border:2px solid var(--lime-dark);border-radius:10px;padding:16px;text-align:center;margin-bottom:14px"><div style="font-size:28px;margin-bottom:6px">✓</div><div style="font-family:var(--fc);font-size:18px;font-weight:900;text-transform:uppercase">+${S.extHrs} hour${S.extHrs!==1?'s':''} added</div><div style="font-size:13px;color:var(--t2);margin-top:4px">New expiry: <strong>${ne.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</strong></div></div><div class="tmr"><div class="tmrn">${fmtT(remMs(s))}</div><div class="tmrl">Updated time remaining</div></div><button class="oln" style="margin-top:0" onclick="S.v='pay';S.cstep=S.payData&&S.payData.id===S.extId?2:1;S.extId=null;S.extDone=false;render()">← Back to my ticket</button></div></div></div>`;}
@@ -1051,12 +1051,20 @@ function renderLookup(){
   </div></div>`;
 }
 
-function doLookup(){
+async function doLookup(){
   const plate=(document.getElementById('lookup-plate')?.value||'').trim().toUpperCase();
   if(!plate)return;
-  const matches=S.sess.filter(s=>(s.plate===plate||s.phone===plate)&&remMs(s)>0);
+  const btn=document.querySelector('.paybtn');
+  if(btn){btn.disabled=true;btn.textContent='Searching...';}
+  const result=await lookupSessionsByContact(plate);
+  if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-search"></i> Find Ticket';}
   const el=document.getElementById('lookup-result');
   if(!el)return;
+  if(result.error){
+    el.innerHTML=`<div style="background:#fff0f0;border:1.5px solid #ffcdd2;border-radius:8px;padding:12px 14px;font-size:13px;color:var(--red);text-align:center">${result.error}</div>`;
+    return;
+  }
+  const matches=result.sessions||[];
   if(!matches.length){
     el.innerHTML=`<div style="background:#fff0f0;border:1.5px solid #ffcdd2;border-radius:8px;padding:12px 14px;font-size:13px;color:var(--red);text-align:center">No active sessions found for <strong>${plate}</strong></div>`;
     return;
@@ -1064,7 +1072,7 @@ function doLookup(){
   el.innerHTML=matches.map(s=>{
     const l=S.lots[s.lotId]||{name:'?',zone:'?'};
     const exp=new Date(s.start+s.duration*3600000);
-    return`<div style="background:var(--lime-bg);border:1.5px solid var(--lime);border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer" onclick="S.payData=S.sess.find(x=>x.id==='${s.id}');S.cstep=2;S.v='pay';localStorage.setItem('cpm_active_session','${s.id}');render()">
+    return`<div style="background:var(--lime-bg);border:1.5px solid var(--lime);border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer" onclick="selectFoundSession('${s.id}')">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <span style="font-family:var(--fc);font-size:16px;font-weight:900;color:var(--lime-dark)">${escH(s.plate)}</span>
         <span style="font-family:var(--fc);font-size:12px;font-weight:700;color:var(--t3)">${s.type}</span>
@@ -1076,6 +1084,14 @@ function doLookup(){
       </div>
     </div>`;
   }).join('');
+}
+
+async function selectFoundSession(id){
+  const found=await lookupSessionById(id);
+  if(!found)return;
+  S.payData=found;S.cstep=2;S.v='pay';
+  localStorage.setItem('cpm_active_session',id);
+  render();
 }
 
 function renderLogin(){
@@ -2489,7 +2505,7 @@ async function sendAdminMasterInvite(){
   const acct=(S.masterAccounts||[]).find(x=>x.id===acctId);
   logAudit('Invited master account parker',`${name} — ${acct?.business_name||''}`);
   closeM('admin-invite-modal');
-  await loadFromDB();
+  await loadStaffData();
   render();
 }
 
@@ -2626,7 +2642,7 @@ async function saveUser(){
       if(btn){btn.textContent='✓ Save';btn.disabled=false;}
       return;
     }
-    await loadFromDB();
+    await loadStaffData();
     closeM('usr-modal');
     render();
   }
@@ -2782,17 +2798,18 @@ async function init(){
     }
   }
 
-loadTemplatesFromLocal();  
-await loadFromDB();
+loadTemplatesFromLocal();
+await loadPublicData();
+if(S.cu)await loadStaffData();
 if(!S.lots[S.lotId]){
   const firstLot=Object.keys(S.lots)[0];
   if(firstLot)S.lotId=firstLot;
 }
-  
+
   // Restore active session if user refreshed
   const savedSessId = localStorage.getItem('cpm_active_session');
   if(savedSessId && !S.cu){
-    const found = S.sess.find(x=>x.id===savedSessId);
+    const found = await lookupSessionById(savedSessId);
     if(found && remMs(found)>0){
       S.payData=found;S.cstep=2;S.v='pay';
     } else {
@@ -2815,20 +2832,26 @@ if(!S.lots[S.lotId]){
     S.closedLotName = S.lots[lotParam].name;
     S.v = 'picklot';
   }
-  if(codeParam){
-    const v = Object.values(S.vals).find(x=>x.code===codeParam.toUpperCase()&&x.active);
-    if(v) S.val = v;
+  if(codeParam && S.lots[S.lotId]){
+    const res=await fetch(`${SUPA_URL}/functions/v1/validate-code`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+      body:JSON.stringify({code:codeParam,lotId:S.lotId})
+    });
+    const data=await res.json();
+    if(data.valid) S.val = data.val;
   }
   if(sessionParam){
-    const found = S.sess.find(x=>x.id===sessionParam);
+    const found = await lookupSessionById(sessionParam);
     if(found && remMs(found)>0){
+      S.payData = found;
       S.extId = sessionParam;
       S.extHrs = 1;
       S.extDone = false;
       S.v = 'extend';
     }
   }
-  
+
   render();
 }
 init();
@@ -2849,7 +2872,8 @@ window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); }
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState !== 'visible') return;
   if (document.querySelector('.show')) return;
-  await loadFromDB();
+  await loadPublicData();
+  if (S.cu) await loadStaffData();
   if (S.v === 'pay' && S.lotId && (!S.lots[S.lotId] || S.lots[S.lotId].open === false)) {
     S.closedLotName = S.lots[S.lotId] ? S.lots[S.lotId].name : null;
     S.v = 'picklot';
