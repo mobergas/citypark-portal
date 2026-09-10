@@ -5,6 +5,29 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
+async function sendEmail(to: string, subject: string, html: string) {
+  await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+    body: JSON.stringify({ to, subject, html })
+  });
+}
+
+const ALERT_EMAIL = 'info@cityparkmanagement.com';
+const ALERT_DEDUP_MS = 30 * 60 * 1000;
+
+async function sendAdminAlert(key: string, subject: string, details: string) {
+  try {
+    const windowStart = new Date(Date.now() - ALERT_DEDUP_MS).toISOString();
+    const { data: recent } = await supabase.from('admin_alerts').select('id').eq('alert_key', key).gte('created_at', windowStart).limit(1);
+    if (recent && recent.length) return;
+    await supabase.from('admin_alerts').insert({ alert_key: key, details });
+    await sendEmail(ALERT_EMAIL, `⚠️ City Park Alert: ${subject}`, `<p>${details}</p><p style="color:#888;font-size:12px">Sent ${new Date().toISOString()}</p>`);
+  } catch (e) {
+    console.error('sendAdminAlert failed:', e);
+  }
+}
+
 async function getValidPass(passId: string, token: string) {
   const { data: passes } = await supabase
     .from('passes')
@@ -140,7 +163,10 @@ Deno.serve(async (req) => {
         passUpdates.total_billed = (pass.total_billed || 0) + amount;
       }
 
-      await supabase.from('passes').update(passUpdates).eq('id', pass.id);
+      const { error: updateErr } = await supabase.from('passes').update(passUpdates).eq('id', pass.id);
+      if (updateErr && pass.status === 'past_due') {
+        await sendAdminAlert(`manage-pass-retry-failed:${pass.id}`, 'Charged customer but pass update failed', `A past-due retry charge succeeded for pass ${pass.id} (${pass.holder_name || pass.name}), but the passes update failed: ${updateErr.message}. This customer paid and their pass still shows past_due.`);
+      }
 
       return new Response(JSON.stringify({ success: true, retried: pass.status === 'past_due' }), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }

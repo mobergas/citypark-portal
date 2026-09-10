@@ -15,6 +15,32 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
+async function sendEmail(to: string, subject: string, html: string) {
+  await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+    body: JSON.stringify({ to, subject, html })
+  });
+}
+
+const ALERT_EMAIL = 'info@cityparkmanagement.com';
+const ALERT_DEDUP_MS = 30 * 60 * 1000;
+
+// The worst failure mode here: Stripe already confirmed the charge, and the database write
+// that's supposed to record it then fails — the customer paid and nothing shows it. Every
+// call site below is specifically the write that happens right after a verified PI.
+async function sendAdminAlert(key: string, subject: string, details: string) {
+  try {
+    const windowStart = new Date(Date.now() - ALERT_DEDUP_MS).toISOString();
+    const { data: recent } = await supabase.from('admin_alerts').select('id').eq('alert_key', key).gte('created_at', windowStart).limit(1);
+    if (recent && recent.length) return;
+    await supabase.from('admin_alerts').insert({ alert_key: key, details });
+    await sendEmail(ALERT_EMAIL, `⚠️ City Park Alert: ${subject}`, `<p>${details}</p><p style="color:#888;font-size:12px">Sent ${new Date().toISOString()}</p>`);
+  } catch (e) {
+    console.error('sendAdminAlert failed:', e);
+  }
+}
+
 function calcSessionTotal(lot: any, rate: string, hours: number, val: any) {
   const p = lot.pricing;
   const f = (lot.fees && lot.fees[rate]) || { enabled: false, amount: 0 };
@@ -119,7 +145,12 @@ Deno.serve(async (req) => {
         val_id: code ? code.id : null, payment_intent_id: storedPaymentIntentId, captured: false,
         sms_sent: false, receipt_sent: false, val_window_min: lot.val_window_minutes ?? 15
       }).select().single();
-      if (error) throw error;
+      if (error) {
+        if (storedPaymentIntentId) {
+          await sendAdminAlert(`session-insert-failed:${sessionId}`, 'Charged customer but session insert failed', `PaymentIntent ${storedPaymentIntentId} was verified as paid ($${calc.total}) for session ${sessionId} (plate ${cleanPlate}, lot ${lot.id}), but the sessions insert failed: ${error.message}. This customer paid and has no session on record.`);
+        }
+        throw error;
+      }
       return ok({ session: inserted });
     }
 
@@ -147,7 +178,10 @@ Deno.serve(async (req) => {
       const newDuration = sess.duration + hrs;
       const newPaid = +(sess.paid + amount).toFixed(2);
       const { error } = await supabase.from('sessions').update({ duration: newDuration, paid: newPaid }).eq('id', sessionId);
-      if (error) throw error;
+      if (error) {
+        await sendAdminAlert(`extend-update-failed:${sessionId}`, 'Charged customer but extend update failed', `PaymentIntent ${paymentIntentId} was verified as paid ($${amount}) to extend session ${sessionId} by ${hrs}hr, but the sessions update failed: ${error.message}. The PI was not marked finalized, so a retry with the same PI should still work — but check this session's duration/paid fields.`);
+        throw error;
+      }
       await stripe.paymentIntents.update(paymentIntentId, { metadata: { ...pi.metadata, finalized: 'true' } });
       return ok({ duration: newDuration, paid: newPaid });
     }
@@ -160,7 +194,10 @@ Deno.serve(async (req) => {
       const pi = await verifyPI(paymentIntentId, violationId);
       if (Math.round(violation.fine_amount * 100) !== pi.amount) throw new Error('Amount mismatch — please try again');
       const { error } = await supabase.from('violations').update({ status: 'paid', paid_at: new Date().toISOString(), paid_amount: violation.fine_amount }).eq('id', violationId);
-      if (error) throw error;
+      if (error) {
+        await sendAdminAlert(`violation-update-failed:${violationId}`, 'Charged customer but violation update failed', `PaymentIntent ${paymentIntentId} was verified as paid ($${violation.fine_amount}) for violation ${violationId} (plate ${violation.plate}), but the violations update failed: ${error.message}. This customer paid and the violation still shows unpaid.`);
+        throw error;
+      }
       return ok({ success: true });
     }
 
@@ -204,7 +241,12 @@ Deno.serve(async (req) => {
       const discAmt = Math.max(0, +(sess.pkch + sess.sfee - newAmount).toFixed(2));
       const newDuration = (matched.max_hours > 0 && matched.max_hours > sess.duration) ? matched.max_hours : sess.duration;
       const { error } = await supabase.from('sessions').update({ paid: newAmount, disc: discAmt, val_id: matched.id, captured: true, duration: newDuration }).eq('id', sessionId);
-      if (error) throw error;
+      if (error) {
+        if (sess.payment_intent_id) {
+          await sendAdminAlert(`apply-val-update-failed:${sessionId}`, 'Charge adjusted but session update failed', `stripe-capture adjusted PaymentIntent ${sess.payment_intent_id} to $${newAmount} for session ${sessionId} (was $${sess.pkch + sess.sfee}), but the sessions update failed: ${error.message}. Stripe and the database now disagree on this session's amount.`);
+        }
+        throw error;
+      }
       return ok({ paid: newAmount, disc: discAmt, duration: newDuration, valId: matched.id, isComp: matched.kind === 'comp' });
     }
 

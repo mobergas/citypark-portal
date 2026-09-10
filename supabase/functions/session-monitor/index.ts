@@ -26,6 +26,23 @@ async function sendSMS(to: string, message: string) {
   return data;
 }
 
+const ALERT_EMAIL = 'info@cityparkmanagement.com';
+const ALERT_DEDUP_MS = 30 * 60 * 1000;
+
+// Deduplicated per alert_key so a repeated failure sends one email per 30-minute window
+// instead of one per cron tick (this function runs every minute).
+async function sendAdminAlert(key: string, subject: string, details: string) {
+  try {
+    const windowStart = new Date(Date.now() - ALERT_DEDUP_MS).toISOString();
+    const { data: recent } = await supabase.from('admin_alerts').select('id').eq('alert_key', key).gte('created_at', windowStart).limit(1);
+    if (recent && recent.length) return;
+    await supabase.from('admin_alerts').insert({ alert_key: key, details });
+    await sendEmail(ALERT_EMAIL, `⚠️ City Park Alert: ${subject}`, `<p>${details}</p><p style="color:#888;font-size:12px">Sent ${new Date().toISOString()}</p>`);
+  } catch (e) {
+    console.error('sendAdminAlert failed:', e);
+  }
+}
+
 async function capturePaymentIntent(paymentIntentId: string, amount: number) {
   const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
   const body = new URLSearchParams();
@@ -211,6 +228,7 @@ Deno.serve(async () => {
         const result = await chargeMonthlyPass(pass);
         if (result.error) {
           console.error('Monthly charge failed for', pass.id, result.error);
+          await sendAdminAlert(`monthly-charge-failed:${pass.id}`, 'Monthly pass charge failed', `Monthly charge failed for pass ${pass.id} (${pass.holder_name || pass.name}, ${pass.email || 'no email'}): ${JSON.stringify(result.error)}. Marked past_due; the customer has been emailed to update their card.`);
           await supabase.from('passes').update({ status: 'past_due', past_due_since: new Date().toISOString() }).eq('id', pass.id);
           if (pass.email) {
             const updateLink = pass.card_update_token ? `https://www.cityparkmanagement.app/update-card?token=${pass.card_update_token}` : 'https://www.cityparkmanagement.app';
@@ -229,6 +247,7 @@ Deno.serve(async () => {
         }
       } catch(e) {
         console.error('Monthly billing error for', pass.id, e);
+        await sendAdminAlert(`monthly-billing-error:${pass.id}`, 'Monthly billing threw an error', `Unexpected error while billing pass ${pass.id} (${pass.holder_name || pass.name}): ${e instanceof Error ? e.message : String(e)}`);
       }
     }
   }
@@ -377,6 +396,7 @@ Deno.serve(async () => {
 
       } catch(e) {
         console.error('Auto-invoice error for', val.id, e);
+        await sendAdminAlert(`auto-invoice-error:${val.id}`, 'Auto-invoice generation failed', `Unexpected error while generating the monthly validation invoice for ${val.name} (${val.id}): ${e instanceof Error ? e.message : String(e)}`);
       }
     }
   }
@@ -399,9 +419,10 @@ Deno.serve(async () => {
       // Remove the photos from storage before the rows referencing them are gone, so
       // nothing gets orphaned in the violation-photos bucket.
       const photoFiles = (oldViolations || []).flatMap((v: any) => [v.photo_url, ...(v.photo_urls || [])]).filter(Boolean);
+      let storageErrOccurred = false;
       if (photoFiles.length) {
         const { error: storageErr } = await supabase.storage.from('violation-photos').remove(photoFiles);
-        if (storageErr) console.error('Retention purge: failed to remove some violation photos:', storageErr);
+        if (storageErr) { console.error('Retention purge: failed to remove some violation photos:', storageErr); storageErrOccurred = true; }
       }
 
       const { error: sessErr, count: sessCount } = await supabase.from('sessions').delete({ count: 'exact' }).lt('start_time', twoYearsAgoMs);
@@ -415,8 +436,12 @@ Deno.serve(async () => {
       const summary = `Deleted ${sessCount || 0} session(s) older than 2 years, ${passCount || 0} canceled pass(es) more than 1 year past cancellation, ${violCount || 0} violation(s) older than 2 years (${photoFiles.length} photo file(s) removed).`;
       console.log('Retention purge:', summary);
       await supabase.from('audit_log').insert({ actor_name: 'System (retention purge)', actor_id: null, action: 'Automated data retention purge', details: summary });
+      if (sessErr || passErr || violErr || storageErrOccurred) {
+        await sendAdminAlert('retention-purge-partial-error', 'Retention purge finished with errors', `The nightly retention purge ran but hit errors on at least one table — check the session-monitor function logs. ${summary}`);
+      }
     } catch (e) {
       console.error('Retention purge error:', e);
+      await sendAdminAlert('retention-purge-error', 'Retention purge failed', `The nightly retention purge threw an unhandled error: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 

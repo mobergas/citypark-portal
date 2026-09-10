@@ -5,6 +5,29 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
+async function sendEmail(to: string, subject: string, html: string) {
+  await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+    body: JSON.stringify({ to, subject, html })
+  });
+}
+
+const ALERT_EMAIL = 'info@cityparkmanagement.com';
+const ALERT_DEDUP_MS = 30 * 60 * 1000;
+
+async function sendAdminAlert(key: string, subject: string, details: string) {
+  try {
+    const windowStart = new Date(Date.now() - ALERT_DEDUP_MS).toISOString();
+    const { data: recent } = await supabase.from('admin_alerts').select('id').eq('alert_key', key).gte('created_at', windowStart).limit(1);
+    if (recent && recent.length) return;
+    await supabase.from('admin_alerts').insert({ alert_key: key, details });
+    await sendEmail(ALERT_EMAIL, `⚠️ City Park Alert: ${subject}`, `<p>${details}</p><p style="color:#888;font-size:12px">Sent ${new Date().toISOString()}</p>`);
+  } catch (e) {
+    console.error('sendAdminAlert failed:', e);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
@@ -58,13 +81,16 @@ Deno.serve(async (req) => {
       next.setDate(1);
       next.setHours(0, 0, 0, 0);
 
-      await supabase.from('passes').update({
+      const { error: updateErr } = await supabase.from('passes').update({
         status: 'active',
         stripe_payment_method_id: pi.payment_method,
         card_update_token: null,
         next_bill_date: next.toISOString(),
         total_billed: (pass.total_billed || 0) + amount
       }).eq('id', passId);
+      if (updateErr) {
+        await sendAdminAlert(`update-card-finalize-failed:${passId}`, 'Charged customer but pass update failed', `PaymentIntent ${paymentIntentId} was verified as paid ($${amount}) as a card-update retry for pass ${passId} (${pass.holder_name || pass.name}), but the passes update failed: ${updateErr.message}. This customer paid and their pass still shows past_due.`);
+      }
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }

@@ -13,6 +13,24 @@ async function sendEmail(to: string, subject: string, html: string) {
   });
 }
 
+const ALERT_EMAIL = 'info@cityparkmanagement.com';
+const ALERT_DEDUP_MS = 30 * 60 * 1000;
+
+// A one-off failure notification, deduplicated per alert_key so a repeated failure (e.g. a
+// misconfigured secret rejecting every webhook call) sends one email per 30-minute window
+// instead of one per event.
+async function sendAdminAlert(key: string, subject: string, details: string) {
+  try {
+    const windowStart = new Date(Date.now() - ALERT_DEDUP_MS).toISOString();
+    const { data: recent } = await supabase.from('admin_alerts').select('id').eq('alert_key', key).gte('created_at', windowStart).limit(1);
+    if (recent && recent.length) return;
+    await supabase.from('admin_alerts').insert({ alert_key: key, details });
+    await sendEmail(ALERT_EMAIL, `⚠️ City Park Alert: ${subject}`, `<p>${details}</p><p style="color:#888;font-size:12px">Sent ${new Date().toISOString()}</p>`);
+  } catch (e) {
+    console.error('sendAdminAlert failed:', e);
+  }
+}
+
 async function verifyStripeSignature(payload: string, sigHeader: string | null, secret: string): Promise<boolean> {
   if (!sigHeader) return false;
   const parts = sigHeader.split(',').reduce((acc: Record<string, string>, part) => {
@@ -61,10 +79,12 @@ Deno.serve(async (req) => {
       const isValid = await verifyStripeSignature(body, sigHeader, webhookSecret);
       if (!isValid) {
         console.error('Webhook signature verification failed');
+        await sendAdminAlert('webhook-sig-fail', 'Stripe webhook signature verification failed', 'A request to stripe-webhook failed signature verification and was rejected. If this keeps happening, check that STRIPE_WEBHOOK_SECRET matches the endpoint configured in the Stripe dashboard.');
         return new Response('Invalid signature', { status: 401 });
       }
     } else {
       console.error('STRIPE_WEBHOOK_SECRET not set — rejecting all webhook events for safety');
+      await sendAdminAlert('webhook-not-configured', 'Stripe webhook secret not configured', 'STRIPE_WEBHOOK_SECRET is not set, so stripe-webhook is rejecting every incoming Stripe event. Invoice-paid and failed-payment handling are not running until this is fixed.');
       return new Response('Webhook not configured', { status: 500 });
     }
 

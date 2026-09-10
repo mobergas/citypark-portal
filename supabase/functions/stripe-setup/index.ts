@@ -13,6 +13,29 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
+async function sendEmail(to: string, subject: string, html: string) {
+  await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+    body: JSON.stringify({ to, subject, html })
+  });
+}
+
+const ALERT_EMAIL = 'info@cityparkmanagement.com';
+const ALERT_DEDUP_MS = 30 * 60 * 1000;
+
+async function sendAdminAlert(key: string, subject: string, details: string) {
+  try {
+    const windowStart = new Date(Date.now() - ALERT_DEDUP_MS).toISOString();
+    const { data: recent } = await supabase.from('admin_alerts').select('id').eq('alert_key', key).gte('created_at', windowStart).limit(1);
+    if (recent && recent.length) return;
+    await supabase.from('admin_alerts').insert({ alert_key: key, details });
+    await sendEmail(ALERT_EMAIL, `⚠️ City Park Alert: ${subject}`, `<p>${details}</p><p style="color:#888;font-size:12px">Sent ${new Date().toISOString()}</p>`);
+  } catch (e) {
+    console.error('sendAdminAlert failed:', e);
+  }
+}
+
 function calcProrate(monthlyPrice: number) {
   const now = new Date();
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
@@ -140,7 +163,12 @@ Deno.serve(async (req) => {
       .eq('token_used', false)
       .select()
       .single();
-    if (error || !updated) throw new Error('This invitation has already been used. Please contact us if you need assistance.');
+    if (error || !updated) {
+      if (responsePrice > 0) {
+        await sendAdminAlert(`pass-activation-failed:${signupToken}`, 'Charged customer but pass activation failed', `A card was charged $${responsePrice + (updateFields.service_fee as number || 0)} for pass signup_token ${signupToken} (${pass.holder_name || pass.email || 'unknown'}), but the activation update failed${error ? ': ' + error.message : ' (claim returned no row, but this was not a normal "already used" case since a charge just happened)'}. This customer paid and their pass is not active.`);
+      }
+      throw new Error('This invitation has already been used. Please contact us if you need assistance.');
+    }
 
     await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-receipt`, {
       method: 'POST',
