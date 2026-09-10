@@ -291,18 +291,6 @@ async function lookupSessionsByContact(query){
   return {sessions:(data.sessions||[]).map(mapSessRow)};
 }
 
-async function capturePayment(paymentIntentId, amount, originalAmount){
-  const res = await fetch(`${SUPA_URL}/functions/v1/stripe-capture`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + (getAuthToken() || SUPA_KEY),
-    },
-    body: JSON.stringify({ paymentIntentId, amount, originalAmount })
-  });
-  return res.json();
-}
-
 async function manageEmployee(action, employeeId, extra){
   const res = await fetch(`${SUPA_URL}/functions/v1/manage-employee`, {
     method: 'POST',

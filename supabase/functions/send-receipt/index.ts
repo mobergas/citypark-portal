@@ -17,6 +17,9 @@ function wrapEmail(innerHtml: string) {
   return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:30px 0;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);"><tr><td style="background:#0d0d0d;padding:24px 32px;border-bottom:5px solid #b5d96e;"><img src="https://sldahhdbvcxdlqdhmsjd.supabase.co/storage/v1/object/public/assets/Logo%201.png" alt="City Park Management" style="height:48px;display:block;"></td></tr><tr><td style="padding:32px;font-size:15px;line-height:1.7;color:#444;">${innerHtml}</td></tr><tr><td style="background:#f5f5f5;padding:16px 32px;text-align:center;font-size:11px;color:#888;">City Park Management · info@cityparkmanagement.com</td></tr></table></td></tr></table></body></html>`;
 }
 
+const MAX_ATTEMPTS = 10;
+const WINDOW_MS = 10 * 60 * 1000;
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
@@ -27,6 +30,26 @@ Deno.serve(async (req) => {
   try {
     const { type, id, email } = await req.json();
     if (!email || !email.includes('@')) throw new Error('Valid email required');
+
+    // This is reachable with no login (a customer picks the destination address for their
+    // own receipt), and every type/id combination looks up real customer data by a fairly
+    // guessable id — so unlike an authenticated action, it needs its own rate limit rather
+    // than relying on a caller identity check, same as lookup-violation and lookup-session.
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const windowStart = new Date(Date.now() - WINDOW_MS).toISOString();
+    await supabase.from('receipt_send_attempts').delete().lt('created_at', windowStart);
+    const { count } = await supabase
+      .from('receipt_send_attempts')
+      .select('*', { count: 'exact', head: true })
+      .eq('ip', ip)
+      .gte('created_at', windowStart);
+    if ((count || 0) >= MAX_ATTEMPTS) {
+      return new Response(JSON.stringify({ error: 'rate_limited', message: 'Too many requests. Please wait a few minutes and try again.' }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
+      });
+    }
+    await supabase.from('receipt_send_attempts').insert({ ip });
 
     if (type === 'session') {
       const { data: s } = await supabase.from('sessions').select('*').eq('id', id).single();

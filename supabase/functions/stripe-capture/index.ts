@@ -8,6 +8,20 @@ Deno.serve(async (req) => {
     });
   }
 
+  // This adjusts or cancels a real Stripe charge from a bare paymentIntentId with no
+  // ownership check of its own — stripe-finalize is the only thing that's supposed to call
+  // it, after it has already verified which session that PaymentIntent belongs to. Restrict
+  // it to that server-to-server path instead of leaving it open to any caller with the
+  // public key, now that db.js's own unused direct-client wrapper for this has been removed.
+  const authHeader = req.headers.get('authorization') || '';
+  const token = authHeader.replace('Bearer ', '');
+  if (token !== Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) {
+    return new Response(JSON.stringify({ error: 'Not authorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
+    });
+  }
+
   try {
     const { paymentIntentId, amount, cancel, originalAmount } = await req.json();
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
