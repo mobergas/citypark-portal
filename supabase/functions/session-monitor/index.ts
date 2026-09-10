@@ -26,7 +26,7 @@ async function sendSMS(to: string, message: string) {
   return data;
 }
 
-const ALERT_EMAIL = 'info@cityparkmanagement.com';
+const ALERT_EMAIL = 'matt@cityparkmanagement.com';
 const ALERT_DEDUP_MS = 30 * 60 * 1000;
 
 // Deduplicated per alert_key so a repeated failure sends one email per 30-minute window

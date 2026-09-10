@@ -13,7 +13,7 @@ async function sendEmail(to: string, subject: string, html: string) {
   });
 }
 
-const ALERT_EMAIL = 'info@cityparkmanagement.com';
+const ALERT_EMAIL = 'matt@cityparkmanagement.com';
 const ALERT_DEDUP_MS = 30 * 60 * 1000;
 
 async function sendAdminAlert(key: string, subject: string, details: string) {

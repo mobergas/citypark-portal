@@ -23,7 +23,7 @@ async function sendEmail(to: string, subject: string, html: string) {
   });
 }
 
-const ALERT_EMAIL = 'info@cityparkmanagement.com';
+const ALERT_EMAIL = 'matt@cityparkmanagement.com';
 const ALERT_DEDUP_MS = 30 * 60 * 1000;
 
 // The worst failure mode here: Stripe already confirmed the charge, and the database write
