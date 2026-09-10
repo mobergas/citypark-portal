@@ -381,5 +381,44 @@ Deno.serve(async () => {
     }
   }
 
+  // Data retention purge — matches the periods stated in the Privacy Policy: sessions after
+  // 2 years, a canceled pass 1 year after its cancellation date, violations (and their
+  // photos) after 2 years. This function runs every minute via cron, so gate the purge to a
+  // single narrow window a day instead of scanning these tables on every run.
+  if (today.getHours() === 3 && today.getMinutes() === 0) {
+    try {
+      const twoYearsAgoMs = now - 2 * 365 * 24 * 3600 * 1000;
+      const twoYearsAgoIso = new Date(twoYearsAgoMs).toISOString();
+      const oneYearAgoIso = new Date(now - 365 * 24 * 3600 * 1000).toISOString();
+
+      const { data: oldViolations } = await supabase
+        .from('violations')
+        .select('id, photo_url, photo_urls')
+        .lt('created_at', twoYearsAgoIso);
+
+      // Remove the photos from storage before the rows referencing them are gone, so
+      // nothing gets orphaned in the violation-photos bucket.
+      const photoFiles = (oldViolations || []).flatMap((v: any) => [v.photo_url, ...(v.photo_urls || [])]).filter(Boolean);
+      if (photoFiles.length) {
+        const { error: storageErr } = await supabase.storage.from('violation-photos').remove(photoFiles);
+        if (storageErr) console.error('Retention purge: failed to remove some violation photos:', storageErr);
+      }
+
+      const { error: sessErr, count: sessCount } = await supabase.from('sessions').delete({ count: 'exact' }).lt('start_time', twoYearsAgoMs);
+      const { error: passErr, count: passCount } = await supabase.from('passes').delete({ count: 'exact' }).eq('status', 'canceled').lt('canceled_on', oneYearAgoIso);
+      const { error: violErr, count: violCount } = await supabase.from('violations').delete({ count: 'exact' }).lt('created_at', twoYearsAgoIso);
+
+      if (sessErr) console.error('Retention purge: sessions delete failed:', sessErr);
+      if (passErr) console.error('Retention purge: passes delete failed:', passErr);
+      if (violErr) console.error('Retention purge: violations delete failed:', violErr);
+
+      const summary = `Deleted ${sessCount || 0} session(s) older than 2 years, ${passCount || 0} canceled pass(es) more than 1 year past cancellation, ${violCount || 0} violation(s) older than 2 years (${photoFiles.length} photo file(s) removed).`;
+      console.log('Retention purge:', summary);
+      await supabase.from('audit_log').insert({ actor_name: 'System (retention purge)', actor_id: null, action: 'Automated data retention purge', details: summary });
+    } catch (e) {
+      console.error('Retention purge error:', e);
+    }
+  }
+
   return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
 });
