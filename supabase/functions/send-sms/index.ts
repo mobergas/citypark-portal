@@ -20,6 +20,17 @@ async function isAuthorized(req: Request): Promise<boolean> {
   return !error && !!data?.user;
 }
 
+// This is the one place every outbound text actually goes out from, so it's the one place
+// that has to honor a STOP request regardless of which caller is trying to send — a missed
+// 20-minute warning or receipt text is a minor inconvenience; texting someone who opted out
+// is not. Keyed by the last 10 digits so it matches no matter how a caller formatted `to`.
+async function isOptedOut(to: string): Promise<boolean> {
+  const last10 = to.replace(/\D/g, '').slice(-10);
+  if (!last10) return false;
+  const { data } = await supabase.from('sms_optouts').select('phone').eq('phone', last10).maybeSingle();
+  return !!data;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -31,6 +42,12 @@ Deno.serve(async (req) => {
 
   try {
     const { to, message } = await req.json();
+
+    if (await isOptedOut(to)) {
+      return new Response(JSON.stringify({ success: false, skipped: true, reason: 'opted_out' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
     const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
