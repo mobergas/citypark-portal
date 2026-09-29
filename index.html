@@ -621,14 +621,23 @@ function resolveOperator(){
 function applyOperatorBranding(){
   const root=document.documentElement.style;
   const logoImg=document.querySelector('.logo-box img');
+  const icoLink=document.querySelector('link[rel="icon"][type="image/x-icon"]');
+  const png32Link=document.querySelector('link[rel="icon"][sizes="32x32"]');
+  const png16Link=document.querySelector('link[rel="icon"][sizes="16x16"]');
   if(S.operator){
     if(logoImg)logoImg.src=S.operator.logo_url;
     if(S.operator.accent)root.setProperty('--lime',S.operator.accent);
     if(S.operator.accent_dark)root.setProperty('--lime-dark',S.operator.accent_dark);
     if(S.operator.accent_bg)root.setProperty('--lime-bg',S.operator.accent_bg);
+    if(icoLink&&S.operator.favicon_ico)icoLink.href=S.operator.favicon_ico;
+    if(png32Link&&S.operator.favicon_32)png32Link.href=S.operator.favicon_32;
+    if(png16Link&&S.operator.favicon_16)png16Link.href=S.operator.favicon_16;
   } else {
     if(logoImg)logoImg.src='https://sldahhdbvcxdlqdhmsjd.supabase.co/storage/v1/object/public/assets/Logo%201.png';
     root.removeProperty('--lime');root.removeProperty('--lime-dark');root.removeProperty('--lime-bg');
+    if(icoLink)icoLink.href='favicon_io/favicon.ico';
+    if(png32Link)png32Link.href='favicon_io/favicon-32x32.png';
+    if(png16Link)png16Link.href='favicon_io/favicon-16x16.png';
   }
 }
 function visibleLots(){
