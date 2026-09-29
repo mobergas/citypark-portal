@@ -189,6 +189,7 @@ async function saveLotDB(lot){
   const exists=await db('lots','GET',null,`?id=eq.${lot.id}&select=id`);
   const body={
     id:lot.id,name:lot.name,zone:lot.zone,address:lot.address,
+    category:lot.category||'parking',
     open:lot.open,rates:lot.rates,monthlyselfsrv:lot.monthlyselfsrv,
     fees:lot.fees,pricing:lot.pricing,
     total_spaces:lot.total_spaces||0,
