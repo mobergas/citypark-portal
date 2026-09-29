@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
     const { mode } = body;
 
     if (mode === 'session') {
-      const { sessionId, paymentIntentId, lotId, rate, hours, valCode, plate, vehicle, phone, email } = body;
+      const { sessionId, paymentIntentId, lotId, rate, hours, valCode, plate, vehicle, phone, email, slipNumber, vesselName } = body;
       const cleanPlate = String(plate || '').trim().toUpperCase();
       if (!cleanPlate) throw new Error('Plate required');
       if (!sessionId || !lotId) throw new Error('Missing session details');
@@ -143,7 +143,8 @@ Deno.serve(async (req) => {
         start_time: Date.now(), duration: dur, paid: calc.total, pkch: calc.base, sfee: calc.fee, disc: calc.disc,
         vehicle: vehicle || null, phone: phone || null, email: email || '', lot_id: lot.id,
         val_id: code ? code.id : null, payment_intent_id: storedPaymentIntentId, captured: false,
-        sms_sent: false, receipt_sent: false, val_window_min: lot.val_window_minutes ?? 15
+        sms_sent: false, receipt_sent: false, val_window_min: lot.val_window_minutes ?? 15,
+        slip_number: slipNumber || null, vessel_name: vesselName || null
       }).select().single();
       if (error) {
         if (storedPaymentIntentId) {

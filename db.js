@@ -38,7 +38,10 @@ async function db(table,method='GET',body=null,filters=''){
 // info). Sessions, violations, and everything else are staff-only data and belong in
 // loadStaffData(), which the caller only invokes once someone is actually logged in.
 async function loadPublicData(){
-  const lots=await db('lots','GET',null,'?select=*');
+  const [lots,operators]=await Promise.all([
+    db('lots','GET',null,'?select=*'),
+    db('operators','GET',null,'?select=*'),
+  ]);
   if(lots){
     S.lots={};
     lots.forEach(l=>{
@@ -55,6 +58,10 @@ async function loadPublicData(){
         val_window_minutes:l.val_window_minutes??15
       };
     });
+  }
+  if(operators){
+    S.operators={};
+    operators.forEach(o=>{S.operators[o.id]={...o,terminology:o.terminology||{}};});
   }
 }
 
@@ -156,7 +163,8 @@ function mapSessRow(s){
     lotId:s.lot_id,valId:s.val_id,
     paymentIntentId:s.payment_intent_id||null,
     captured:s.captured||false,
-    valWindowMin:s.val_window_min??15
+    valWindowMin:s.val_window_min??15,
+    slipNumber:s.slip_number||null,vesselName:s.vessel_name||null
   };
 }
 

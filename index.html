@@ -484,6 +484,7 @@ This invite is personal to you and expires in 7 days. Questions? Reply to this e
 
 const S={
   v:'pay',
+  operators:{},operator:null,slipNumber:'',vesselName:'',
   cstep:1,lotId:'lot1',rate:'hourly',hours:3,plate:'',phone:'',email:'',vehicle:'car',custName:'',
   val:null,codeErr:false,payData:null,tic:Date.now()+Math.floor(Math.random()*1000),extId:null,extHrs:1,extDone:false,
   cu:null,loginErr:false,showPw:false,tab:'sessions',sfLot:'all',
@@ -583,11 +584,38 @@ const T={
     consentErr:'Por favor acepte los términos anteriores para continuar.',
   }
 };
-function t(k){return T[S.lang][k]||T.en[k]||k;}
+function t(k){return S.operator?.terminology?.[k]||T[S.lang][k]||T.en[k]||k;}
 
 function isMgr(){return S.cu?.role==='manager'||S.cu?.role==='admin'}
 function isAdmin(){return S.cu?.role==='admin'}
 function lot(){return S.lots[S.lotId]||Object.values(S.lots)[0]}
+// Resolves which white-label operator (if any) is "active" for the current customer-facing
+// view: the selected lot's own operator wins whenever a lot is known (authoritative — a
+// session/lot always belongs to exactly one operator), falling back to matching the hostname
+// against an operator's subdomain for the pre-lot-selection moment (a bare visit to
+// sliplink.cityparkmanagement.app before any lot is picked).
+function resolveOperator(){
+  const l=S.lots[S.lotId];
+  if(l?.operator_id&&S.operators[l.operator_id])return S.operators[l.operator_id];
+  const host=window.location.hostname.split('.')[0];
+  return Object.values(S.operators).find(o=>o.subdomain===host)||null;
+}
+// Applies the resolved operator's logo/accent colors/copy to the DOM. Colors are set as the
+// same CSS custom properties (--lime/--lime-dark/--lime-bg) already referenced throughout
+// this file's styles, so this alone re-skins the page without touching each call site.
+function applyOperatorBranding(){
+  const root=document.documentElement.style;
+  const logoImg=document.querySelector('.logo-box img');
+  if(S.operator){
+    if(logoImg)logoImg.src=S.operator.logo_url;
+    if(S.operator.accent)root.setProperty('--lime',S.operator.accent);
+    if(S.operator.accent_dark)root.setProperty('--lime-dark',S.operator.accent_dark);
+    if(S.operator.accent_bg)root.setProperty('--lime-bg',S.operator.accent_bg);
+  } else {
+    if(logoImg)logoImg.src='https://sldahhdbvcxdlqdhmsjd.supabase.co/storage/v1/object/public/assets/Logo%201.png';
+    root.removeProperty('--lime');root.removeProperty('--lime-dark');root.removeProperty('--lime-bg');
+  }
+}
 function visibleLots(){
   const allowed=S.cu?.allowed_lot_ids;
   if(!allowed||!allowed.length)return Object.values(S.lots);
@@ -747,7 +775,9 @@ function renderPay(){
         </div>
         ${S.rate==='hourly'?`<div class="fg"><label class="fl">${t('duration')}</label><div class="hrs-row"><button class="hrs-btn" onclick="S.hours=Math.max(1,S.hours-1);render()" aria-label="Decrease hours">−</button><div class="hrs-disp" aria-live="polite">${S.hours}</div><button class="hrs-btn" onclick="S.hours=Math.min(12,S.hours+1);render()" aria-label="Increase hours">+</button><span class="hrs-lbl">${S.hours===1?'hour':'hours'}</span></div></div>`:''}
         ${S.rate==='monthly'?`<div class="fg"><label class="fl">Full Name <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--red)">* required</span></label><input class="fi" id="name-inp" placeholder="Enter your full name" value="${escH(S.custName||'')}" oninput="S.custName=this.value"></div>`:''}
+        ${S.operator?`<div class="fg"><label class="fl">Slip Number</label><input class="fi" style="font-family:var(--fc);font-size:22px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;text-align:center" id="slip-inp" placeholder="e.g. A-14" value="${escH(S.slipNumber)}" oninput="S.slipNumber=this.value.toUpperCase();this.value=S.slipNumber"></div>`:''}
         <div class="fg"><label class="fl">${t('plate')}</label><input class="fi" style="font-family:var(--fc);font-size:22px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;text-align:center" id="plate-inp" placeholder="Enter plate here" value="${escH(S.plate)}" oninput="S.plate=this.value.toUpperCase();this.value=S.plate;updatePayBtn()" maxlength="10"></div>
+        ${S.operator?`<div class="fg"><label class="fl">Vessel Name <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--t3)">optional</span></label><input class="fi" id="vessel-inp" placeholder="e.g. Reel Time" value="${escH(S.vesselName)}" oninput="S.vesselName=this.value"></div>`:''}
         <div class="fg"><label class="fl">${t('vehicle')}</label><select class="fse" id="veh-sel"><option value="car"${S.vehicle==='car'?' selected':''}>${t('car')}</option><option value="truck"${S.vehicle==='truck'?' selected':''}>${t('truck')}</option><option value="motorcycle"${S.vehicle==='motorcycle'?' selected':''}>${t('moto')}</option></select></div>
         <div class="fg"><label class="fl">Phone <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--red)">* required</span></label><div class="ph-row"><div class="ph-pfx"><i class="ti ti-device-mobile" style="font-size:13px"></i> +1</div><input class="fi" id="phone-inp" placeholder="(555) 000-0000" value="${escH(S.phone)}" oninput="S.phone=this.value;updatePayBtn()" style="flex:1" type="tel"></div><label id="consent-label" style="display:flex;align-items:flex-start;gap:10px;margin-top:10px;cursor:pointer"><input type="checkbox" id="sms-consent" ${S.smsConsent?'checked':''} onchange="S.smsConsent=this.checked;updatePayBtn();document.getElementById('consent-err').style.display='none';document.getElementById('consent-label').style.color=''" style="margin-top:3px;flex-shrink:0;width:20px;height:20px;cursor:pointer"><span style="font-size:14px;color:var(--t2);line-height:1.6">${t('smsConsentText')} <a href="/sms-terms" target="_blank" style="color:var(--lime-dark);text-decoration:underline">${t('smsTerms')}</a></span></label><div id="consent-err" role="alert" aria-live="assertive" style="display:none;color:var(--red);font-size:12px;font-weight:700;margin-top:4px">${t('consentErr')}</div></div> <div class="fg"><label class="fl">Email ${S.rate==='monthly'?'<span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--red)">* required</span>':'<span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--t3)">optional · for email receipt</span>'}</label><input class="fi" id="email-inp" placeholder="your@email.com" value="${escH(S.email||'')}" oninput="S.email=this.value;updatePayBtn()" type="email"></div>
         ${!S.val&&S.rate!=='monthly'?`<div class="vcode-sec"><div class="fl" style="margin-bottom:8px"><i class="ti ti-discount" style="font-size:12px;margin-right:4px;color:var(--gold)"></i>${t('valCode')}</div><div class="vcode-row"><input class="vcode-inp" id="vcode-inp" placeholder="ENTER CODE (e.g. HOTEL2024)" maxlength="30" oninput="this.value=this.value.toUpperCase();S.codeErr=false" onkeydown="if(event.key==='Enter')applyCode()"><button class="vcode-btn" onclick="applyCode()">${t('apply')}</button></div><div class="vcode-err${S.codeErr?' show':''}" id="vcode-err">${t('invalidCode')}</div><div class="fl" style="margin-top:10px;white-space:normal;line-height:1.5"><i class="ti ti-discount" style="font-size:12px;margin-right:4px;color:var(--gold)"></i>${t('postPayNote')}</div></div>`:''}
@@ -848,7 +878,7 @@ async function handlePay(){
     // charge, verifies the Stripe payment before ever writing a "paid" row. The client just
     // asks for it and renders whatever comes back.
     const sessId='CPM-'+S.tic++;
-    const data=await finalizePayment({mode:'session',sessionId:sessId,lotId:S.lotId,rate:S.rate,hours:S.hours,valCode:S.val?S.val.code:null,plate:S.plate.trim(),vehicle:S.vehicle,phone:S.phone,email:emailVal});
+    const data=await finalizePayment({mode:'session',sessionId:sessId,lotId:S.lotId,rate:S.rate,hours:S.hours,valCode:S.val?S.val.code:null,plate:S.plate.trim(),vehicle:S.vehicle,phone:S.phone,email:emailVal,slipNumber:S.operator?S.slipNumber.trim():null,vesselName:S.operator?S.vesselName.trim():null});
     if(data.error){alert(data.error);return;}
     const sess=mapSessRow(data.session);
     S.sess.unshift(sess);S.payData=sess;S.cstep=2;S.val=null;render();
@@ -936,7 +966,7 @@ async function submitCardPayment(){
   // The card is confirmed with Stripe now, but the session row itself only gets written
   // once the server re-verifies that PaymentIntent — the browser reporting success here
   // isn't enough on its own.
-  const data=await finalizePayment({mode:'session',sessionId:sessId,paymentIntentId:paymentIntent.id,lotId:S.lotId,rate:S.rate,hours:S.hours,valCode:S.val?S.val.code:null,plate:S.plate.trim(),vehicle:S.vehicle,phone:S.phone,email:emailVal});
+  const data=await finalizePayment({mode:'session',sessionId:sessId,paymentIntentId:paymentIntent.id,lotId:S.lotId,rate:S.rate,hours:S.hours,valCode:S.val?S.val.code:null,plate:S.plate.trim(),vehicle:S.vehicle,phone:S.phone,email:emailVal,slipNumber:S.operator?S.slipNumber.trim():null,vesselName:S.operator?S.vesselName.trim():null});
   if(data.error){
     // The card was already charged at this point — don't invite a second attempt, which
     // would charge again. This should be rare (finalize recomputes the same amount the
@@ -959,7 +989,7 @@ function renderSuccess(){
     <div class="ccbd">
       ${val?`<div style="background:var(--gold-bg);border:1.5px solid var(--gold-bd);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px"><span style="font-size:18px">🎟️</span><div><div style="font-family:var(--fc);font-size:13px;font-weight:800;color:#b45309;text-transform:uppercase">Validated by ${val.name}</div><div style="font-size:11px;color:#78350f;margin-top:2px">${val.type==='free'?'Free parking applied':val.type==='percent'?val.discountPct+'% discount':'$'+val.discountAmt.toFixed(2)+' discount'}</div></div></div>`:''}
       <div class="tkt"><div class="tkt-top"><span class="tkt-id">${d.id}</span><span style="font-family:var(--fc);font-size:10px;font-weight:700;text-transform:uppercase;color:#888">${d.type}</span></div>
-        <div class="tkt-bd"><div class="tkr"><span class="tkl">Plate</span><span class="tkv">${escH(d.plate)}</span></div><div class="tkr"><span class="tkl">Lot</span><span class="tkv">${l.name}</span></div><div class="tkr"><span class="tkl">Zone</span><span class="tkv">${l.zone}</span></div><div class="tkr"><span class="tkl">Expires</span><span class="tkv">${exp.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · ${exp.toLocaleDateString([],{month:'short',day:'numeric'})}</span></div><div class="tkr"><span class="tkl">Paid</span><span class="tkv" style="color:${d.paid===0?'#10b981':'var(--grn)'}">$${d.paid.toFixed(2)}</span></div></div>
+        <div class="tkt-bd">${d.slipNumber?`<div class="tkr"><span class="tkl">Slip</span><span class="tkv">${escH(d.slipNumber)}</span></div>`:''}<div class="tkr"><span class="tkl">${t('plate')}</span><span class="tkv">${escH(d.plate)}</span></div><div class="tkr"><span class="tkl">${t('lot')}</span><span class="tkv">${l.name}</span></div><div class="tkr"><span class="tkl">${t('zone')}</span><span class="tkv">${l.zone}</span></div><div class="tkr"><span class="tkl">Expires</span><span class="tkv">${exp.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · ${exp.toLocaleDateString([],{month:'short',day:'numeric'})}</span></div><div class="tkr"><span class="tkl">Paid</span><span class="tkv" style="color:${d.paid===0?'#10b981':'var(--grn)'}">$${d.paid.toFixed(2)}</span></div></div>
       </div>
       ${inValWindow?`<div style="background:linear-gradient(135deg,#1a1a1a,#2a2a2a);border:2px solid var(--gold);border-radius:12px;padding:14px 16px;margin-bottom:14px"><div style="font-family:var(--fc);font-size:13px;font-weight:900;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">🎟️ Have a validation code?</div><div style="font-size:12px;color:#ccc;margin-bottom:10px">Apply within <strong id="val-countdown" aria-label="time remaining to apply validation code">${Math.floor(valWindowRem/60000)}:${String(Math.floor((valWindowRem%60000)/1000)).padStart(2,'0')}</strong> to reduce or waive your charge.</div><div style="display:flex;gap:8px"><input class="vcode-inp" id="post-val-inp" placeholder="ENTER CODE" maxlength="30" oninput="this.value=this.value.toUpperCase()" style="flex:1;background:#1a1a1a;border-color:#444;color:#fff" onkeydown="if(event.key==='Enter')applyPostVal()"><button onclick="applyPostVal()" style="background:var(--gold);color:var(--blk);border:none;border-radius:8px;padding:10px 16px;font-family:var(--fc);font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer">Apply</button></div><div id="post-val-err" role="alert" aria-live="assertive" style="color:var(--red);font-size:12px;margin-top:6px;min-height:16px"></div></div>`:''}
       <div class="tmr"><div class="tmrn" id="cdown">${fmtT(rem)}</div><div class="tmrl">Time remaining</div></div>
@@ -2801,6 +2831,14 @@ async function init(){
 loadTemplatesFromLocal();
 await loadPublicData();
 if(S.cu)await loadStaffData();
+// A bare visit to an operator's own subdomain (no ?lot= yet) should default into that
+// operator's own lot, not whichever lot happens to be first in the shared table — otherwise
+// a Slip Link visitor would land on a random City Park lot until they explicitly pick one.
+const hostOperator=Object.values(S.operators).find(o=>o.subdomain===window.location.hostname.split('.')[0]);
+if(hostOperator){
+  const ownLot=Object.values(S.lots).find(l=>l.operator_id===hostOperator.id);
+  if(ownLot)S.lotId=ownLot.id;
+}
 if(!S.lots[S.lotId]){
   const firstLot=Object.keys(S.lots)[0];
   if(firstLot)S.lotId=firstLot;
@@ -2852,6 +2890,8 @@ if(!S.lots[S.lotId]){
     }
   }
 
+  S.operator=resolveOperator();
+  applyOperatorBranding();
   render();
 }
 init();
