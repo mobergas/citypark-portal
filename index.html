@@ -28,7 +28,7 @@ if(location.pathname==='/admin'){
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--lime:#b5d96e;--lime-dark:#8fb84a;--lime-bg:#f0f8e0;--blk:#0d0d0d;--wht:#fff;--g1:#f5f5f5;--g2:#ebebeb;--g3:#c8c8c8;--t1:#0d0d0d;--t2:#444;--t3:#888;--red:#d32f2f;--grn:#2e7d32;--gold:#f59e0b;--gold-bg:#fffbeb;--gold-bd:#fde68a;--blue:#1d4ed8;--f:'Barlow',sans-serif;--fc:'Barlow Condensed',sans-serif}
 body{background:var(--g1);color:var(--t1);font-family:var(--f);min-height:100vh;font-size:15px}
-.tb-out{background:var(--blk)}.tb{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;align-items:stretch;justify-content:space-between;height:64px}
+.tb-out{background:var(--nav-bg,var(--blk))}.tb{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;align-items:stretch;justify-content:space-between;height:64px}
 .logo-a{display:flex;align-items:center}.logo-box{background:transparent;border-radius:6px;padding:5px 12px;display:flex;flex-direction:column;align-items:flex-start;gap:1px;cursor:pointer}
 .lcp{font-family:var(--fc);font-weight:900;font-size:22px;color:#0d0d0d;letter-spacing:-.5px}
 .lmg{font-family:var(--fc);font-weight:900;font-size:11px;color:#b5d96e;letter-spacing:.12em;text-transform:uppercase}
@@ -629,12 +629,16 @@ function applyOperatorBranding(){
     if(S.operator.accent)root.setProperty('--lime',S.operator.accent);
     if(S.operator.accent_dark)root.setProperty('--lime-dark',S.operator.accent_dark);
     if(S.operator.accent_bg)root.setProperty('--lime-bg',S.operator.accent_bg);
+    // The logo asset's own background is pure black, not the app's --blk (#0d0d0d) — without
+    // this, the logo shows a faint mismatched-black seam against the nav bar behind it.
+    root.setProperty('--nav-bg','#000000');
     if(icoLink&&S.operator.favicon_ico)icoLink.href=S.operator.favicon_ico;
     if(png32Link&&S.operator.favicon_32)png32Link.href=S.operator.favicon_32;
     if(png16Link&&S.operator.favicon_16)png16Link.href=S.operator.favicon_16;
   } else {
     if(logoImg)logoImg.src='https://sldahhdbvcxdlqdhmsjd.supabase.co/storage/v1/object/public/assets/Logo%201.png';
     root.removeProperty('--lime');root.removeProperty('--lime-dark');root.removeProperty('--lime-bg');
+    root.removeProperty('--nav-bg');
     if(icoLink)icoLink.href='favicon_io/favicon.ico';
     if(png32Link)png32Link.href='favicon_io/favicon-32x32.png';
     if(png16Link)png16Link.href='favicon_io/favicon-16x16.png';
