@@ -535,7 +535,7 @@ const T={
     payBtn:'Pay',claimFree:'Claim Free Parking',
     valCode:'Have a validation code?',apply:'Apply',
     invalidCode:'Invalid or inactive code for this lot.',
-    postPayNote:"Don't have a code yet? No problem — you can apply one after paying for a reduced charge or free parking.",
+    postPayNote:"Don't have a code yet? No problem — you can apply one within {MINS} minutes after paying for a reduced charge or free parking.",
     secured:'Secured payment · City Park Management',
     contact:'Contact',monthlyAvail:'Monthly passes available',
     monthlyInvite:'Monthly parking at {LOT} is by invitation only. Contact the parking office to request a pass.',
@@ -567,7 +567,7 @@ const T={
     payBtn:'Pagar',claimFree:'Reclamar Estacionamiento Gratis',
     valCode:'¿Tiene un código de validación?',apply:'Aplicar',
     invalidCode:'Código inválido o inactivo para este estacionamiento.',
-    postPayNote:'¿Aún no tiene un código? No hay problema — puede aplicar uno después de pagar para recibir un descuento o estacionamiento gratis.',
+    postPayNote:'¿Aún no tiene un código? No hay problema — puede aplicar uno dentro de {MINS} minutos después de pagar para recibir un descuento o estacionamiento gratis.',
     secured:'Pago seguro · City Park Management',
     contact:'Contacto',monthlyAvail:'Pases mensuales disponibles',
     monthlyInvite:'El estacionamiento mensual en {LOT} es solo por invitación. Contacte la oficina para solicitar un pase.',
@@ -596,6 +596,7 @@ const MARINA_TERMS={
   vesselName:'Vessel Name',vesselNamePh:'e.g. Reel Time',
   vcodePh:'Enter Code (E.G. Marina 2024)',
   smsConsentText:'I agree to receive docking-related SMS alerts from City Park Management including expiration reminders and receipts. Msg & data rates may apply. Message frequency varies. Reply STOP to cancel.',
+  postPayNote:"Don't have a code yet? No problem — you can apply one within {MINS} minutes after paying for a reduced charge or free dockage.",
 };
 function t(k){
   const cat=lot()?.category;
@@ -809,7 +810,7 @@ function renderPay(){
         ${l.category==='marina'?`<div class="fg"><label class="fl">${t('vesselName')} <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--t3)">optional</span></label><input class="fi" id="vessel-inp" placeholder="${t('vesselNamePh')}" value="${escH(S.vesselName)}" oninput="S.vesselName=this.value"></div>`:''}
         <div class="fg"><label class="fl">${t('vehicle')}</label><select class="fse" id="veh-sel"><option value="car"${S.vehicle==='car'?' selected':''}>${t('car')}</option><option value="truck"${S.vehicle==='truck'?' selected':''}>${t('truck')}</option><option value="motorcycle"${S.vehicle==='motorcycle'?' selected':''}>${t('moto')}</option>${l.category==='marina'?`<option value="pontoon"${S.vehicle==='pontoon'?' selected':''}>${t('pontoon')}</option>`:''}</select></div>
         <div class="fg"><label class="fl">Phone <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--red)">* required</span></label><div class="ph-row"><div class="ph-pfx"><i class="ti ti-device-mobile" style="font-size:13px"></i> +1</div><input class="fi" id="phone-inp" placeholder="(555) 000-0000" value="${escH(S.phone)}" oninput="S.phone=this.value;updatePayBtn()" style="flex:1" type="tel"></div><label id="consent-label" style="display:flex;align-items:flex-start;gap:10px;margin-top:10px;cursor:pointer"><input type="checkbox" id="sms-consent" ${S.smsConsent?'checked':''} onchange="S.smsConsent=this.checked;updatePayBtn();document.getElementById('consent-err').style.display='none';document.getElementById('consent-label').style.color=''" style="margin-top:3px;flex-shrink:0;width:20px;height:20px;cursor:pointer"><span style="font-size:14px;color:var(--t2);line-height:1.6">${t('smsConsentText')} <a href="/sms-terms" target="_blank" style="color:var(--lime-dark);text-decoration:underline">${t('smsTerms')}</a></span></label><div id="consent-err" role="alert" aria-live="assertive" style="display:none;color:var(--red);font-size:12px;font-weight:700;margin-top:4px">${t('consentErr')}</div></div> <div class="fg"><label class="fl">Email ${S.rate==='monthly'?'<span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--red)">* required</span>':'<span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--t3)">optional · for email receipt</span>'}</label><input class="fi" id="email-inp" placeholder="your@email.com" value="${escH(S.email||'')}" oninput="S.email=this.value;updatePayBtn()" type="email"></div>
-        ${!S.val&&S.rate!=='monthly'?`<div class="vcode-sec"><div class="fl" style="margin-bottom:8px"><i class="ti ti-discount" style="font-size:12px;margin-right:4px;color:var(--gold)"></i>${t('valCode')}</div><div class="vcode-row"><input class="vcode-inp" id="vcode-inp" placeholder="${l.category==='marina'?t('vcodePh'):'ENTER CODE (e.g. HOTEL2024)'}" maxlength="30" oninput="this.value=this.value.toUpperCase();S.codeErr=false" onkeydown="if(event.key==='Enter')applyCode()"><button class="vcode-btn" onclick="applyCode()">${t('apply')}</button></div><div class="vcode-err${S.codeErr?' show':''}" id="vcode-err">${t('invalidCode')}</div><div class="fl" style="margin-top:10px;white-space:normal;line-height:1.5"><i class="ti ti-discount" style="font-size:12px;margin-right:4px;color:var(--gold)"></i>${t('postPayNote')}</div></div>`:''}
+        ${!S.val&&S.rate!=='monthly'?`<div class="vcode-sec"><div class="fl" style="margin-bottom:8px"><i class="ti ti-discount" style="font-size:12px;margin-right:4px;color:var(--gold)"></i>${t('valCode')}</div><div class="vcode-row"><input class="vcode-inp" id="vcode-inp" placeholder="${l.category==='marina'?t('vcodePh'):'ENTER CODE (e.g. HOTEL2024)'}" maxlength="30" oninput="this.value=this.value.toUpperCase();S.codeErr=false" onkeydown="if(event.key==='Enter')applyCode()"><button class="vcode-btn" onclick="applyCode()">${t('apply')}</button></div><div class="vcode-err${S.codeErr?' show':''}" id="vcode-err">${t('invalidCode')}</div><div class="fl" style="margin-top:10px;white-space:normal;line-height:1.5"><i class="ti ti-discount" style="font-size:12px;margin-right:4px;color:var(--gold)"></i>${t('postPayNote').replace('{MINS}',l.val_window_minutes??15)}</div></div>`:''}
         <div class="psumm">
           ${S.rate==='hourly'?`<div class="psr"><span class="pl">${t('rate')}</span><span class="pv">$${p.hourly.toFixed(2)}/hr</span></div><div class="psr"><span class="pl">${t('dur')}</span><span class="pv">${S.hours} ${S.hours===1?t('hour'):t('hours')}</span></div>`:''}
           ${S.rate==='event'?`<div class="psr"><span class="pl">${t('event')}</span><span class="pv">${t('flatRate')}</span></div>`:''}
