@@ -1,3 +1,4 @@
+import { withCors } from '../_shared/cors.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // This function is the only place a monthly pass gets activated. Before this existed, the
@@ -47,7 +48,7 @@ function calcProrate(monthlyPrice: number) {
   return { prorated, nextBill };
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withCors(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
       headers: {
@@ -186,4 +187,4 @@ Deno.serve(async (req) => {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
     });
   }
-});
+}));

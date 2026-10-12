@@ -1,9 +1,10 @@
+import { withCors } from '../_shared/cors.ts';
 // Serves the Stripe publishable key from the same place STRIPE_SECRET_KEY lives, instead
 // of every client page hardcoding its own copy — so there's one source of truth to switch
 // at go-live, not five+ files to hunt down and keep in sync by hand. Also actively checks
 // that the two keys agree on test vs live before handing either out, which is the actual
 // safeguard against a half-switched cutover that #25 asked for.
-Deno.serve(async (req) => {
+Deno.serve(withCors(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
       headers: { 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' }
@@ -31,4 +32,4 @@ Deno.serve(async (req) => {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
     });
   }
-});
+}));

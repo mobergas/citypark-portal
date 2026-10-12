@@ -1,3 +1,4 @@
+import { withCors } from '../_shared/cors.ts';
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -20,7 +21,7 @@ async function isAuthorized(req: Request): Promise<boolean> {
   return !error && !!data?.user;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withCors(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -73,4 +74,4 @@ Deno.serve(async (req) => {
       headers: corsHeaders 
     });
   }
-});
+}));

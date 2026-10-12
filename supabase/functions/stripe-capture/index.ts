@@ -1,4 +1,5 @@
-Deno.serve(async (req) => {
+import { withCors } from '../_shared/cors.ts';
+Deno.serve(withCors(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
       headers: {
@@ -123,4 +124,4 @@ Deno.serve(async (req) => {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
     });
   }
-});
+}));
