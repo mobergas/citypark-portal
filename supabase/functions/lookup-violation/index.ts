@@ -10,8 +10,9 @@ const MAX_ATTEMPTS = 15;
 const WINDOW_MS = 10 * 60 * 1000;
 
 // Only what the public payfine.html page actually displays — never staff-internal fields
-// like photo_url/photo_urls or issued_by.
-const SAFE_FIELDS = 'id,plate,lot_name,violation_name,created_at,notes,parking_fee,fine_amount,status,paid_at';
+// like photo_url/photo_urls or issued_by. lot_id is only selected so the lot's category can be
+// looked up for wording (marina vs parking); it is stripped before the response goes out.
+const SAFE_FIELDS = 'id,plate,lot_id,lot_name,violation_name,created_at,notes,parking_fee,slip_number,fine_amount,status,paid_at';
 
 Deno.serve(withCors(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -53,7 +54,15 @@ Deno.serve(withCors(async (req) => {
       violations = data;
     }
 
-    return new Response(JSON.stringify({ violations: violations || [] }), {
+    const lotIds = [...new Set((violations || []).map((v: any) => v.lot_id).filter(Boolean))];
+    const categories: Record<string, string> = {};
+    if (lotIds.length) {
+      const { data: lotRows } = await supabase.from('lots').select('id,category').in('id', lotIds);
+      (lotRows || []).forEach((l: any) => { categories[l.id] = l.category; });
+    }
+    const result = (violations || []).map(({ lot_id, ...rest }: any) => ({ ...rest, category: categories[lot_id] || 'parking' }));
+
+    return new Response(JSON.stringify({ violations: result }), {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://www.cityparkmanagement.app' }
     });
 

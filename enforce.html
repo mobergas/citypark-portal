@@ -92,9 +92,9 @@ body{font-family:var(--fb);background:#0d0d0d;color:#fff;min-height:100vh;}
   <!-- Lookup screen -->
   <div id="screen-lookup" style="display:none">
     <div class="card">
-      <div class="card-title"><i class="ti ti-search"></i> Plate Lookup</div>
-      <label class="fl">License Plate</label>
-      <input class="fi plate-inp" id="plate-input" placeholder="ABC 1234" maxlength="10" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')lookupPlate()">
+      <div class="card-title"><i class="ti ti-search"></i> <span data-w="lookupTitle">Plate Lookup</span></div>
+      <label class="fl" data-w="idLabel">License Plate</label>
+      <input class="fi plate-inp" id="plate-input" placeholder="ABC 1234" data-wph="idPlaceholder" maxlength="10" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')lookupPlate()">
       <button class="btn" onclick="lookupPlate()" style="margin-top:10px"><i class="ti ti-search"></i> Look Up</button>
     </div>
     <div id="lookup-result"></div>
@@ -105,6 +105,7 @@ body{font-family:var(--fb);background:#0d0d0d;color:#fff;min-height:100vh;}
     <div class="card">
       <div class="card-title"><i class="ti ti-alert-triangle"></i> Issue Violation</div>
       <div id="violation-plate-display" style="font-family:var(--fc);font-size:28px;font-weight:900;letter-spacing:.15em;color:var(--red);margin-bottom:14px;text-align:center"></div>
+      <div id="slip-wrap" style="display:none"><label class="fl">Slip Number <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:#888">(optional)</span></label><input class="fi" id="violation-slip" placeholder="e.g. A-14" maxlength="12" oninput="this.value=this.value.toUpperCase()" style="margin-bottom:12px"></div>
       <label class="fl">Violation Type</label>
       <div id="vtype-list"></div>
       <label class="fl" style="margin-top:12px">Notes (optional)</label>
@@ -149,7 +150,7 @@ body{font-family:var(--fb);background:#0d0d0d;color:#fff;min-height:100vh;}
     </div>
     <div id="print-ticket" style="background:#fff;border-radius:8px;margin-bottom:12px"></div>
     <button class="btn" onclick="window.print()" style="background:#2563eb;margin-bottom:8px"><i class="ti ti-printer"></i> Print Ticket</button>
-    <button class="btn" onclick="newLookup()">Look Up Another Plate</button>
+    <button class="btn" onclick="newLookup()" data-w="lookupAnother">Look Up Another Plate</button>
   </div>
 </div>
 
@@ -163,6 +164,22 @@ let selectedViolationType=null;
 let violationTypes=[];
 let photoFiles=[];
 let warningPhotoFiles=[];
+
+// Wording follows the lot's category (marina vs parking), the same split the pay page uses.
+// Parking entries are the original text, unchanged.
+const WORDS={
+  parking:{lookupTitle:'Plate Lookup',idLabel:'License Plate',idUpper:'LICENSE PLATE',idShort:'Plate',idPlaceholder:'ABC 1234',lookupAnother:'Look Up Another Plate',lotNotes:'Lot Notes',noNotes:'No special notes for this lot.',noValid:'No Valid Parking',feeLabel:'Unpaid Parking Fee',feeShort:'Unpaid Parking',warnTitle:'PARKING WARNING NOTICE',violTitle:'PARKING VIOLATION NOTICE',placeLabel:'Lot',enforcement:'FAILURE TO PAY WITHIN 30 DAYS MAY RESULT IN ADDITIONAL ENFORCEMENT ACTION INCLUDING TOWING, BOOTING, AND REFERRAL TO COLLECTIONS.'},
+  marina:{lookupTitle:'Registration Lookup',idLabel:'Registration Number',idUpper:'REGISTRATION NUMBER',idShort:'Registration',idPlaceholder:'FL 1234 AB',lookupAnother:'Look Up Another Vessel',lotNotes:'Marina Notes',noNotes:'No special notes for this marina.',noValid:'No Valid Dockage',feeLabel:'Unpaid Dockage Fee',feeShort:'Unpaid Dockage',warnTitle:'DOCKAGE WARNING NOTICE',violTitle:'DOCKAGE VIOLATION NOTICE',placeLabel:'Marina',enforcement:'FAILURE TO PAY WITHIN 30 DAYS MAY RESULT IN ADDITIONAL ENFORCEMENT ACTION INCLUDING REMOVAL FROM THE MARINA, LOSS OF DOCKAGE PRIVILEGES, AND REFERRAL TO COLLECTIONS.'}
+};
+function escHtml(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function isMarina(lotId){const l=(window._enforceLots||[]).find(x=>x.id===lotId);return (l?l.category:currentLot?.category)==='marina';}
+function W(lotId){return WORDS[isMarina(lotId===undefined?currentLot?.id:lotId)?'marina':'parking'];}
+function applyWording(){
+  const w=W();
+  document.querySelectorAll('[data-w]').forEach(el=>{const k=el.dataset.w;if(w[k]!==undefined)el.textContent=w[k];});
+  document.querySelectorAll('[data-wph]').forEach(el=>{const k=el.dataset.wph;if(w[k]!==undefined)el.placeholder=w[k];});
+  const sw=document.getElementById('slip-wrap');if(sw)sw.style.display=currentLot&&isMarina(currentLot.id)?'block':'none';
+}
 
 async function issueWarning(){
   const reason=document.getElementById('warning-reason')?.value.trim();
@@ -205,16 +222,16 @@ async function issueWarning(){
 
   const issuedAt=new Date();
   document.getElementById('issued-summary').innerHTML=`
-    Plate: <strong>${currentPlate}</strong><br>
+    ${W().idShort}: <strong>${currentPlate}</strong><br>
     Warning issued${reason?`: <strong>${reason}</strong>`:''}<br>
-    Lot: <strong>${currentLot.name}</strong>
+    ${W().placeLabel}: <strong>${currentLot.name}</strong>
   `;
 
   // Build print ticket
   document.getElementById('print-ticket').innerHTML=`
     <div style="width:1.89in;font-family:monospace;font-size:9px;color:#000;background:#fff;padding:1.5mm;margin:0 auto;border:1px solid #000;box-sizing:border-box">
       <div style="text-align:center;margin-bottom:4mm">
-        <div style="font-size:14px;font-weight:900;letter-spacing:1px">PARKING WARNING NOTICE</div>
+        <div style="font-size:14px;font-weight:900;letter-spacing:1px">${W().warnTitle}</div>
         <div style="border-top:2px solid #000;margin:2mm 0"></div>
       </div>
       <div style="margin-bottom:3mm">
@@ -226,7 +243,7 @@ async function issueWarning(){
         <div style="font-size:13px;font-weight:900">${issuedAt.toLocaleDateString()} ${issuedAt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
       </div>
       <div style="margin-bottom:3mm">
-        <div style="font-size:10px;color:#666">LICENSE PLATE</div>
+        <div style="font-size:10px;color:#666">${W().idUpper}</div>
         <div style="font-size:16px;font-weight:900;letter-spacing:1px">${currentPlate}</div>
       </div>
       <div style="margin-bottom:3mm">
@@ -460,16 +477,16 @@ async function initApp(){
     </div>
     <div id="screen-lotnotes" style="display:none">
       <div class="card">
-        <div class="card-title"><i class="ti ti-note" style="color:var(--gold)"></i> Lot Notes</div>
+        <div class="card-title"><i class="ti ti-note" style="color:var(--gold)"></i> <span data-w="lotNotes">Lot Notes</span></div>
         <div id="lotnotes-content" style="font-size:15px;line-height:1.7;color:#ccc;white-space:pre-wrap;margin-bottom:16px"></div>
         <button class="btn" onclick="showScreen('lookup')"><i class="ti ti-check"></i> Got It — Continue</button>
       </div>
     </div>
     <div id="screen-lookup" style="display:none">
       <div class="card">
-        <div class="card-title"><i class="ti ti-search"></i> Plate Lookup</div>
-        <label class="fl">License Plate</label>
-        <input class="fi plate-inp" id="plate-input" placeholder="ABC 1234" maxlength="10" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')lookupPlate()">
+        <div class="card-title"><i class="ti ti-search"></i> <span data-w="lookupTitle">Plate Lookup</span></div>
+        <label class="fl" data-w="idLabel">License Plate</label>
+        <input class="fi plate-inp" id="plate-input" placeholder="ABC 1234" data-wph="idPlaceholder" maxlength="10" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')lookupPlate()">
         <button class="btn" onclick="lookupPlate()" style="margin-top:10px"><i class="ti ti-search"></i> Look Up</button>
       </div>
       <div id="lookup-result"></div>
@@ -478,7 +495,8 @@ async function initApp(){
       <div class="card">
         <div class="card-title"><i class="ti ti-alert-triangle"></i> Issue Violation</div>
         <div id="violation-plate-display" style="font-family:var(--fc);font-size:28px;font-weight:900;letter-spacing:.15em;color:var(--red);margin-bottom:14px;text-align:center"></div>
-        <label class="fl">Violation Type</label>
+        <div id="slip-wrap" style="display:none"><label class="fl">Slip Number <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:#888">(optional)</span></label><input class="fi" id="violation-slip" placeholder="e.g. A-14" maxlength="12" oninput="this.value=this.value.toUpperCase()" style="margin-bottom:12px"></div>
+      <label class="fl">Violation Type</label>
         <div id="vtype-list"></div>
         <label class="fl" style="margin-top:12px">Notes (optional)</label>
         <textarea class="fi" id="violation-notes" rows="3" placeholder="Additional details..." style="resize:none"></textarea>
@@ -518,7 +536,7 @@ async function initApp(){
       </div>
       <div id="print-ticket" style="background:#fff;border-radius:8px;margin-bottom:12px"></div>
       <button class="btn" onclick="window.print()" style="background:#2563eb;margin-bottom:8px"><i class="ti ti-printer"></i> Print Ticket</button>
-      <button class="btn" onclick="newLookup()">Look Up Another Plate</button>
+      <button class="btn" onclick="newLookup()" data-w="lookupAnother">Look Up Another Plate</button>
     </div>
   `;
   window._enforceLots=lots||[];
@@ -558,7 +576,7 @@ function selectLot(lotId){
   const sel=document.getElementById('lot-select');
   const name=sel.options[sel.selectedIndex].text;
   const fullLot=(window._enforceLots||[]).find(l=>l.id===lotId);
-  currentLot={id:lotId,name:name.split(' · ')[0],zone:name.split('Zone ')[1],lot_notes:fullLot?.lot_notes||''};
+  currentLot={id:lotId,name:name.split(' · ')[0],zone:name.split('Zone ')[1],lot_notes:fullLot?.lot_notes||'',category:fullLot?.category||'parking'};
   localStorage.setItem('enforce_lot',lotId);
   updateLotBadge();
   showLotNotes();
@@ -567,7 +585,7 @@ function selectLot(lotId){
 function showLotNotes(){
   const content=document.getElementById('lotnotes-content');
   if(content){
-    content.textContent=currentLot.lot_notes&&currentLot.lot_notes.trim()?currentLot.lot_notes:'No special notes for this lot.';
+    content.textContent=currentLot.lot_notes&&currentLot.lot_notes.trim()?currentLot.lot_notes:W().noNotes;
   }
   showScreen('lotnotes');
 }
@@ -596,6 +614,7 @@ function changeLot(){
 function showScreen(name){
   ['lot','lotnotes','lookup','violation','warning','issued'].forEach(s=>document.getElementById('screen-'+s).style.display='none');
   document.getElementById('screen-'+name).style.display='block';
+  applyWording();
   if(name==='lookup'){document.getElementById('lookup-result').innerHTML='';document.getElementById('plate-input').value='';document.getElementById('plate-input').focus();}
 }
 
@@ -626,7 +645,7 @@ async function lookupPlate(){
   if(activeSess.length>0){
     const s=activeSess[0];
     const exp=new Date(new Date(s.start_time).getTime()+s.duration*3600000);
-    html+=`<div class="status-ok"><div class="status-title">✅ Valid Session</div><div class="status-detail">Expires ${exp.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · ${s.type} · Paid $${s.paid.toFixed(2)}</div></div>`;
+    html+=`<div class="status-ok"><div class="status-title">✅ Valid Session</div><div class="status-detail">Expires ${exp.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · ${s.type} · Paid $${s.paid.toFixed(2)}${s.slip_number?' · Slip '+escHtml(s.slip_number):''}${s.vessel_name?' · '+escHtml(s.vessel_name):''}</div></div>`;
   } else if(passes&&passes.length>0){
     const p=passes[0];
     const lotInfo=await db('lots','GET',null,`?id=eq.${currentLot.id}&select=*`);
@@ -660,7 +679,7 @@ async function lookupPlate(){
       const exp=new Date(new Date(lastSess.start_time).getTime()+lastSess.duration*3600000);
       expiredNote=`<br>Last session expired ${exp.toLocaleDateString()} at ${exp.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`;
     }
-    html+=`<div class="status-bad"><div class="status-title">❌ No Valid Parking</div><div class="status-detail">No active session or monthly pass found for this plate at ${currentLot.name}${expiredNote}</div></div>`;
+    html+=`<div class="status-bad"><div class="status-title">❌ ${W().noValid}</div><div class="status-detail">No active session or monthly pass found for this ${W().idShort.toLowerCase()} at ${currentLot.name}${expiredNote}</div></div>`;
     html+=`<button class="btn red" onclick="startViolation('${plate}')"><i class="ti ti-alert-triangle"></i> Issue Violation</button><button class="btn outline" onclick="startWarning('${plate}')" style="margin-top:8px"><i class="ti ti-flag"></i> Issue Warning</button>`;
   }
 
@@ -716,6 +735,7 @@ async function startViolation(plate){
   photoFiles=[];
   document.getElementById('violation-plate-display').textContent=plate;
   document.getElementById('violation-notes').value='';
+  const slEl=document.getElementById('violation-slip');if(slEl)slEl.value='';
   const pl=document.getElementById('photo-preview-list');if(pl)pl.innerHTML='';
   document.getElementById('issue-btn').disabled=true;
 
@@ -726,6 +746,10 @@ async function startViolation(plate){
   const eventRate=lot?.pricing?.event||0;
   const parkingFee=Math.max(dailyMax,eventRate);
   window._lotParkingFee=parkingFee;
+  const w=W();
+  // Marina lots bill a flat hourly rate, so their daily-max / event rates are usually $0 — hide $0 options there.
+  const hideZero=isMarina(currentLot.id);
+  const defKey=(!hideZero||dailyMax>0)?'daily':(eventRate>0?'event':'none');
 
   // Build violation type list
   const list=document.getElementById('vtype-list');
@@ -736,23 +760,23 @@ async function startViolation(plate){
     </div>
   `).join('')+`
     <div style="margin-top:12px;background:#1a1a1a;border:1.5px solid #333;border-radius:8px;padding:12px">
-      <div style="font-family:var(--fc);font-size:13px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Unpaid Parking Fee</div>
-      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:8px">
-        <input type="radio" name="parking-fee" id="pf-daily" value="${dailyMax}" style="width:18px;height:18px;cursor:pointer" checked>
+      <div style="font-family:var(--fc);font-size:13px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${w.feeLabel}</div>
+      <label style="display:${hideZero&&dailyMax===0?'none':'flex'};align-items:center;gap:10px;cursor:pointer;margin-bottom:8px">
+        <input type="radio" name="parking-fee" id="pf-daily" value="${dailyMax}" style="width:18px;height:18px;cursor:pointer" ${defKey==='daily'?'checked':''}>
         <div>
           <div style="font-family:var(--fc);font-size:14px;font-weight:800;color:#fff">Daily Max</div>
           <div style="font-size:12px;color:var(--gold);font-weight:700">+$${dailyMax.toFixed(2)}</div>
         </div>
       </label>
-      <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
-        <input type="radio" name="parking-fee" id="pf-event" value="${eventRate}" style="width:18px;height:18px;cursor:pointer">
+      <label style="display:${hideZero&&eventRate===0?'none':'flex'};align-items:center;gap:10px;cursor:pointer">
+        <input type="radio" name="parking-fee" id="pf-event" value="${eventRate}" style="width:18px;height:18px;cursor:pointer" ${defKey==='event'?'checked':''}>
         <div>
           <div style="font-family:var(--fc);font-size:14px;font-weight:800;color:#fff">Event Rate</div>
           <div style="font-size:12px;color:var(--gold);font-weight:700">+$${eventRate.toFixed(2)}</div>
         </div>
       </label>
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-top:8px">
-        <input type="radio" name="parking-fee" id="pf-none" value="0" style="width:18px;height:18px;cursor:pointer">
+        <input type="radio" name="parking-fee" id="pf-none" value="0" style="width:18px;height:18px;cursor:pointer" ${defKey==='none'?'checked':''}>
         <div>
           <div style="font-family:var(--fc);font-size:14px;font-weight:800;color:#fff">No Fee</div>
           <div style="font-size:12px;color:var(--gold);font-weight:700">+$0.00</div>
@@ -870,6 +894,7 @@ async function issueViolation(){
 
 
   const violationId='VIO-'+Date.now().toString().slice(-10);
+  const slip=isMarina(currentLot.id)?(document.getElementById('violation-slip')?.value.trim()||null):null;
   const notes=document.getElementById('violation-notes').value.trim();
   const selectedPF=document.querySelector('input[name="parking-fee"]:checked');
   const parkingFee=selectedPF?parseFloat(selectedPF.value)||0:0;
@@ -888,13 +913,14 @@ async function issueViolation(){
     notes:notes||null,
     photo_url:photoUrl,
     photo_urls:photoUrls,
+    slip_number:slip,
     issued_by:localStorage.getItem('enforce_officer')||'Staff',
     status:'unpaid'
   });
 
   const issuedAt=new Date();
   printViolationTicket({
-    id:violationId,plate:currentPlate,lot_name:currentLot.name,
+    id:violationId,plate:currentPlate,lot_id:currentLot.id,slip_number:slip,lot_name:currentLot.name,
     violation_name:selectedViolationType.name,fine_amount:selectedViolationType.fine_amount,
     parking_fee:parkingFee,created_at:issuedAt.toISOString(),issued_by:localStorage.getItem('enforce_officer')||'Staff'
   });
@@ -911,18 +937,19 @@ function printViolationTicket(v){
   const totalFine=v.fine_amount;
   const parkingFee=v.parking_fee||0;
   const violationFineOnly=totalFine-parkingFee;
+  const w=W(v.lot_id||currentLot?.id);
   document.getElementById('issued-summary').innerHTML=`
-    Plate: <strong>${v.plate}</strong><br>
+    ${w.idShort}: <strong>${v.plate}</strong><br>
     Violation: <strong>${v.violation_name}</strong><br>
-    Fine: <strong>$${violationFineOnly.toFixed(2)}</strong>${parkingFee>0?`<br>Unpaid Parking Fee: <strong>$${parkingFee.toFixed(2)}</strong><br>Total: <strong>$${totalFine.toFixed(2)}</strong>`:''}<br>
-    Lot: <strong>${v.lot_name}</strong>
+    Fine: <strong>$${violationFineOnly.toFixed(2)}</strong>${parkingFee>0?`<br>${w.feeLabel}: <strong>$${parkingFee.toFixed(2)}</strong><br>Total: <strong>$${totalFine.toFixed(2)}</strong>`:''}<br>
+    ${w.placeLabel}: <strong>${v.lot_name}</strong>${v.slip_number?`<br>Slip: <strong>${escHtml(v.slip_number)}</strong>`:''}
   `;
 
   // Build print ticket
   document.getElementById('print-ticket').innerHTML=`
     <div style="width:1.89in;font-family:monospace;font-size:9px;color:#000;background:#fff;padding:1.5mm;margin:0 auto;border:1px solid #000;box-sizing:border-box">
       <div style="text-align:center;margin-bottom:4mm">
-        <div style="font-size:11px;font-weight:900;letter-spacing:0px">PARKING VIOLATION NOTICE</div>
+        <div style="font-size:11px;font-weight:900;letter-spacing:0px">${w.violTitle}</div>
         <div style="border-top:2px solid #000;margin:2mm 0"></div>
       </div>
       <div style="margin-bottom:3mm">
@@ -934,19 +961,20 @@ function printViolationTicket(v){
         <div style="font-size:13px;font-weight:900">${issuedAt.toLocaleDateString()} ${issuedAt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
       </div>
       <div style="margin-bottom:3mm">
-        <div style="font-size:10px;color:#666">LICENSE PLATE</div>
+        <div style="font-size:10px;color:#666">${w.idUpper}</div>
         <div style="font-size:14px;font-weight:900;letter-spacing:0px">${v.plate}</div>
       </div>
       <div style="margin-bottom:3mm">
         <div style="font-size:10px;color:#666">LOCATION</div>
         <div style="font-size:13px;font-weight:900">${v.lot_name}</div>
       </div>
+      ${v.slip_number?`<div style="margin-bottom:3mm"><div style="font-size:10px;color:#666">SLIP</div><div style="font-size:13px;font-weight:900">${escHtml(v.slip_number)}</div></div>`:''}
       <div style="margin-bottom:3mm">
         <div style="font-size:10px;color:#666">VIOLATION</div>
         <div style="font-size:14px;font-weight:900">${v.violation_name}</div>
       </div>
       <div style="border-top:2px solid #000;border-bottom:2px solid #000;padding:2mm 0;margin:3mm 0;text-align:center">
-        ${parkingFee>0?`<div style="font-size:9px;margin-bottom:1mm">Violation Fine: $${violationFineOnly.toFixed(2)} + Unpaid Parking: $${parkingFee.toFixed(2)}</div>`:''}
+        ${parkingFee>0?`<div style="font-size:9px;margin-bottom:1mm">Violation Fine: $${violationFineOnly.toFixed(2)} + ${w.feeShort}: $${parkingFee.toFixed(2)}</div>`:''}
         <div style="font-size:10px">TOTAL AMOUNT DUE</div>
         <div style="font-size:20px;font-weight:900">$${totalFine.toFixed(2)}</div>
       </div>
@@ -961,7 +989,7 @@ function printViolationTicket(v){
         Issued by: ${v.issued_by}
       </div>
       <div style="text-align:center;margin-top:3mm;display:flex;justify-content:center" id="ticket-qr"></div>
-      <div style="text-align:center;font-size:9px;font-weight:700;line-height:1.5;margin-top:3mm;border-top:1px dashed #999;padding-top:2mm"> FAILURE TO PAY WITHIN 30 DAYS MAY RESULT IN ADDITIONAL ENFORCEMENT ACTION INCLUDING TOWING, BOOTING, AND REFERRAL TO COLLECTIONS.</div>
+      <div style="text-align:center;font-size:9px;font-weight:700;line-height:1.5;margin-top:3mm;border-top:1px dashed #999;padding-top:2mm"> ${w.enforcement}</div>
       <div style="text-align:center;font-size:9px;font-weight:700;line-height:1.5;margin-top:3mm;border-top:1px dashed #999;padding-top:2mm">THIS INVOICE IS PRIVATELY ISSUED, IS NOT ISSUED BY A GOVERNMENTAL AUTHORITY, AND IS NOT SUBJECT TO CRIMINAL PENALTIES.</div>
     </div>
   `;

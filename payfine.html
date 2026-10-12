@@ -58,6 +58,31 @@ body{font-family:var(--fb);background:#f5f5f5;color:var(--blk);min-height:100vh;
 <script>
 const SUPA_URL='https://sldahhdbvcxdlqdhmsjd.supabase.co';
 const SUPA_KEY='sb_publishable_ZGELlV5vw7QFvva8_8NGcA_pQplXd46';
+
+// Wording follows the violation's lot category (marina vs parking). Parking entries are the
+// original text, unchanged.
+const PW={
+  parking:{title:'Pay Parking Fine',heading:'Pay a Parking Fine',idLabel:'Violation ID or License Plate',idPh:'VIO-0000000000 or ABC 1234',note:'Enter your Violation ID (printed on your notice) or your license plate number.',noMatch:'No unpaid violations found for that plate.',multi:'plate',cardTitle:'Parking Violation',plate:'Plate',fee:'Unpaid Parking Fee',desc:'Parking Violation Payment',remedies:'vehicle towing, booting, and referral to a collections agency'},
+  marina:{title:'Pay Dockage Fine',heading:'Pay a Dockage Fine',idLabel:'Violation ID or Registration Number',idPh:'VIO-0000000000 or FL 1234 AB',note:'Enter your Violation ID (printed on your notice) or your vessel registration number.',noMatch:'No unpaid violations found for that registration number.',multi:'registration',cardTitle:'Dockage Violation',plate:'Registration',fee:'Unpaid Dockage Fee',desc:'Dockage Violation Payment',remedies:'removal from the marina, loss of dockage privileges, and referral to a collections agency'}
+};
+let ctxMarina=false; // set from the hostname before a violation is known
+const PWv=v=>PW[v&&v.category==='marina'?'marina':'parking'];
+const PWctx=()=>PW[ctxMarina?'marina':'parking'];
+function escHtml(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+// On an operator's own subdomain whose lots are all marinas, the pre-lookup screens use marina
+// wording too. Anything unexpected just leaves the default parking wording in place.
+async function detectContext(){
+  const host=location.hostname,sub=host.split('.')[0];
+  if(!host.endsWith('.cityparkmanagement.app')||sub==='www')return;
+  try{
+    const h={headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY}};
+    const ops=await (await fetch(SUPA_URL+'/rest/v1/operators?select=id&subdomain=eq.'+encodeURIComponent(sub),h)).json();
+    if(!Array.isArray(ops)||!ops.length)return;
+    const lots=await (await fetch(SUPA_URL+'/rest/v1/lots?select=category&operator_id=eq.'+encodeURIComponent(ops[0].id),h)).json();
+    ctxMarina=Array.isArray(lots)&&lots.length>0&&lots.every(l=>l.category==='marina');
+    if(ctxMarina)document.title=PWctx().title+' · City Park Management';
+  }catch(e){}
+}
 let violationData=null;
 let stripe=null;
 let cardElement=null;
@@ -97,6 +122,7 @@ async function loadStripeKey(){
 }
 
 async function init(){
+  await detectContext();
   try{ await loadStripeKey(); }
   catch(e){ showError(e.message); return; }
   const params=new URLSearchParams(window.location.search);
@@ -109,23 +135,24 @@ async function init(){
 }
 
 function showLookup(){
+  const w=PWctx();
   document.getElementById('main').innerHTML=`
     <div style="text-align:center;padding:32px 0 20px">
       <div style="font-family:'Barlow Condensed',sans-serif;font-size:64px;font-weight:900;color:#b5d96e;margin-bottom:8px;line-height:1">P</div>
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;text-transform:uppercase;margin-bottom:4px">Pay a Parking Fine</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;text-transform:uppercase;margin-bottom:4px">${w.heading}</div>
       <div style="font-size:13px;color:#888;margin-bottom:24px">Enter your violation ID from your ticket</div>
     </div>
     <div class="card">
       <div class="card-bd">
         <div class="fg">
-          <label class="fl">Violation ID or License Plate</label>
-          <input class="fi id-input" id="vio-id-input" placeholder="VIO-0000000000 or ABC 1234" maxlength="20" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')lookupViolation()">
+          <label class="fl">${w.idLabel}</label>
+          <input class="fi id-input" id="vio-id-input" placeholder="${w.idPh}" maxlength="20" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')lookupViolation()">
         </div>
         <button class="btn" onclick="lookupViolation()">Find My Ticket</button>
         <div class="err" id="lookup-err"></div>
       </div>
     </div>
-    <p class="note">Enter your Violation ID (printed on your notice) or your license plate number.<br>Contact us at violations@cityparkmanagement.com for help.</p>
+    <p class="note">${w.note}<br>Contact us at violations@cityparkmanagement.com for help.</p>
   `;
 }
 
@@ -150,7 +177,7 @@ async function lookupViolation(){
     }
     if(!violations.length){
       const err=document.getElementById('lookup-err');
-      if(err)err.textContent='No unpaid violations found for that plate.';
+      if(err)err.textContent=PWctx().noMatch;
       if(btn){btn.textContent='Find My Ticket';btn.disabled=false;}
       return;
     }
@@ -169,7 +196,7 @@ function showViolationList(violations){
   document.getElementById('main').innerHTML=`
     <div style="text-align:center;padding:24px 0 16px">
       <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;text-transform:uppercase;margin-bottom:4px">Select Violation</div>
-      <div style="font-size:13px;color:#888">Multiple unpaid violations found for plate <strong>${violations[0].plate}</strong></div>
+      <div style="font-size:13px;color:#888">Multiple unpaid violations found for ${PWv(violations[0]).multi} <strong>${violations[0].plate}</strong></div>
     </div>
     ${violations.map(v=>`
       <div onclick="selectViolation('${v.id}')" style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer;border:2px solid transparent" onmouseover="this.style.borderColor='#d32f2f'" onmouseout="this.style.borderColor='transparent'">
@@ -218,19 +245,22 @@ async function loadViolation(id){
 
 function showPayment(){
   const v=violationData;
+  const w=PWv(v);
+  document.title=w.title+' · City Park Management';
   document.getElementById('main').innerHTML=`
     <div class="card">
       <div class="card-hd">
-        <h1>Parking Violation</h1>
+        <h1>${w.cardTitle}</h1>
         <p>Reference: ${v.id}</p>
       </div>
       <div class="card-bd">
-        <div class="info-row"><span class="info-label">Plate</span><span class="info-val" style="font-family:'Barlow Condensed',sans-serif;font-size:18px;letter-spacing:.1em">${v.plate}</span></div>
+        <div class="info-row"><span class="info-label">${w.plate}</span><span class="info-val" style="font-family:'Barlow Condensed',sans-serif;font-size:18px;letter-spacing:.1em">${v.plate}</span></div>
         <div class="info-row"><span class="info-label">Location</span><span class="info-val">${v.lot_name||'—'}</span></div>
+        ${v.slip_number?`<div class="info-row"><span class="info-label">Slip</span><span class="info-val">${escHtml(v.slip_number)}</span></div>`:''}
         <div class="info-row"><span class="info-label">Violation</span><span class="info-val">${v.violation_name||'—'}</span></div>
         <div class="info-row"><span class="info-label">Date Issued</span><span class="info-val">${new Date(v.created_at).toLocaleDateString()}</span></div>
         ${v.notes?`<div class="info-row"><span class="info-label">Notes</span><span class="info-val">${v.notes}</span></div>`:''}
-        ${v.parking_fee>0?`<div class="info-row"><span class="info-label">Unpaid Parking Fee</span><span class="info-val">$${v.parking_fee.toFixed(2)}</span></div><div class="info-row"><span class="info-label">Violation Fine</span><span class="info-val">$${(v.fine_amount-v.parking_fee).toFixed(2)}</span></div>`:''}
+        ${v.parking_fee>0?`<div class="info-row"><span class="info-label">${w.fee}</span><span class="info-val">$${v.parking_fee.toFixed(2)}</span></div><div class="info-row"><span class="info-label">Violation Fine</span><span class="info-val">$${(v.fine_amount-v.parking_fee).toFixed(2)}</span></div>`:''}
         <div class="fine-amount">
           <div class="label">Total Due</div>
           <div class="amount">$${v.fine_amount.toFixed(2)}</div>
@@ -242,7 +272,7 @@ function showPayment(){
         </div>
         <button class="btn" id="pay-btn" onclick="submitPayment()">Pay $${v.fine_amount.toFixed(2)} Now</button>
         <p class="note">🔒 Secured by Stripe · City Park Holdings LLC · Your card details are never stored</p>
-        <div style="background:#fff5f5;border:1.5px solid #ffcdd2;border-radius:8px;padding:12px 14px;margin-top:12px;font-size:12px;color:#b71c1c;line-height:1.6;text-align:left"><strong>⚠️ Important Notice:</strong> Failure to pay this violation within 30 days may result in additional enforcement action, including but not limited to vehicle towing, booting, and referral to a collections agency. Payment of this fine does not waive any additional penalties that may apply.</div>
+        <div style="background:#fff5f5;border:1.5px solid #ffcdd2;border-radius:8px;padding:12px 14px;margin-top:12px;font-size:12px;color:#b71c1c;line-height:1.6;text-align:left"><strong>⚠️ Important Notice:</strong> Failure to pay this violation within 30 days may result in additional enforcement action, including but not limited to ${w.remedies}. Payment of this fine does not waive any additional penalties that may apply.</div>
       </div>
     </div>
   `;
@@ -278,7 +308,7 @@ async function submitPayment(){
     body:JSON.stringify({
       mode:'violation',
       violationId:violationData.id,
-      description:`Parking Violation Payment - ${violationData.violation_name} - ${violationData.plate}`,
+      description:`${PWv(violationData).desc} - ${violationData.violation_name} - ${violationData.plate}`,
       sessionId:violationData.id,
       immediate:true
     })
