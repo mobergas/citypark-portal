@@ -830,8 +830,18 @@ function loadGoogleMaps(){
   });
   return window._gmapsP;
 }
+// Copy buttons read their text from an escaped data attribute instead of embedding it in the
+// onclick, so an address containing quotes can't break out of the handler.
+function copyMapText(btn){
+  const text=btn.dataset.copy||'';
+  const done=()=>{const old=btn.dataset.label||btn.textContent;btn.dataset.label=old;btn.textContent='Copied!';btn.disabled=true;setTimeout(()=>{btn.textContent=old;btn.disabled=false;},1500);};
+  const fallback=()=>{const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e){btn.textContent='Press Ctrl+C';}document.body.removeChild(ta);};
+  if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(text).then(done,fallback);else fallback();
+}
 function mapPopupHtml(l){
-  return`<div style="min-width:170px"><div style="font-family:var(--fc);font-weight:900;font-size:16px;text-transform:uppercase;color:#0d0d0d">${escH(l.name)}</div><div style="font-size:12px;color:#888;margin:2px 0 6px">${escH(l.address||'')}</div><div style="font-family:var(--fc);font-weight:800;font-size:18px;color:var(--lime-dark)">${escH(lotPriceText(l))}</div><a href="/?lot=${encodeURIComponent(l.id)}" style="display:block;margin-top:8px;text-align:center;background:var(--lime);color:#0d0d0d;font-family:var(--fc);font-weight:900;text-transform:uppercase;letter-spacing:.06em;padding:8px;border-radius:8px;text-decoration:none">${l.category==='marina'?'Pay for dockage':'Pay for parking'}</a></div>`;
+  const coords=`${Number(l.latitude)}, ${Number(l.longitude)}`;
+  const row=(label,text)=>`<div style="margin-top:10px"><div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;margin-bottom:2px">${label}</div><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-size:13px;color:#0d0d0d;word-break:break-word">${escH(text)}</span><button type="button" data-copy="${escH(text)}" onclick="copyMapText(this)" style="flex-shrink:0;background:#fff;border:1.5px solid #0d0d0d;border-radius:6px;padding:3px 9px;font-family:var(--fc);font-weight:800;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:#0d0d0d;cursor:pointer">Copy</button></div></div>`;
+  return`<div style="min-width:230px;max-width:290px"><div style="font-family:var(--fc);font-weight:900;font-size:16px;text-transform:uppercase;color:#0d0d0d">${escH(l.name)}</div><div style="font-family:var(--fc);font-weight:800;font-size:18px;color:var(--lime-dark);margin-top:2px">${escH(lotPriceText(l))}</div>${l.address?row('Address',l.address):''}${row('Coordinates',coords)}<a href="/?lot=${encodeURIComponent(l.id)}" style="display:block;margin-top:12px;text-align:center;background:var(--lime);color:#0d0d0d;font-family:var(--fc);font-weight:900;text-transform:uppercase;letter-spacing:.06em;padding:8px;border-radius:8px;text-decoration:none">${l.category==='marina'?'Pay for dockage':'Pay for parking'}</a></div>`;
 }
 async function initMap(){
   if(!document.getElementById('loc-map'))return;
