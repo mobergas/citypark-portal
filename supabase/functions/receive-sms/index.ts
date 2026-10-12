@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { brandForLot } from '../_shared/brand.ts';
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -87,8 +88,11 @@ Deno.serve(async (req) => {
 
     let reply: string;
     if (lot) {
-      const link = `https://www.cityparkmanagement.app/pay?lot=${lot.id}&zone=${lot.zone}`;
-      reply = `City Park Management: Pay for parking at ${lot.name} (Zone ${lot.zone}) here: ${link}`;
+      const brand = await brandForLot(supabase, lot);
+      const link = `${brand.baseUrl}/pay?lot=${lot.id}&zone=${lot.zone}`;
+      reply = brand.marina
+        ? `${brand.smsName}: Pay for dockage at ${lot.name} here: ${link}`
+        : `${brand.smsName}: Pay for parking at ${lot.name} (Zone ${lot.zone}) here: ${link}`;
     } else {
       reply = `City Park Management: We couldn't find that zone number. Please double check the number posted at your parking spot and try again, or visit cityparkmanagement.app to pay directly.`;
     }

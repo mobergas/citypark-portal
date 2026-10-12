@@ -31,12 +31,21 @@ Deno.serve(withCors(async (req) => {
   }
 
   try {
-    const { to, subject, html, attachments } = await req.json();
+    const { to, subject, html, attachments, operatorId } = await req.json();
 
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
 
+    // The display name comes from the operators table by id, never from caller-supplied text,
+    // so a caller can't set an arbitrary sender name. The address stays on our verified domain.
+    let fromName = 'City Park Management';
+    if (operatorId) {
+      const { data: op } = await supabase.from('operators').select('name').eq('id', operatorId).maybeSingle();
+      const clean = String(op?.name || '').replace(/[<>",\r\n]/g, '').trim();
+      if (clean) fromName = clean;
+    }
+
     const body: any = {
-      from: 'City Park Management <info@cityparkmanagement.com>',
+      from: `${fromName} <info@cityparkmanagement.com>`,
       to,
       subject,
       html,

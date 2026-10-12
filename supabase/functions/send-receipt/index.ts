@@ -1,4 +1,5 @@
 import { withCors } from '../_shared/cors.ts';
+import { brandForLot, defaultBrand, emailHeaderRow, emailFooterRow, receiptWords, escHtml, type Brand } from '../_shared/brand.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const supabase = createClient(
@@ -6,16 +7,16 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
-async function sendEmail(to: string, subject: string, html: string) {
+async function sendEmail(to: string, subject: string, html: string, operatorId?: string | null) {
   await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
-    body: JSON.stringify({ to, subject, html })
+    body: JSON.stringify({ to, subject, html, operatorId })
   });
 }
 
-function wrapEmail(innerHtml: string) {
-  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:30px 0;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);"><tr><td style="background:#0d0d0d;padding:24px 32px;border-bottom:5px solid #b5d96e;"><img src="https://sldahhdbvcxdlqdhmsjd.supabase.co/storage/v1/object/public/assets/Logo%201.png" alt="City Park Management" style="height:48px;display:block;"></td></tr><tr><td style="padding:32px;font-size:15px;line-height:1.7;color:#444;">${innerHtml}</td></tr><tr><td style="background:#f5f5f5;padding:16px 32px;text-align:center;font-size:11px;color:#888;">City Park Management · info@cityparkmanagement.com</td></tr></table></td></tr></table></body></html>`;
+function wrapEmail(innerHtml: string, brand: Brand = defaultBrand()) {
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:30px 0;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">${emailHeaderRow(brand)}<tr><td style="padding:32px;font-size:15px;line-height:1.7;color:#444;">${innerHtml}</td></tr>${emailFooterRow(brand)}</table></td></tr></table></body></html>`;
 }
 
 const MAX_ATTEMPTS = 10;
@@ -59,8 +60,10 @@ Deno.serve(withCors(async (req) => {
       const dur = s.rate === 'hourly' ? s.duration + 'hr' : s.rate === 'event' ? 'Event' : 'Monthly';
       const start = new Date(s.start_time);
       const exp = new Date(s.start_time + s.duration * 3600000);
-      const html = wrapEmail(`<h2 style="font-size:20px;font-weight:900;margin:0 0 4px;color:#0d0d0d;">Parking Receipt</h2><p style="margin:0 0 20px;font-size:13px;color:#888;">Here is a copy of your receipt.</p><table width="100%" cellpadding="10" cellspacing="0" style="background:#f5f5f5;border-radius:8px;margin-bottom:20px;"><tr><td style="color:#888;font-size:13px;border-bottom:1px solid #e0e0e0">Ticket #</td><td style="font-weight:700;border-bottom:1px solid #e0e0e0">${s.id}</td></tr><tr><td style="color:#888;font-size:13px;border-bottom:1px solid #e0e0e0">Plate</td><td style="font-weight:700;border-bottom:1px solid #e0e0e0">${s.plate}</td></tr><tr><td style="color:#888;font-size:13px;border-bottom:1px solid #e0e0e0">Location</td><td style="font-weight:700;border-bottom:1px solid #e0e0e0">${lot?.name||'—'}${lot?.zone?' · Zone '+lot.zone:''}</td></tr><tr><td style="color:#888;font-size:13px;border-bottom:1px solid #e0e0e0">Started</td><td style="font-weight:700;border-bottom:1px solid #e0e0e0">${start.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · ${start.toLocaleDateString()}</td></tr><tr><td style="color:#888;font-size:13px;border-bottom:1px solid #e0e0e0">Ended</td><td style="font-weight:700;border-bottom:1px solid #e0e0e0">${exp.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · ${exp.toLocaleDateString()}</td></tr><tr><td style="color:#888;font-size:13px;border-bottom:1px solid #e0e0e0">Duration</td><td style="font-weight:700;border-bottom:1px solid #e0e0e0">${dur}</td></tr><tr><td style="color:#888;font-size:13px;">Amount Paid</td><td style="font-weight:900;font-size:18px;color:#2e7d32;">$${s.paid.toFixed(2)}</td></tr></table>`);
-      await sendEmail(email, 'Your City Park Parking Receipt', html);
+      const brand = await brandForLot(supabase, lot);
+      const wd = receiptWords(brand);
+      const html = wrapEmail(`<h2 style="font-size:20px;font-weight:900;margin:0 0 4px;color:#0d0d0d;">${wd.title}</h2><p style="margin:0 0 20px;font-size:13px;color:#888;">Here is a copy of your receipt.</p><table width="100%" cellpadding="10" cellspacing="0" style="background:#f5f5f5;border-radius:8px;margin-bottom:20px;"><tr><td style="color:#888;font-size:13px;border-bottom:1px solid #e0e0e0">Ticket #</td><td style="font-weight:700;border-bottom:1px solid #e0e0e0">${s.id}</td></tr><tr><td style="color:#888;font-size:13px;border-bottom:1px solid #e0e0e0">${wd.idLabel}</td><td style="font-weight:700;border-bottom:1px solid #e0e0e0">${s.plate}</td></tr><tr><td style="color:#888;font-size:13px;border-bottom:1px solid #e0e0e0">Location</td><td style="font-weight:700;border-bottom:1px solid #e0e0e0">${brand.marina?(lot?.name||'—'):(lot?.name||'—')+(lot?.zone?' · Zone '+lot.zone:'')}</td></tr>${brand.marina&&s.slip_number?'<tr><td style="color:#888;font-size:13px;border-bottom:1px solid #e0e0e0">Slip</td><td style="font-weight:700;border-bottom:1px solid #e0e0e0">'+escHtml(s.slip_number)+'</td></tr>':''}${brand.marina&&s.vessel_name?'<tr><td style="color:#888;font-size:13px;border-bottom:1px solid #e0e0e0">Vessel</td><td style="font-weight:700;border-bottom:1px solid #e0e0e0">'+escHtml(s.vessel_name)+'</td></tr>':''}<tr><td style="color:#888;font-size:13px;border-bottom:1px solid #e0e0e0">Started</td><td style="font-weight:700;border-bottom:1px solid #e0e0e0">${start.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · ${start.toLocaleDateString()}</td></tr><tr><td style="color:#888;font-size:13px;border-bottom:1px solid #e0e0e0">Ended</td><td style="font-weight:700;border-bottom:1px solid #e0e0e0">${exp.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · ${exp.toLocaleDateString()}</td></tr><tr><td style="color:#888;font-size:13px;border-bottom:1px solid #e0e0e0">Duration</td><td style="font-weight:700;border-bottom:1px solid #e0e0e0">${dur}</td></tr><tr><td style="color:#888;font-size:13px;">Amount Paid</td><td style="font-weight:900;font-size:18px;color:#2e7d32;">$${s.paid.toFixed(2)}</td></tr></table>`, brand);
+      await sendEmail(email, wd.subject, html, brand.operatorId);
     } else if (type === 'pass') {
       const { data: p } = await supabase.from('passes').select('*').eq('id', id).single();
       if (!p) throw new Error('Pass not found');

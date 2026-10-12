@@ -1,15 +1,16 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { brandForLot, emailHeaderRow, emailFooterRow, receiptWords, escHtml, expiryWarningSms, receiptSms } from '../_shared/brand.ts';
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
-async function sendEmail(to: string, subject: string, html: string, attachments?: any[]) {
+async function sendEmail(to: string, subject: string, html: string, attachments?: any[], operatorId?: string | null) {
   await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
-    body: JSON.stringify({ to, subject, html, attachments })
+    body: JSON.stringify({ to, subject, html, attachments, operatorId })
   });
 }
 
@@ -170,9 +171,8 @@ Deno.serve(async () => {
       if (smsErr) console.error('Failed to mark sms_sent for', s.id, smsErr);
       if (claimed && claimed.length > 0) {
         const l2 = await supabase.from('lots').select('*').eq('id', s.lot_id).single();
-        const lotName = l2.data?.name || 'the lot';
-        const lotZone = l2.data?.zone || '';
-        await sendSMS(s.phone, `City Park Management: Your parking for plate ${s.plate} at ${lotName} (Zone ${lotZone}) expires in 20 min. Tap to extend: cityparkmanagement.app/extend?session=${s.id}`);
+        const brand = await brandForLot(supabase, l2.data);
+        await sendSMS(s.phone, expiryWarningSms(brand, s, l2.data));
       }
     }
 
@@ -187,18 +187,20 @@ Deno.serve(async () => {
       if (receiptSmsErr) console.error('Failed to mark receipt_sms_sent for', s.id, receiptSmsErr);
       if (claimed && claimed.length > 0) {
         const l3 = await supabase.from('lots').select('*').eq('id', s.lot_id).single();
-        const lotName = l3.data?.name || 'the lot';
-        const lotZone = l3.data?.zone || '';
+        const brand = await brandForLot(supabase, l3.data);
         const dur = s.rate === 'hourly' ? s.duration + 'hr' : s.rate === 'event' ? 'Event' : 'Monthly';
-        await sendSMS(s.phone, `City Park Management: Receipt for ${s.plate} at ${lotName} (Zone ${lotZone}). Duration: ${dur}. Amount paid: $${s.paid.toFixed(2)}. Thank you for parking with us!`);
+        await sendSMS(s.phone, receiptSms(brand, s, l3.data, dur));
       }
     }
 
     // Send receipt email when session expires
     if (remaining <= 0 && !s.receipt_sent && s.email) {
-      const subject = 'Your City Park Parking Receipt';
-      const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:30px 0;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;"><tr><td style="background:#0d0d0d;padding:24px 32px;border-bottom:5px solid #b5d96e;"><img src="https://sldahhdbvcxdlqdhmsjd.supabase.co/storage/v1/object/public/assets/Logo%201.png" alt="City Park Management" style="height:48px;display:block;"></td></tr><tr><td style="padding:32px;font-size:15px;line-height:1.7;color:#444;"><p>Your parking session has ended. Here is your receipt.</p><table width="100%" cellpadding="8" cellspacing="0" style="background:#f5f5f5;border-radius:8px;margin-bottom:20px;"><tr><td style="color:#888;font-size:13px;">Ticket</td><td style="font-weight:700;">${s.id}</td></tr><tr><td style="color:#888;font-size:13px;">Plate</td><td style="font-weight:700;">${s.plate}</td></tr><tr><td style="color:#888;font-size:13px;">Duration</td><td style="font-weight:700;">${s.duration}hr</td></tr><tr><td style="color:#888;font-size:13px;">Amount Paid</td><td style="font-weight:700;color:#2e7d32;">$${s.paid.toFixed(2)}</td></tr></table></td></tr><tr><td style="background:#f5f5f5;padding:16px 32px;text-align:center;font-size:11px;color:#888;">City Park Management · info@cityparkmanagement.com</td></tr></table></td></tr></table></body></html>`;
-      await sendEmail(s.email, subject, html);
+      const { data: rLot } = await supabase.from('lots').select('*').eq('id', s.lot_id).single();
+      const brand = await brandForLot(supabase, rLot);
+      const wd = receiptWords(brand);
+      const subject = wd.subject;
+      const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:30px 0;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;">${emailHeaderRow(brand)}<tr><td style="padding:32px;font-size:15px;line-height:1.7;color:#444;"><p>${wd.ended}</p><table width="100%" cellpadding="8" cellspacing="0" style="background:#f5f5f5;border-radius:8px;margin-bottom:20px;"><tr><td style="color:#888;font-size:13px;">Ticket</td><td style="font-weight:700;">${s.id}</td></tr><tr><td style="color:#888;font-size:13px;">${wd.idLabel}</td><td style="font-weight:700;">${s.plate}</td></tr>${brand.marina&&s.slip_number?`<tr><td style="color:#888;font-size:13px;">Slip</td><td style="font-weight:700;">${escHtml(s.slip_number)}</td></tr>`:''}${brand.marina&&s.vessel_name?`<tr><td style="color:#888;font-size:13px;">Vessel</td><td style="font-weight:700;">${escHtml(s.vessel_name)}</td></tr>`:''}<tr><td style="color:#888;font-size:13px;">Duration</td><td style="font-weight:700;">${s.duration}hr</td></tr><tr><td style="color:#888;font-size:13px;">Amount Paid</td><td style="font-weight:700;color:#2e7d32;">$${s.paid.toFixed(2)}</td></tr></table></td></tr>${emailFooterRow(brand)}</table></td></tr></table></body></html>`;
+      await sendEmail(s.email, subject, html, undefined, brand.operatorId);
       await supabase.from('sessions').update({ receipt_sent: true }).eq('id', s.id);
     }
   }
