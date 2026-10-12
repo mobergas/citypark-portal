@@ -52,7 +52,6 @@ body{background:var(--g1);color:var(--t1);font-family:var(--f);min-height:100vh;
 .fi:focus{border-color:var(--lime-dark);background:#fff}
 #plate-inp::placeholder{color:#d0d0d0}
 #slip-inp::placeholder{color:#d0d0d0}
-.map-pin{width:34px;height:34px;border-radius:50%;background:var(--lime);border:3px solid var(--blk);display:flex;align-items:center;justify-content:center;color:var(--blk);font-size:16px;box-shadow:0 2px 6px rgba(0,0,0,.35)}
 .fta{width:100%;background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:11px 13px;color:var(--t1);font-size:14px;outline:none;font-family:var(--f);resize:vertical;min-height:80px;line-height:1.6}
 .fta:focus{border-color:var(--lime-dark);background:#fff}
 .fse{width:100%;background:var(--g1);border:1.5px solid var(--g2);border-radius:8px;padding:11px 13px;color:var(--t1);font-family:var(--f);font-size:15px;outline:none;cursor:pointer}
@@ -804,31 +803,56 @@ function renderMap(){
     </div>
   </div></div>`;
 }
-function loadLeaflet(){
-  if(window.L)return Promise.resolve();
-  if(window._leafletP)return window._leafletP;
-  window._leafletP=new Promise((res,rej)=>{
-    const css=document.createElement('link');css.rel='stylesheet';css.href='https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css';document.head.appendChild(css);
-    const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';s.onload=res;s.onerror=()=>{window._leafletP=null;rej(new Error('leaflet'));};document.head.appendChild(s);
+// Publishable browser key, restricted by HTTP referrer + API in Google Cloud — safe to ship in page source.
+const GMAPS_KEY='AIzaSyADtIp3NyCPKKGmUc5cJ82bGfK3Mp1PH0Y';
+function lotPriceShort(l){
+  const p=l.pricing||{},r=l.rates||{};
+  const f=n=>'$'+(Number(n)%1?Number(n).toFixed(2):Number(n).toFixed(0));
+  if(r.hourly&&p.hourly!=null)return f(p.hourly);
+  if(r.event&&p.event)return f(p.event);
+  if(r.monthly&&l.monthlyselfsrv&&p.monthly)return f(p.monthly);
+  return '';
+}
+function mapFail(){
+  const e=document.getElementById('loc-map');
+  if(e){e.style.height='auto';e.innerHTML='<div style="padding:24px;text-align:center;color:var(--t3)">Map unavailable right now — use the list below.</div>';}
+}
+function loadGoogleMaps(){
+  if(window.google?.maps?.Map)return Promise.resolve();
+  if(window._gmapsP)return window._gmapsP;
+  window._gmapsP=new Promise((res,rej)=>{
+    window._gmapsReady=res;
+    window.gm_authFailure=mapFail;
+    const s=document.createElement('script');
+    s.src=`https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&v=weekly&callback=_gmapsReady`;
+    s.async=true;s.onerror=()=>{window._gmapsP=null;rej(new Error('gmaps'));};
+    document.head.appendChild(s);
   });
-  return window._leafletP;
+  return window._gmapsP;
+}
+function mapPopupHtml(l){
+  return`<div style="min-width:170px"><div style="font-family:var(--fc);font-weight:900;font-size:16px;text-transform:uppercase;color:#0d0d0d">${escH(l.name)}</div><div style="font-size:12px;color:#888;margin:2px 0 6px">${escH(l.address||'')}</div><div style="font-family:var(--fc);font-weight:800;font-size:18px;color:var(--lime-dark)">${escH(lotPriceText(l))}</div><a href="/?lot=${encodeURIComponent(l.id)}" style="display:block;margin-top:8px;text-align:center;background:var(--lime);color:#0d0d0d;font-family:var(--fc);font-weight:900;text-transform:uppercase;letter-spacing:.06em;padding:8px;border-radius:8px;text-decoration:none">${l.category==='marina'?'Pay for dockage':'Pay for parking'}</a></div>`;
 }
 async function initMap(){
-  const el=document.getElementById('loc-map');if(!el)return;
-  try{await loadLeaflet();}catch(e){el.style.height='auto';el.innerHTML='<div style="padding:24px;text-align:center;color:var(--t3)">Map unavailable right now — use the list below.</div>';return;}
-  const el2=document.getElementById('loc-map');
-  if(S.v!=='map'||!el2)return;
-  if(S._map){S._map.remove();S._map=null;}
-  const map=L.map(el2,{scrollWheelZoom:false});S._map=map;
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(map);
-  const pts=[];
-  mapLots().forEach(l=>{
-    const ll=[+l.latitude,+l.longitude];pts.push(ll);
-    const icon=L.divIcon({className:'',html:`<div class="map-pin"><i class="ti ${l.category==='marina'?'ti-anchor':'ti-parking'}"></i></div>`,iconSize:[34,34],iconAnchor:[17,17],popupAnchor:[0,-18]});
-    L.marker(ll,{icon}).addTo(map).bindPopup(`<div style="min-width:170px"><div style="font-family:var(--fc);font-weight:900;font-size:16px;text-transform:uppercase;color:#0d0d0d">${escH(l.name)}</div><div style="font-size:12px;color:#888;margin:2px 0 6px">${escH(l.address||'')}</div><div style="font-family:var(--fc);font-weight:800;font-size:18px;color:var(--lime-dark)">${escH(lotPriceText(l))}</div><a href="/?lot=${encodeURIComponent(l.id)}" style="display:block;margin-top:8px;text-align:center;background:var(--lime);color:#0d0d0d;font-family:var(--fc);font-weight:900;text-transform:uppercase;letter-spacing:.06em;padding:8px;border-radius:8px;text-decoration:none">${l.category==='marina'?'Pay for dockage':'Pay for parking'}</a></div>`);
+  if(!document.getElementById('loc-map'))return;
+  try{await loadGoogleMaps();}catch(e){mapFail();return;}
+  const el=document.getElementById('loc-map');
+  if(S.v!=='map'||!el)return;
+  const lots=mapLots();
+  const allMarinas=lots.length>0&&lots.every(l=>l.category==='marina');
+  const map=new google.maps.Map(el,{mapTypeId:allMarinas?'hybrid':'roadmap',gestureHandling:'cooperative',streetViewControl:false,fullscreenControl:true,mapTypeControl:true,center:{lat:+lots[0].latitude,lng:+lots[0].longitude},zoom:15});
+  const info=new google.maps.InfoWindow();
+  const bounds=new google.maps.LatLngBounds();
+  const accent=getComputedStyle(document.documentElement).getPropertyValue('--lime').trim()||'#b5d96e';
+  lots.forEach(l=>{
+    const pos={lat:+l.latitude,lng:+l.longitude};bounds.extend(pos);
+    const price=lotPriceShort(l);
+    const m=new google.maps.Marker({position:pos,map,title:l.name,
+      label:price?{text:price,color:'#0d0d0d',fontWeight:'800',fontSize:'12px'}:undefined,
+      icon:{path:google.maps.SymbolPath.CIRCLE,scale:20,fillColor:accent,fillOpacity:1,strokeColor:'#0d0d0d',strokeWeight:3}});
+    m.addListener('click',()=>{info.setContent(mapPopupHtml(l));info.open({map,anchor:m});});
   });
-  if(pts.length===1)map.setView(pts[0],15);else map.fitBounds(pts,{padding:[40,40],maxZoom:16});
-  setTimeout(()=>map.invalidateSize(),0);
+  if(lots.length>1)map.fitBounds(bounds,40);
 }
 function pickHomeLot(lotId){S.lotId=lotId;localStorage.setItem('cpm_home_lot',lotId);S.pickLotSearch='';S.closedLotName=null;S.v='pay';render();}
 function renderPay(){
