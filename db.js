@@ -191,6 +191,7 @@ async function saveLotDB(lot){
     id:lot.id,name:lot.name,zone:lot.zone,address:lot.address,
     category:lot.category||'parking',
     operator_id:lot.operator_id||null,
+    latitude:lot.latitude??null,longitude:lot.longitude??null,
     open:lot.open,rates:lot.rates,monthlyselfsrv:lot.monthlyselfsrv,
     fees:lot.fees,pricing:lot.pricing,
     total_spaces:lot.total_spaces||0,
