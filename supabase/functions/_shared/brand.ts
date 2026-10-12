@@ -48,7 +48,7 @@ export async function brandForLot(supabase: any, lot: any): Promise<Brand> {
   return {
     ...base,
     operatorId: op.id,
-    name: op.name,
+    name: shortName,
     shortName,
     // Texts keep the registered sender name in parentheses — the SMS campaign is registered
     // to City Park Management, and the consent checkbox names it as the sender.
@@ -59,7 +59,7 @@ export async function brandForLot(supabase: any, lot: any): Promise<Brand> {
     accent: op.accent || base.accent,
     linkBase: host,
     baseUrl: `https://${host}`,
-    footer: `${op.name} · Operated by City Park Management · ${SUPPORT_EMAIL}`,
+    footer: `${shortName} · Operated by City Park Management · ${SUPPORT_EMAIL}`,
   };
 }
 

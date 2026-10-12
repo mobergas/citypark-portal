@@ -40,7 +40,7 @@ Deno.serve(withCors(async (req) => {
     let fromName = 'City Park Management';
     if (operatorId) {
       const { data: op } = await supabase.from('operators').select('name').eq('id', operatorId).maybeSingle();
-      const clean = String(op?.name || '').replace(/[<>",\r\n]/g, '').trim();
+      const clean = String(op?.name || '').replace(/[<>",\r\n]/g, '').replace(/\s+Management$/i, '').trim();
       if (clean) fromName = clean;
     }
 
